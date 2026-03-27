@@ -127,7 +127,7 @@ export function TaskForm({ onClose }: TaskFormProps) {
                 </div>
 
                 {/* Footer Actions */}
-                <div className="shrink-0 p-6 border-t border-border flex justify-end gap-3 bg-background/95 pb-safe mt-auto">
+                <div className="shrink-0 p-6 border-t border-border flex justify-end gap-3 bg-background/95 pb-24 md:pb-6 mt-auto">
                     <button
                         type="button"
                         onClick={onClose}
@@ -140,7 +140,7 @@ export function TaskForm({ onClose }: TaskFormProps) {
                         disabled={loading}
                         className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-lg hover:shadow-indigo-500/25 flex items-center justify-center min-w-[120px]"
                     >
-                        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Guardar Tarea'}
+                        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Guardar'}
                     </button>
                 </div>
             </form>

@@ -115,7 +115,7 @@ export function MediaClient({ initialItems }: { initialItems: any[] }) {
                                 : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50 border border-transparent'
                                 }`}
                         >
-                            {status === 'All' ? 'Todo' : status === 'Active' ? 'Viendo / Jugando' : status === 'Backlog' ? 'Pendiente' : 'Terminado'}
+                            {status === 'All' ? 'Todo' : status === 'Active' ? 'En Progreso' : status === 'Backlog' ? 'Pendiente' : 'Terminado'}
                         </button>
                     ))}
                 </div>
@@ -179,6 +179,11 @@ export function MediaClient({ initialItems }: { initialItems: any[] }) {
                                             <span className="text-xs bg-secondary px-2 py-0.5 rounded-full text-muted-foreground border border-border">
                                                 {item.type === 'Movie' ? 'Película' : item.type === 'Series' ? 'Serie' : item.type === 'Book' ? 'Libro' : 'Juego'}
                                             </span>
+                                            {item.status === 'Active' && (
+                                                <span className="text-xs bg-pink-500/10 text-pink-500 px-2 py-0.5 rounded-full border border-pink-500/20 font-medium whitespace-nowrap">
+                                                    {item.type === 'Book' ? 'Leyendo' : item.type === 'Game' ? 'Jugando' : 'Viendo'}
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -186,18 +191,21 @@ export function MediaClient({ initialItems }: { initialItems: any[] }) {
                                 {/* Progress / Actions */}
                                 <div className="mt-5 pt-4 border-t border-border/50 flex items-center justify-between gap-3">
                                     {item.status === 'Active' ? (
-                                        <div className="flex-1 relative">
+                                        <div className="flex-1">
+                                            <div className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wider font-semibold">
+                                                {item.type === 'Book' ? 'Página actual' : item.type === 'Series' ? 'Episodio/Temp' : item.type === 'Game' ? 'Nivel/Porcentaje' : 'Progreso'}
+                                            </div>
                                             <input
                                                 type="text"
                                                 value={item.progress || ''}
                                                 onChange={(e) => handleProgressChange(item.id, e.target.value)}
-                                                placeholder={item.type === 'Series' ? 'Ep 4' : item.type === 'Book' ? 'Pág 120' : 'Progreso...'}
+                                                placeholder={item.type === 'Series' ? 'Ej: S2 Ep 4' : item.type === 'Book' ? 'Ej: Pág 120' : 'Ej: 50%'}
                                                 className="w-full bg-background border border-border py-1.5 px-3 rounded-lg text-sm text-foreground focus:ring-2 focus:ring-pink-500 outline-none"
                                             />
                                         </div>
                                     ) : (
-                                        <div className="flex-1 text-sm text-muted-foreground">
-                                            {item.status === 'Finished' ? 'Terminado' : 'En Backlog'}
+                                        <div className="flex-1 text-sm text-muted-foreground font-medium">
+                                            {item.status === 'Finished' ? 'Terminado' : 'Pendiente (Backlog)'}
                                         </div>
                                     )}
 
@@ -282,7 +290,7 @@ export function MediaClient({ initialItems }: { initialItems: any[] }) {
                                     <label className="text-sm font-medium">Estado inicial</label>
                                     <select name="status" className="w-full bg-secondary border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-pink-500 appearance-none text-muted-foreground">
                                         <option value="Backlog">Pendiente (Backlog)</option>
-                                        <option value="Active">Empezar ahora</option>
+                                        <option value="Active">Empezar (En Progreso)</option>
                                     </select>
                                 </div>
 
