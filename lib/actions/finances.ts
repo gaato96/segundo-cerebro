@@ -96,6 +96,46 @@ export async function createDebt(formData: FormData) {
     revalidatePath('/finances')
 }
 
+export async function deleteDebt(id: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    const { error } = await supabase
+        .from('debts')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id)
+
+    if (error) throw error
+    revalidatePath('/finances')
+}
+
+export async function updateDebt(id: string, formData: FormData) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    const creditor = formData.get('creditor') as string
+    const total_amount = parseFloat(formData.get('total_amount') as string)
+    const remaining_amount = parseFloat(formData.get('remaining_amount') as string)
+    const due_day = parseInt(formData.get('due_day') as string)
+
+    const { error } = await supabase
+        .from('debts')
+        .update({
+            creditor,
+            total_amount,
+            remaining_amount,
+            due_day
+        })
+        .eq('id', id)
+        .eq('user_id', user.id)
+
+    if (error) throw error
+    revalidatePath('/finances')
+}
+
 export async function deleteTransaction(id: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()

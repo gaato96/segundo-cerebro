@@ -2,12 +2,14 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Wallet, TrendingUp, TrendingDown, Landmark, Trash2, X, Loader2 } from 'lucide-react'
-import { createTransaction, createDebt, deleteTransaction } from '@/lib/actions/finances'
+import { Plus, Wallet, TrendingUp, TrendingDown, Landmark, Trash2, X, Loader2, Edit3 } from 'lucide-react'
+import { createTransaction, createDebt, deleteTransaction, deleteDebt, updateDebt } from '@/lib/actions/finances'
 
 export function FinancesClient({ transactions, debts }: { transactions: any[], debts: any[] }) {
     const [isTxFormOpen, setIsTxFormOpen] = useState(false)
     const [isDebtFormOpen, setIsDebtFormOpen] = useState(false)
+    const [editingDebt, setEditingDebt] = useState<any | null>(null)
+    const [prefilledDebtId, setPrefilledDebtId] = useState<string>('')
     const [loading, setLoading] = useState<string | null>(null)
 
     // Calculations
@@ -35,15 +37,38 @@ export function FinancesClient({ transactions, debts }: { transactions: any[], d
     }
 
     async function handleDebtSubmit(formData: FormData) {
+        if (loading === 'debt') return
         setLoading('debt')
         try {
-            await createDebt(formData)
+            if (editingDebt) {
+                await updateDebt(editingDebt.id, formData)
+            } else {
+                await createDebt(formData)
+            }
             setIsDebtFormOpen(false)
+            setEditingDebt(null)
         } catch (e) {
             alert('Error guardando deuda')
         } finally {
             setLoading(null)
         }
+    }
+
+    async function handleDeleteDebt(id: string) {
+        if (!confirm('¿Eliminar esta deuda? No se guardará el registro si hay pagos pendientes.')) return
+        setLoading(id)
+        try {
+            await deleteDebt(id)
+        } catch (e) {
+            alert('Error eliminando deuda')
+        } finally {
+            setLoading(null)
+        }
+    }
+
+    function openPayDebt(debt: any) {
+        setPrefilledDebtId(debt.id)
+        setIsTxFormOpen(true)
     }
 
     async function handleDeleteTx(id: string) {
@@ -193,8 +218,23 @@ export function FinancesClient({ transactions, debts }: { transactions: any[], d
                         ) : debts.map(debt => {
                             const progress = 100 - (debt.remaining_amount / debt.total_amount * 100)
                             return (
-                                <div key={debt.id} className="glass p-5 rounded-2xl border border-red-500/20 bg-card relative overflow-hidden">
-                                    <div className="flex justify-between items-start mb-2">
+                                <div key={debt.id} className="glass p-5 rounded-2xl border border-red-500/20 bg-card relative overflow-hidden group">
+                                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all flex gap-1 z-10">
+                                        <button
+                                            onClick={() => { setEditingDebt(debt); setIsDebtFormOpen(true) }}
+                                            className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg"
+                                        >
+                                            <Edit3 className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteDebt(debt.id)}
+                                            disabled={loading === debt.id}
+                                            className="p-1.5 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 rounded-lg"
+                                        >
+                                            {loading === debt.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                                        </button>
+                                    </div>
+                                    <div className="flex justify-between items-start mb-2 pr-12">
                                         <h3 className="font-semibold">{debt.creditor}</h3>
                                         <span className="text-xs font-medium text-red-400 bg-red-500/10 px-2 py-1 rounded-md">
                                             Día {debt.due_day}
@@ -218,6 +258,12 @@ export function FinancesClient({ transactions, debts }: { transactions: any[], d
                                             />
                                         </div>
                                     </div>
+                                    <button
+                                        onClick={() => openPayDebt(debt)}
+                                        className="w-full mt-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 text-xs font-bold rounded-xl border border-indigo-500/20 transition-all uppercase tracking-wider"
+                                    >
+                                        Registrar Pago
+                                    </button>
                                 </div>
                             )
                         })}
@@ -233,13 +279,13 @@ export function FinancesClient({ transactions, debts }: { transactions: any[], d
                         <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="bg-card w-full max-w-md max-h-[90dvh] flex flex-col rounded-2xl border border-border shadow-2xl relative z-10">
                             <div className="flex items-center justify-between p-6 border-b border-border/50">
                                 <h2 className="text-xl font-bold font-heading">Nuevo Movimiento</h2>
-                                <button onClick={() => setIsTxFormOpen(false)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
+                                <button onClick={() => { setIsTxFormOpen(false); setPrefilledDebtId('') }} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
                             </div>
                             <form action={handleTxSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium">Tipo</label>
-                                        <select name="type" className="w-full bg-secondary border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 appearance-none">
+                                        <select name="type" defaultValue={prefilledDebtId ? 'Debt_Payment' : 'Variable'} className="w-full bg-secondary border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 appearance-none">
                                             <option value="Variable">Gasto Variable</option>
                                             <option value="Fixed_Expense">Gasto Fijo</option>
                                             <option value="Income">Ingreso</option>
@@ -271,7 +317,7 @@ export function FinancesClient({ transactions, debts }: { transactions: any[], d
                                 {debts.length > 0 && (
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium text-muted-foreground">Si es pago de deuda, seleccioná cuál:</label>
-                                        <select name="debt_id" className="w-full bg-secondary border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 appearance-none">
+                                        <select name="debt_id" defaultValue={prefilledDebtId} className="w-full bg-secondary border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 appearance-none">
                                             <option value="">-- No es deuda --</option>
                                             {debts.map(d => <option key={d.id} value={d.id}>{d.creditor}</option>)}
                                         </select>
@@ -279,7 +325,7 @@ export function FinancesClient({ transactions, debts }: { transactions: any[], d
                                 )}
 
                                 <div className="pt-4 mt-6 border-t border-border flex justify-end gap-3 shrink-0">
-                                    <button type="button" onClick={() => setIsTxFormOpen(false)} className="px-5 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-secondary">Cancelar</button>
+                                    <button type="button" onClick={() => { setIsTxFormOpen(false); setPrefilledDebtId('') }} className="px-5 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-secondary">Cancelar</button>
                                     <button disabled={loading === 'tx'} type="submit" className="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-md flex items-center justify-center min-w-[100px]">
                                         {loading === 'tx' ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Guardar'}
                                     </button>
@@ -297,26 +343,30 @@ export function FinancesClient({ transactions, debts }: { transactions: any[], d
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsDebtFormOpen(false)} className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
                         <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="bg-card w-full max-w-md max-h-[90dvh] flex flex-col rounded-2xl border border-border shadow-2xl relative z-10">
                             <div className="flex items-center justify-between p-6 border-b border-border/50">
-                                <h2 className="text-xl font-bold font-heading">Nueva Deuda</h2>
-                                <button onClick={() => setIsDebtFormOpen(false)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
+                                <h2 className="text-xl font-bold font-heading">{editingDebt ? 'Editar Deuda' : 'Nueva Deuda'}</h2>
+                                <button onClick={() => { setIsDebtFormOpen(false); setEditingDebt(null) }} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
                             </div>
                             <form action={handleDebtSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">Acreedor / Nombre</label>
-                                    <input required name="creditor" placeholder="Ej. Tarjeta de Crédito, Préstamo Auto..." className="w-full bg-secondary border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-500" />
+                                    <input required name="creditor" defaultValue={editingDebt?.creditor} placeholder="Ej. Tarjeta de Crédito, Préstamo Auto..." className="w-full bg-secondary border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-500" />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium">Monto Total ($)</label>
-                                        <input required type="number" step="0.01" name="total_amount" className="w-full bg-secondary border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-500" />
+                                        <input required type="number" step="0.01" name="total_amount" defaultValue={editingDebt?.total_amount} className="w-full bg-secondary border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-500" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Restante ($)</label>
+                                        <input required type="number" step="0.01" name="remaining_amount" defaultValue={editingDebt?.remaining_amount} className="w-full bg-secondary border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-500" />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium">Día de vencimiento</label>
-                                        <input required type="number" min="1" max="31" name="due_day" placeholder="1-31" className="w-full bg-secondary border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-500" />
+                                        <input required type="number" min="1" max="31" name="due_day" defaultValue={editingDebt?.due_day} placeholder="1-31" className="w-full bg-secondary border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-500" />
                                     </div>
                                 </div>
                                 <div className="pt-4 mt-6 border-t border-border flex justify-end gap-3 shrink-0">
-                                    <button type="button" onClick={() => setIsDebtFormOpen(false)} className="px-5 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-secondary">Cancelar</button>
+                                    <button type="button" onClick={() => { setIsDebtFormOpen(false); setEditingDebt(null) }} className="px-5 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-secondary">Cancelar</button>
                                     <button disabled={loading === 'debt'} type="submit" className="bg-red-600 hover:bg-red-500 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-md flex items-center justify-center min-w-[100px]">
                                         {loading === 'debt' ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Guardar'}
                                     </button>
