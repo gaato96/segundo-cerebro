@@ -111,8 +111,8 @@ export function MediaClient({ initialItems }: { initialItems: any[] }) {
                             key={status}
                             onClick={() => setFilterStatus(status)}
                             className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${filterStatus === status
-                                    ? 'bg-background text-foreground shadow-sm border border-border'
-                                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50 border border-transparent'
+                                ? 'bg-background text-foreground shadow-sm border border-border'
+                                : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50 border border-transparent'
                                 }`}
                         >
                             {status === 'All' ? 'Todo' : status === 'Active' ? 'Viendo / Jugando' : status === 'Backlog' ? 'Pendiente' : 'Terminado'}
@@ -156,8 +156,8 @@ export function MediaClient({ initialItems }: { initialItems: any[] }) {
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
                                 className={`glass p-5 rounded-2xl border transition-all group relative ${item.status === 'Finished'
-                                        ? 'border-border/30 bg-secondary/10 opacity-70 hover:opacity-100'
-                                        : 'border-border/50 hover:bg-secondary/20'
+                                    ? 'border-border/30 bg-secondary/10 opacity-70 hover:opacity-100'
+                                    : 'border-border/50 hover:bg-secondary/20'
                                     }`}
                             >
                                 <button
@@ -245,7 +245,7 @@ export function MediaClient({ initialItems }: { initialItems: any[] }) {
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsFormOpen(false)} className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
 
-                        <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="bg-card w-full max-w-md rounded-2xl border border-border shadow-2xl relative z-10 overflow-hidden">
+                        <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="bg-card w-full max-w-md max-h-[90dvh] flex flex-col rounded-2xl border border-border shadow-2xl relative z-10">
                             <div className="flex items-center justify-between p-6 border-b border-border/50">
                                 <h2 className="text-xl font-bold font-heading">Añadir al Backlog</h2>
                                 <button onClick={() => setIsFormOpen(false)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
@@ -261,7 +261,7 @@ export function MediaClient({ initialItems }: { initialItems: any[] }) {
                                     alert('Error al guardar')
                                     setLoading(null)
                                 }
-                            }} className="p-6 space-y-4">
+                            }} className="p-6 space-y-4 overflow-y-auto flex-1">
 
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">Tipo</label>
@@ -286,7 +286,7 @@ export function MediaClient({ initialItems }: { initialItems: any[] }) {
                                     </select>
                                 </div>
 
-                                <div className="pt-4 mt-6 border-t border-border flex justify-end gap-3">
+                                <div className="pt-4 mt-6 border-t border-border flex justify-end gap-3 shrink-0">
                                     <button type="button" onClick={() => setIsFormOpen(false)} className="px-5 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-secondary">Cancelar</button>
                                     <button disabled={loading === 'create'} type="submit" className="bg-pink-600 hover:bg-pink-500 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-md flex items-center justify-center min-w-[100px]">
                                         {loading === 'create' ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Añadir'}

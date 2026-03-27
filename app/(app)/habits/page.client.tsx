@@ -179,7 +179,7 @@ export function HabitsClient({ habits, logs }: { habits: any[], logs: any[] }) {
                             initial={{ scale: 0.95, opacity: 0, y: 20 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                            className="bg-card w-full max-w-md rounded-2xl border border-border shadow-2xl relative z-10 overflow-hidden"
+                            className="bg-card w-full max-w-md max-h-[90dvh] flex flex-col rounded-2xl border border-border shadow-2xl relative z-10"
                         >
                             <div className="flex items-center justify-between p-6 border-b border-border/50">
                                 <h2 className="text-xl font-bold font-heading">Nuevo Hábito</h2>
@@ -198,7 +198,7 @@ export function HabitsClient({ habits, logs }: { habits: any[], logs: any[] }) {
                                 } finally {
                                     setLoading(null)
                                 }
-                            }} className="p-6 space-y-4">
+                            }} className="p-6 space-y-4 overflow-y-auto flex-1">
 
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">Nombre del Hábito</label>
@@ -236,7 +236,7 @@ export function HabitsClient({ habits, logs }: { habits: any[], logs: any[] }) {
 
                                 <input type="hidden" name="frequency" value="weekly" />
 
-                                <div className="pt-4 mt-6 border-t border-border flex justify-end gap-3">
+                                <div className="pt-4 mt-6 border-t border-border flex justify-end gap-3 shrink-0">
                                     <button type="button" onClick={() => setIsFormOpen(false)} className="px-5 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-secondary">
                                         Cancelar
                                     </button>

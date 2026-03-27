@@ -30,7 +30,6 @@ export default async function DashboardPage() {
         .from('habits')
         .select('*')
         .eq('user_id', user.id)
-        .eq('frequency', 'daily')
 
     // Fetch today's habit logs
     const { data: todayLogs } = await supabase

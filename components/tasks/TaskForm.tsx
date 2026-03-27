@@ -38,8 +38,8 @@ export function TaskForm({ onClose }: TaskFormProps) {
                 </button>
             </div>
 
-            <form action={action} className="flex-1 flex flex-col p-6 overflow-y-auto">
-                <div className="space-y-6 flex-1">
+            <form action={action} className="flex-1 flex flex-col min-h-0">
+                <div className="space-y-6 flex-1 overflow-y-auto p-6">
                     {/* Title */}
                     <div className="space-y-2">
                         <label htmlFor="title" className="text-sm font-medium text-foreground">
@@ -127,7 +127,7 @@ export function TaskForm({ onClose }: TaskFormProps) {
                 </div>
 
                 {/* Footer Actions */}
-                <div className="pt-6 mt-6 border-t border-border flex justify-end gap-3 sticky bottom-0 bg-background/95 pb-safe">
+                <div className="shrink-0 p-6 border-t border-border flex justify-end gap-3 bg-background/95 pb-safe mt-auto">
                     <button
                         type="button"
                         onClick={onClose}

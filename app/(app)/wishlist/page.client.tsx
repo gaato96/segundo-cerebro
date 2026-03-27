@@ -117,7 +117,7 @@ export function WishlistClient({ items }: { items: any[] }) {
                 {isFormOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsFormOpen(false)} className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
-                        <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="bg-card w-full max-w-md rounded-2xl border border-border shadow-2xl relative z-10 overflow-hidden">
+                        <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="bg-card w-full max-w-md max-h-[90dvh] flex flex-col rounded-2xl border border-border shadow-2xl relative z-10">
                             <div className="flex items-center justify-between p-6 border-b border-border/50">
                                 <h2 className="text-xl font-bold font-heading">Nuevo Deseo</h2>
                                 <button onClick={() => setIsFormOpen(false)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
@@ -127,7 +127,7 @@ export function WishlistClient({ items }: { items: any[] }) {
                                 try { await createWish(formData); setIsFormOpen(false) }
                                 catch { alert('Error') }
                                 finally { setLoading(null) }
-                            }} className="p-6 space-y-4">
+                            }} className="p-6 space-y-4 overflow-y-auto flex-1">
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">¿Qué deseás?</label>
                                     <input required autoFocus name="name" placeholder="Ej. iPhone 16, Viaje a Japón..." className="w-full bg-secondary border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-rose-500" />
@@ -163,7 +163,7 @@ export function WishlistClient({ items }: { items: any[] }) {
                                     <label className="text-sm font-medium">Link (opcional)</label>
                                     <input name="url" type="url" placeholder="https://..." className="w-full bg-secondary border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-rose-500" />
                                 </div>
-                                <div className="pt-4 mt-6 border-t border-border flex justify-end gap-3">
+                                <div className="pt-4 mt-6 border-t border-border flex justify-end gap-3 shrink-0">
                                     <button type="button" onClick={() => setIsFormOpen(false)} className="px-5 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-secondary">Cancelar</button>
                                     <button disabled={loading === 'create'} type="submit" className="bg-rose-600 hover:bg-rose-500 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-md flex items-center justify-center min-w-[100px]">
                                         {loading === 'create' ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Guardar'}

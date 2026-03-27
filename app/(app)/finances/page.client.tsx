@@ -144,8 +144,8 @@ export function FinancesClient({ transactions, debts }: { transactions: any[], d
                                     <div key={tx.id} className="p-4 flex items-center justify-between hover:bg-secondary/30 transition-colors group">
                                         <div className="flex items-center gap-4">
                                             <div className={`p-2 rounded-full ${tx.type === 'Income' ? 'bg-emerald-500/10 text-emerald-500' :
-                                                    tx.type === 'Debt_Payment' ? 'bg-indigo-500/10 text-indigo-400' :
-                                                        'bg-red-500/10 text-red-400'
+                                                tx.type === 'Debt_Payment' ? 'bg-indigo-500/10 text-indigo-400' :
+                                                    'bg-red-500/10 text-red-400'
                                                 }`}>
                                                 {tx.type === 'Income' ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
                                             </div>
@@ -230,12 +230,12 @@ export function FinancesClient({ transactions, debts }: { transactions: any[], d
                 {isTxFormOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsTxFormOpen(false)} className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
-                        <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="bg-card w-full max-w-md rounded-2xl border border-border shadow-2xl relative z-10 overflow-hidden">
+                        <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="bg-card w-full max-w-md max-h-[90dvh] flex flex-col rounded-2xl border border-border shadow-2xl relative z-10">
                             <div className="flex items-center justify-between p-6 border-b border-border/50">
                                 <h2 className="text-xl font-bold font-heading">Nuevo Movimiento</h2>
                                 <button onClick={() => setIsTxFormOpen(false)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
                             </div>
-                            <form action={handleTxSubmit} className="p-6 space-y-4">
+                            <form action={handleTxSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium">Tipo</label>
@@ -278,7 +278,7 @@ export function FinancesClient({ transactions, debts }: { transactions: any[], d
                                     </div>
                                 )}
 
-                                <div className="pt-4 mt-6 border-t border-border flex justify-end gap-3">
+                                <div className="pt-4 mt-6 border-t border-border flex justify-end gap-3 shrink-0">
                                     <button type="button" onClick={() => setIsTxFormOpen(false)} className="px-5 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-secondary">Cancelar</button>
                                     <button disabled={loading === 'tx'} type="submit" className="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-md flex items-center justify-center min-w-[100px]">
                                         {loading === 'tx' ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Guardar'}
@@ -295,12 +295,12 @@ export function FinancesClient({ transactions, debts }: { transactions: any[], d
                 {isDebtFormOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsDebtFormOpen(false)} className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
-                        <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="bg-card w-full max-w-md rounded-2xl border border-border shadow-2xl relative z-10 overflow-hidden">
+                        <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="bg-card w-full max-w-md max-h-[90dvh] flex flex-col rounded-2xl border border-border shadow-2xl relative z-10">
                             <div className="flex items-center justify-between p-6 border-b border-border/50">
                                 <h2 className="text-xl font-bold font-heading">Nueva Deuda</h2>
                                 <button onClick={() => setIsDebtFormOpen(false)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
                             </div>
-                            <form action={handleDebtSubmit} className="p-6 space-y-4">
+                            <form action={handleDebtSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">Acreedor / Nombre</label>
                                     <input required name="creditor" placeholder="Ej. Tarjeta de Crédito, Préstamo Auto..." className="w-full bg-secondary border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-500" />
@@ -315,7 +315,7 @@ export function FinancesClient({ transactions, debts }: { transactions: any[], d
                                         <input required type="number" min="1" max="31" name="due_day" placeholder="1-31" className="w-full bg-secondary border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-500" />
                                     </div>
                                 </div>
-                                <div className="pt-4 mt-6 border-t border-border flex justify-end gap-3">
+                                <div className="pt-4 mt-6 border-t border-border flex justify-end gap-3 shrink-0">
                                     <button type="button" onClick={() => setIsDebtFormOpen(false)} className="px-5 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-secondary">Cancelar</button>
                                     <button disabled={loading === 'debt'} type="submit" className="bg-red-600 hover:bg-red-500 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-md flex items-center justify-center min-w-[100px]">
                                         {loading === 'debt' ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Guardar'}
