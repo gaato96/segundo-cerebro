@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createTask } from '@/lib/actions/tasks'
 import { X, Loader2, Calendar as CalendarIcon, Flag, Tag } from 'lucide-react'
 
@@ -11,10 +12,13 @@ interface TaskFormProps {
 export function TaskForm({ onClose }: TaskFormProps) {
     const [loading, setLoading] = useState(false)
 
+    const router = useRouter()
+
     async function action(formData: FormData) {
         setLoading(true)
         try {
             await createTask(formData)
+            router.refresh()
             onClose()
         } catch (error) {
             console.error('Failed to create task:', error)

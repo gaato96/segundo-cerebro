@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Check, Circle, Flame, Calendar as CalendarIcon, MoreVertical, CheckSquare } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -34,6 +34,14 @@ export function DailySnapshot({ tasks: initialTasks, habits, completedHabitIds: 
     const [completedHabits, setCompletedHabits] = useState<Set<string>>(initialCompleted)
     const [loadingTask, setLoadingTask] = useState<string | null>(null)
     const [loadingHabit, setLoadingHabit] = useState<string | null>(null)
+
+    useEffect(() => {
+        setTasks(initialTasks)
+    }, [initialTasks])
+
+    useEffect(() => {
+        setCompletedHabits(initialCompleted)
+    }, [initialCompleted])
 
     const supabase = createClient()
 

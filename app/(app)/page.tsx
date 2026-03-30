@@ -15,13 +15,13 @@ export default async function DashboardPage() {
     const todayStr = format(today, 'yyyy-MM-dd')
     const monthYear = format(today, 'yyyy-MM')
 
-    // Fetch today's tasks
+    // Fetch today's tasks (including overdue and no due date)
     const { data: todayTasks } = await supabase
         .from('tasks')
         .select('*')
         .eq('user_id', user.id)
         .neq('status', 'Done')
-        .or(`due_date.eq.${todayStr},due_date.is.null`)
+        .or(`due_date.lte.${todayStr},due_date.is.null`)
         .order('priority', { ascending: true })
         .limit(6)
 

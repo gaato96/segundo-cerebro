@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Search, Filter, Calendar } from 'lucide-react'
 import { TaskList } from '@/components/tasks/TaskList'
@@ -15,6 +15,10 @@ export function TasksClient({ initialTasks }: TaskPageProps) {
     const [isFormOpen, setIsFormOpen] = useState(false)
     const [search, setSearch] = useState('')
     const [filterCategory, setFilterCategory] = useState<string | null>(null)
+
+    useEffect(() => {
+        setTasks(initialTasks)
+    }, [initialTasks])
 
     const filteredTasks = tasks.filter(task => {
         if (search && !task.title.toLowerCase().includes(search.toLowerCase())) return false
