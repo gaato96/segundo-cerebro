@@ -11,9 +11,18 @@ export default async function DashboardPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect('/login')
 
-    const today = new Date()
-    const todayStr = format(today, 'yyyy-MM-dd')
-    const monthYear = format(today, 'yyyy-MM')
+    const now = new Date()
+    const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Argentina/Buenos_Aires',
+        year: 'numeric', month: '2-digit', day: '2-digit'
+    })
+    const parts = formatter.formatToParts(now)
+    const yr = parts.find(p => p.type === 'year')?.value
+    const mo = parts.find(p => p.type === 'month')?.value
+    const da = parts.find(p => p.type === 'day')?.value
+
+    const todayStr = `${yr}-${mo}-${da}`
+    const monthYear = `${yr}-${mo}`
 
     // Fetch today's tasks (including overdue and no due date)
     const { data: todayTasks } = await supabase
@@ -36,8 +45,8 @@ export default async function DashboardPage() {
         .from('habit_logs')
         .select('habit_id')
         .eq('user_id', user.id)
-        .gte('completed_at', `${todayStr}T00:00:00`)
-        .lte('completed_at', `${todayStr}T23:59:59`)
+        .gte('completed_at', `${todayStr}T00:00:00-03:00`)
+        .lte('completed_at', `${todayStr}T23:59:59-03:00`)
 
     // Fetch finances summary for current month
     const { data: finances } = await supabase
@@ -56,7 +65,7 @@ export default async function DashboardPage() {
         .filter((f: { type: string }) => f.type !== 'Income')
         .reduce((sum: number, f: { amount: number }) => sum + f.amount, 0)
 
-    const todayFormatted = format(today, "EEEE d 'de' MMMM", { locale: es })
+    const todayFormatted = format(now, "EEEE d 'de' MMMM", { locale: es })
 
     return (
         <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6 animate-fade-in">

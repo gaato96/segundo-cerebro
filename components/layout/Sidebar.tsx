@@ -106,16 +106,7 @@ export function Sidebar() {
 
             {/* Bottom actions */}
             <div className="p-2 border-t border-sidebar-border space-y-1">
-                <Link
-                    href="/settings"
-                    className={cn(
-                        'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent',
-                        collapsed && 'justify-center'
-                    )}
-                >
-                    <Settings className="w-4 h-4 flex-shrink-0" />
-                    {!collapsed && <span className="text-sm">Configuración</span>}
-                </Link>
+
                 <button
                     onClick={signOut}
                     className={cn(

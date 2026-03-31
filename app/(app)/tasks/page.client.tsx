@@ -28,7 +28,33 @@ export function TasksClient({ initialTasks }: TaskPageProps) {
 
     // Grouped by status
     const pendingTasks = filteredTasks.filter(t => t.status !== 'Done')
-    const completedTasks = filteredTasks.filter(t => t.status === 'Done')
+
+    const now = new Date()
+    const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Argentina/Buenos_Aires',
+        year: 'numeric', month: '2-digit', day: '2-digit'
+    }).formatToParts(now)
+    const y = parts.find(p => p.type === 'year')?.value
+    const m = parts.find(p => p.type === 'month')?.value
+    const d = parts.find(p => p.type === 'day')?.value
+    const argTodayStr = `${y}-${m}-${d}`
+
+    const completedTasks = filteredTasks.filter(t => {
+        if (t.status !== 'Done') return false
+        if (!t.updated_at) return true
+
+        const taskDate = new Date(t.updated_at)
+        const tParts = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'America/Argentina/Buenos_Aires',
+            year: 'numeric', month: '2-digit', day: '2-digit'
+        }).formatToParts(taskDate)
+        const ty = tParts.find(p => p.type === 'year')?.value
+        const tm = tParts.find(p => p.type === 'month')?.value
+        const td = tParts.find(p => p.type === 'day')?.value
+        const taskDateStr = `${ty}-${tm}-${td}`
+
+        return taskDateStr === argTodayStr
+    })
 
     return (
         <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6 animate-fade-in relative">

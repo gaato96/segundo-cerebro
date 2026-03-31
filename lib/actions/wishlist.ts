@@ -45,6 +45,21 @@ export async function createWish(formData: FormData) {
     revalidatePath('/wishlist')
 }
 
+export async function toggleWishPurchased(id: string, purchased: boolean) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    const { error } = await supabase
+        .from('wishlist')
+        .update({ purchased })
+        .eq('id', id)
+        .eq('user_id', user.id)
+
+    if (error) throw error
+    revalidatePath('/wishlist')
+}
+
 export async function deleteWish(id: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()

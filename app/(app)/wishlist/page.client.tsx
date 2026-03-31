@@ -2,15 +2,31 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Heart, Plus, Trash2, X, Loader2, ExternalLink, Star } from 'lucide-react'
-import { createWish, deleteWish } from '@/lib/actions/wishlist'
+import { Heart, Plus, Trash2, X, Loader2, ExternalLink, Star, CheckCircle2, Circle } from 'lucide-react'
+import { createWish, deleteWish, toggleWishPurchased } from '@/lib/actions/wishlist'
 
 export function WishlistClient({ items }: { items: any[] }) {
     const [isFormOpen, setIsFormOpen] = useState(false)
     const [loading, setLoading] = useState<string | null>(null)
 
-    const totalCost = items.reduce((acc, i) => acc + (i.price || 0), 0)
+    const pendingItems = items.filter(i => !i.purchased)
+    const purchasedItems = items.filter(i => i.purchased)
+
+    const pendingCost = pendingItems.reduce((acc, i) => acc + (i.price || 0), 0)
+    const purchasedCost = purchasedItems.reduce((acc, i) => acc + (i.price || 0), 0)
+
     const formatCurrency = (n: number) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n)
+
+    async function handleTogglePurchased(id: string, current: boolean) {
+        setLoading(id)
+        try {
+            await toggleWishPurchased(id, !current)
+        } catch {
+            alert('Error al actualizar')
+        } finally {
+            setLoading(null)
+        }
+    }
 
     async function handleDelete(id: string) {
         if (!confirm('¿Eliminar este deseo?')) return
@@ -47,14 +63,26 @@ export function WishlistClient({ items }: { items: any[] }) {
             </div>
 
             {/* Summary */}
-            <div className="glass p-5 rounded-2xl border border-border/50 flex items-center justify-between">
-                <div>
-                    <p className="text-sm text-muted-foreground">Costo total estimado</p>
-                    <p className="text-2xl font-bold text-rose-400">{formatCurrency(totalCost)}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="glass p-5 rounded-2xl border border-border/50 flex items-center justify-between">
+                    <div>
+                        <p className="text-sm text-muted-foreground">Pendiente de compra</p>
+                        <p className="text-2xl font-bold text-rose-400">{formatCurrency(pendingCost)}</p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-sm text-muted-foreground">Items</p>
+                        <p className="text-2xl font-bold">{pendingItems.length}</p>
+                    </div>
                 </div>
-                <div className="text-right">
-                    <p className="text-sm text-muted-foreground">Items</p>
-                    <p className="text-2xl font-bold">{items.length}</p>
+                <div className="glass p-5 rounded-2xl border border-border/50 flex items-center justify-between bg-emerald-500/5">
+                    <div>
+                        <p className="text-sm text-muted-foreground">Ya invertido</p>
+                        <p className="text-2xl font-bold text-emerald-400">{formatCurrency(purchasedCost)}</p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-sm text-muted-foreground">Cumplidos</p>
+                        <p className="text-2xl font-bold text-emerald-400">{purchasedItems.length}</p>
+                    </div>
                 </div>
             </div>
 
@@ -81,11 +109,32 @@ export function WishlistClient({ items }: { items: any[] }) {
                                 exit={{ opacity: 0, scale: 0.95 }}
                                 className="glass p-5 rounded-2xl border border-border/50 group relative hover:bg-secondary/20 transition-colors"
                             >
-                                <button onClick={() => handleDelete(item.id)} className="absolute top-4 right-4 p-1.5 text-muted-foreground hover:text-red-400 opacity-0 group-hover:opacity-100 rounded-md hover:bg-red-500/10 transition-all">
-                                    {loading === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                                </button>
-
-                                <h3 className="font-semibold text-lg pr-8">{item.name}</h3>
+                                <div className="flex items-start justify-between">
+                                    <h3 className={`font-semibold text-lg pr-8 ${item.purchased ? 'line-through text-muted-foreground' : ''}`}>
+                                        {item.name}
+                                    </h3>
+                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button
+                                            onClick={() => handleTogglePurchased(item.id, item.purchased)}
+                                            disabled={loading === item.id}
+                                            className={`p-1.5 transition-colors rounded-lg hover:bg-secondary ${item.purchased ? 'text-emerald-500' : 'text-muted-foreground hover:text-rose-400'}`}
+                                        >
+                                            {loading === item.id ? (
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                            ) : item.purchased ? (
+                                                <CheckCircle2 className="w-5 h-5" />
+                                            ) : (
+                                                <Circle className="w-5 h-5" />
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(item.id)}
+                                            className="p-1.5 text-muted-foreground hover:text-red-400 rounded-md hover:bg-red-500/10 transition-all"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
 
                                 <div className="flex items-center gap-2 mt-2">
                                     <span className="text-xs bg-secondary px-2 py-0.5 rounded-full text-muted-foreground border border-border">
@@ -102,7 +151,7 @@ export function WishlistClient({ items }: { items: any[] }) {
                                     <div className="flex items-center gap-0.5">
                                         {desireStars(item.desire_level)}
                                     </div>
-                                    <span className="font-bold text-lg text-rose-400">
+                                    <span className={`font-bold text-lg ${item.purchased ? 'text-muted-foreground' : 'text-rose-400'}`}>
                                         {item.price > 0 ? formatCurrency(item.price) : 'Sin precio'}
                                     </span>
                                 </div>
@@ -174,6 +223,6 @@ export function WishlistClient({ items }: { items: any[] }) {
                     </div>
                 )}
             </AnimatePresence>
-        </div>
+        </div >
     )
 }

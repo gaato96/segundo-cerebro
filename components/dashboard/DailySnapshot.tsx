@@ -93,14 +93,23 @@ export function DailySnapshot({ tasks: initialTasks, habits, completedHabitIds: 
 
         try {
             if (isCompleted) {
-                // Find and delete today's log
-                const todayStr = format(new Date(), 'yyyy-MM-dd')
+                const now = new Date()
+                const formatter = new Intl.DateTimeFormat('en-US', {
+                    timeZone: 'America/Argentina/Buenos_Aires',
+                    year: 'numeric', month: '2-digit', day: '2-digit'
+                })
+                const parts = formatter.formatToParts(now)
+                const yr = parts.find(p => p.type === 'year')?.value
+                const mo = parts.find(p => p.type === 'month')?.value
+                const da = parts.find(p => p.type === 'day')?.value
+                const todayStr = `${yr}-${mo}-${da}`
+
                 const { error } = await supabase
                     .from('habit_logs')
                     .delete()
                     .eq('habit_id', habitId)
                     .eq('user_id', userId)
-                    .gte('completed_at', `${todayStr}T00:00:00`)
+                    .gte('completed_at', `${todayStr}T00:00:00-03:00`)
 
                 if (error) throw error
             } else {
