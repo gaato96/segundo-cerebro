@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
     LayoutDashboard, CheckSquare, Flame, DollarSign,
-    Baby, Tv, Target, BookOpen, Heart
+    Baby, Tv, Target, BookOpen, Heart, Utensils
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -19,6 +19,7 @@ const bottomNavItems = [
     { href: '/okrs', icon: Target, label: 'OKRs' },
     { href: '/journal', icon: BookOpen, label: 'Journal' },
     { href: '/wishlist', icon: Heart, label: 'Deseos' },
+    { href: '/meals', icon: Utensils, label: 'Comidas' },
 ]
 
 export function BottomBar() {

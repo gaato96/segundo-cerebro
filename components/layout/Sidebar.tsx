@@ -7,7 +7,7 @@ import {
     Brain, LayoutDashboard, CheckSquare, Flame,
     DollarSign, Baby, Tv, Target, BookOpen,
     Heart, LogOut, ChevronLeft, ChevronRight,
-    Settings
+    Settings, Utensils
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useState } from 'react'
@@ -23,6 +23,7 @@ const navItems = [
     { href: '/okrs', icon: Target, label: 'Objetivos' },
     { href: '/journal', icon: BookOpen, label: 'Journal' },
     { href: '/wishlist', icon: Heart, label: 'Wishlist' },
+    { href: '/meals', icon: Utensils, label: 'Comidas' },
 ]
 
 export function Sidebar() {
