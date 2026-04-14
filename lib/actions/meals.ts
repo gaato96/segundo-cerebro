@@ -10,13 +10,22 @@ export async function getRecipes() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
 
-    const { data, error } = await supabase
-        .from('recipes')
-        .select('*')
-        .order('name', { ascending: true })
+    try {
+        const { data, error } = await supabase
+            .from('recipes')
+            .select('*')
+            .order('name', { ascending: true })
 
-    if (error) throw error
-    return data || []
+        if (error) {
+            console.error('Error fetching recipes:', error)
+            return []
+        }
+        return data || []
+    } catch (e) {
+        console.error('Recipes table might not exist yet:', e)
+        return []
+    }
+
 }
 
 export async function createRecipe(formData: FormData) {
@@ -58,15 +67,24 @@ export async function getWeeklyMenu(startDate: string) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
 
-    const { data, error } = await supabase
-        .from('weekly_menus')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('start_date', startDate)
-        .maybeSingle()
+    try {
+        const { data, error } = await supabase
+            .from('weekly_menus')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('start_date', startDate)
+            .maybeSingle()
 
-    if (error) throw error
-    return data
+        if (error) {
+            console.error('Error fetching weekly menu:', error)
+            return null
+        }
+        return data
+    } catch (e) {
+        console.error('Weekly menus table might not exist yet:', e)
+        return null
+    }
+
 }
 
 // --- THE MEAL ENGINE (AI AGENT) ---
