@@ -191,3 +191,4 @@ export async function generateWeeklyMenu(startDate: string) {
         }
 
     }
+}
