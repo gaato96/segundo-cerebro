@@ -154,7 +154,7 @@ export async function generateWeeklyMenu(startDate: string) {
                     }]
                 }],
                 generationConfig: {
-                    responseMimeType: "application/json",
+                    response_mime_type: "application/json",
                 }
             })
         })
