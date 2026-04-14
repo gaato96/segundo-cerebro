@@ -158,37 +158,35 @@ export async function generateWeeklyMenu(startDate: string) {
             })
         })
 
-        try {
-            const aiData = await response.json()
-            if (aiData.error) {
-                throw new Error(`Gemini API Error: ${aiData.error.message}`)
-            }
-
-            const contentText = aiData.candidates[0].content.parts[0].text
-            const result = JSON.parse(contentText)
-
-            // 4. Save to Database
-            const { error: saveError } = await supabase
-                .from('weekly_menus')
-                .upsert({
-                    user_id: user.id,
-                    start_date: startDate,
-                    menu_data: result.menu,
-                    shopping_list: result.shopping_list,
-                    updated_at: new Date().toISOString()
-                }, { onConflict: 'user_id, start_date' })
-
-            if (saveError) {
-                console.error('Save error:', saveError)
-                throw new Error(`No se pudo guardar el menú. ¿Has ejecutado el SQL en Supabase? Error: ${saveError.message}`)
-            }
-
-            revalidatePath('/meals')
-            return result
-        } catch (err: any) {
-            console.error('Error in generateWeeklyMenu:', err)
-            throw new Error(err.message || 'Error desconocido al generar el menú.')
+        const aiData = await response.json()
+        if (aiData.error) {
+            throw new Error(`Gemini API Error: ${aiData.error.message}`)
         }
 
+        const contentText = aiData.candidates[0].content.parts[0].text
+        const result = JSON.parse(contentText)
+
+        // 4. Save to Database
+        const { error: saveError } = await supabase
+            .from('weekly_menus')
+            .upsert({
+                user_id: user.id,
+                start_date: startDate,
+                menu_data: result.menu,
+                shopping_list: result.shopping_list,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'user_id, start_date' })
+
+        if (saveError) {
+            console.error('Save error:', saveError)
+            throw new Error(`No se pudo guardar el menú. ¿Has ejecutado el SQL en Supabase? Error: ${saveError.message}`)
+        }
+
+        revalidatePath('/meals')
+        return result
+    } catch (err: any) {
+        console.error('Error in generateWeeklyMenu:', err)
+        throw new Error(err.message || 'Error desconocido al generar el menú.')
     }
 }
+
