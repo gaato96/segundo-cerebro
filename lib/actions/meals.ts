@@ -106,7 +106,6 @@ export async function generateWeeklyMenu(startDate: string) {
         return { error: 'No tienes recetas guardadas. Agrega al menos una receta antes de generar el menú.' }
     }
 
-    // 2. Prepare the prompt
     const systemPrompt = "Eres un asistente de nutrición y organización doméstica. Tu tarea es organizar una semana de alimentación equilibrada basándote exclusivamente en el catálogo de recetas del usuario. Si el catálogo es pequeño, puedes sugerir variaciones mínimas, pero siempre prioriza lo guardado en la base de datos. Responde estrictamente en JSON."
 
     const userPrompt = `
@@ -137,7 +136,6 @@ export async function generateWeeklyMenu(startDate: string) {
       }
     `
 
-    // 3. Call Gemini AI API
     const apiKey = process.env.GEMINI_API_KEY
     if (!apiKey) {
         return { error: 'GEMINI_API_KEY no configurada en Vercel. Ve a Settings -> Environment Variables y agrégala.' }
@@ -150,12 +148,9 @@ export async function generateWeeklyMenu(startDate: string) {
             body: JSON.stringify({
                 contents: [{
                     parts: [{
-                        text: `${systemPrompt}\n\n${userPrompt}`
+                        text: `${systemPrompt}\n\n${userPrompt}\n\nResponde únicamente el JSON, sin bloques de código markdown.`
                     }]
-                }],
-                generationConfig: {
-                    response_mime_type: "application/json",
-                }
+                }]
             })
         })
 
@@ -164,10 +159,11 @@ export async function generateWeeklyMenu(startDate: string) {
             return { error: `Error de Gemini: ${aiData.error.message}` }
         }
 
-        const contentText = aiData.candidates[0].content.parts[0].text
+        let contentText = aiData.candidates[0].content.parts[0].text
+        // Clean markdown if AI sends it
+        contentText = contentText.replace(/```json|```/g, '').trim()
         const result = JSON.parse(contentText)
 
-        // 4. Save to Database
         const { error: saveError } = await supabase
             .from('weekly_menus')
             .upsert({
@@ -179,8 +175,7 @@ export async function generateWeeklyMenu(startDate: string) {
             }, { onConflict: 'user_id, start_date' })
 
         if (saveError) {
-            console.error('Save error:', saveError)
-            return { error: `Error al guardar en BD: ¿Ejecutaste el SQL? (${saveError.message})` }
+            return { error: `Error al guardar: ${saveError.message}` }
         }
 
         revalidatePath('/meals')
