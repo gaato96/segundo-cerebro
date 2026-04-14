@@ -43,14 +43,20 @@ export default function MealsPageClient({ initialRecipes, initialMenu, startDate
         setIsLoading(true)
         try {
             const result = await generateWeeklyMenu(startDate)
-            setMenu({ menu_data: result.menu, shopping_list: result.shopping_list })
-            // toast({ title: 'Menú generado', description: 'Tu plan semanal está listo.' })
+            if (result.error) {
+                alert(result.error)
+                return
+            }
+            if (result.data) {
+                setMenu({ menu_data: result.data.menu, shopping_list: result.data.shopping_list })
+            }
         } catch (error: any) {
-            alert(error.message)
+            alert('Error crítico: ' + error.message)
         } finally {
             setIsLoading(false)
         }
     }
+
 
     const selectedRecipeId = selectedDay && menu?.menu_data?.[selectedDay]?.lunch?.recipe_id
     const selectedRecipe = recipes.find(r => r.id === selectedRecipeId)

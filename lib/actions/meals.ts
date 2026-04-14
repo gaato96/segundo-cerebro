@@ -25,7 +25,6 @@ export async function getRecipes() {
         console.error('Recipes table might not exist yet:', e)
         return []
     }
-
 }
 
 export async function createRecipe(formData: FormData) {
@@ -84,7 +83,6 @@ export async function getWeeklyMenu(startDate: string) {
         console.error('Weekly menus table might not exist yet:', e)
         return null
     }
-
 }
 
 // --- THE MEAL ENGINE (AI AGENT) ---
@@ -100,9 +98,12 @@ export async function generateWeeklyMenu(startDate: string) {
         .select('*')
         .eq('user_id', user.id)
 
-    if (recipesError) throw recipesError
+    if (recipesError) {
+        return { error: `Error Base de Datos: ${recipesError.message}. ¿Ejecutaste el SQL?` }
+    }
+
     if (!recipes || recipes.length === 0) {
-        throw new Error('No tienes recetas guardadas. Agrega algunas antes de generar el menú.')
+        return { error: 'No tienes recetas guardadas. Agrega al menos una receta antes de generar el menú.' }
     }
 
     // 2. Prepare the prompt
@@ -139,7 +140,7 @@ export async function generateWeeklyMenu(startDate: string) {
     // 3. Call Gemini AI API
     const apiKey = process.env.GEMINI_API_KEY
     if (!apiKey) {
-        throw new Error('GEMINI_API_KEY no configurada. Por favor, añádela a tus variables de entorno.')
+        return { error: 'GEMINI_API_KEY no configurada en Vercel. Ve a Settings -> Environment Variables y agrégala.' }
     }
 
     try {
@@ -160,7 +161,7 @@ export async function generateWeeklyMenu(startDate: string) {
 
         const aiData = await response.json()
         if (aiData.error) {
-            throw new Error(`Gemini API Error: ${aiData.error.message}`)
+            return { error: `Error de Gemini: ${aiData.error.message}` }
         }
 
         const contentText = aiData.candidates[0].content.parts[0].text
@@ -179,14 +180,13 @@ export async function generateWeeklyMenu(startDate: string) {
 
         if (saveError) {
             console.error('Save error:', saveError)
-            throw new Error(`No se pudo guardar el menú. ¿Has ejecutado el SQL en Supabase? Error: ${saveError.message}`)
+            return { error: `Error al guardar en BD: ¿Ejecutaste el SQL? (${saveError.message})` }
         }
 
         revalidatePath('/meals')
-        return result
+        return { data: result }
     } catch (err: any) {
         console.error('Error in generateWeeklyMenu:', err)
-        throw new Error(err.message || 'Error desconocido al generar el menú.')
+        return { error: err.message || 'Error desconocido al generar el menú.' }
     }
 }
-
