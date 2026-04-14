@@ -138,11 +138,12 @@ export async function generateWeeklyMenu(startDate: string) {
 
     const apiKey = process.env.GEMINI_API_KEY
     if (!apiKey) {
-        return { error: 'GEMINI_API_KEY no configurada en Vercel. Ve a Settings -> Environment Variables y agrégala.' }
+        return { error: 'GEMINI_API_KEY no configurada en Vercel.' }
     }
 
     try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+        // Probamos con gemini-1.5-flash-latest en v1beta
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -160,7 +161,6 @@ export async function generateWeeklyMenu(startDate: string) {
         }
 
         let contentText = aiData.candidates[0].content.parts[0].text
-        // Clean markdown if AI sends it
         contentText = contentText.replace(/```json|```/g, '').trim()
         const result = JSON.parse(contentText)
 
