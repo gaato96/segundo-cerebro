@@ -158,27 +158,36 @@ export async function generateWeeklyMenu(startDate: string) {
             })
         })
 
-        const aiData = await response.json()
-        const contentText = aiData.candidates[0].content.parts[0].text
-        const result = JSON.parse(contentText)
+        try {
+            const aiData = await response.json()
+            if (aiData.error) {
+                throw new Error(`Gemini API Error: ${aiData.error.message}`)
+            }
 
-        // 4. Save to Database
-        const { error: saveError } = await supabase
-            .from('weekly_menus')
-            .upsert({
-                user_id: user.id,
-                start_date: startDate,
-                menu_data: result.menu,
-                shopping_list: result.shopping_list,
-                updated_at: new Date().toISOString()
-            }, { onConflict: 'user_id, start_date' })
+            const contentText = aiData.candidates[0].content.parts[0].text
+            const result = JSON.parse(contentText)
 
-        if (saveError) throw saveError
+            // 4. Save to Database
+            const { error: saveError } = await supabase
+                .from('weekly_menus')
+                .upsert({
+                    user_id: user.id,
+                    start_date: startDate,
+                    menu_data: result.menu,
+                    shopping_list: result.shopping_list,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'user_id, start_date' })
 
-        revalidatePath('/meals')
-        return result
-    } catch (err) {
-        console.error('Error generating menu:', err)
-        throw new Error('Error al generar el menú con IA. Revisa tu API Key o conexión.')
+            if (saveError) {
+                console.error('Save error:', saveError)
+                throw new Error(`No se pudo guardar el menú. ¿Has ejecutado el SQL en Supabase? Error: ${saveError.message}`)
+            }
+
+            revalidatePath('/meals')
+            return result
+        } catch (err: any) {
+            console.error('Error in generateWeeklyMenu:', err)
+            throw new Error(err.message || 'Error desconocido al generar el menú.')
+        }
+
     }
-}

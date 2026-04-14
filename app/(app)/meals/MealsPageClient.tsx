@@ -11,6 +11,7 @@ import { generateWeeklyMenu, createRecipe } from '@/lib/actions/meals'
 import { format, addDays } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
+import { RecipeForm } from './RecipeForm'
 
 interface Recipe {
     id: string
@@ -86,6 +87,12 @@ export default function MealsPageClient({ initialRecipes, initialMenu, startDate
                         Ver Lista de Compras ({menu.shopping_list.length})
                     </button>
                 )}
+
+                <AnimatePresence>
+                    {isAddRecipeOpen && (
+                        <RecipeForm onClose={() => setIsAddRecipeOpen(false)} />
+                    )}
+                </AnimatePresence>
             </div>
 
             {/* Weekly Grid */}
