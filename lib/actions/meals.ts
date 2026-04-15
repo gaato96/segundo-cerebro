@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import Groq from 'groq-sdk'
 
 // --- RECIPES CRUD ---
 
@@ -102,7 +102,7 @@ export async function getWeeklyMenu(startDate: string) {
     }
 }
 
-// --- THE MEAL ENGINE (AI AGENT) ---
+// --- THE MEAL ENGINE (AI AGENT via Groq/Llama) ---
 
 export async function generateWeeklyMenu(startDate: string) {
     const supabase = await createClient()
@@ -116,61 +116,80 @@ export async function generateWeeklyMenu(startDate: string) {
         .eq('user_id', user.id)
 
     if (recipesError) {
-        return { error: `Error Base de Datos: ${recipesError.message}. ¿Ejecutaste el SQL?` }
+        return { error: `Error Base de Datos: ${recipesError.message}. ¿Ejecutaste el SQL de migraciones en Supabase?` }
     }
 
     if (!recipes || recipes.length === 0) {
         return { error: 'No tienes recetas guardadas. Agrega al menos una receta antes de generar el menú.' }
     }
 
-    const systemPrompt = "Eres un asistente de nutrición y organización doméstica. Tu tarea es organizar una semana de alimentación equilibrada basándote exclusivamente en el catálogo de recetas del usuario. Si el catálogo es pequeño, puedes sugerir variaciones mínimas, pero siempre prioriza lo guardado en la base de datos. Responde estrictamente en JSON."
+    // 2. Check API Key
+    const apiKey = process.env.GROQ_API_KEY
+    if (!apiKey) {
+        return { error: 'GROQ_API_KEY no configurada. Agrega la key en Vercel → Settings → Environment Variables.' }
+    }
 
-    const userPrompt = `
-    Catálogo de recetas del usuario:
-    ${JSON.stringify(recipes.map(r => ({
+    // 3. Build prompts
+    const recipeList = recipes.map(r => ({
         id: r.id,
         name: r.name,
         complexity: r.complexity,
         protein: r.protein_type,
         carb: r.carb_type,
         ingredients: r.ingredients
-    })))}
+    }))
 
-    Fecha de inicio: ${startDate} (Lunes)
+    const systemPrompt = `Eres un asistente de nutrición. Tu tarea es organizar una semana de alimentación equilibrada basándote EXCLUSIVAMENTE en el catálogo de recetas proporcionado. Responde SOLO con JSON válido, sin texto adicional ni bloques de código markdown.`
 
-    REGLAS:
-    - Generar menú para Lunes a Domingo.
-    - Turnos: Almuerzo y Cena.
-    - Priorizar variedad: No repetir la misma proteína o tipo de carbohidrato más de dos veces por semana.
-    - Balancear platos complejos con platos rápidos para días laborales (Lunes-Viernes).
-    - Devolver un objeto JSON con la estructura:
-      {
-        "menu": {
-          "Monday": { "lunch": { "recipe_id": "...", "name": "..." }, "dinner": { ... } },
-          ...
-        },
-        "shopping_list": [ { "item": "...", "amount": "...", "unit": "..." }, ... ]
-      }
-    `
+    const userPrompt = `
+Catálogo de recetas:
+${JSON.stringify(recipeList)}
 
-    const apiKey = process.env.GEMINI_API_KEY
-    if (!apiKey) {
-        return { error: 'GEMINI_API_KEY no configurada en Vercel. Ve a Settings -> Environment Variables y agrégala.' }
-    }
+Fecha de inicio: ${startDate} (Lunes)
+
+INSTRUCCIONES:
+- Asignar Almuerzo y Cena para Lunes a Domingo (7 días)
+- Variar las proteínas y carbohidratos a lo largo de la semana
+- Generar una lista de compras consolidada
+
+Responde EXACTAMENTE con esta estructura JSON:
+{
+  "menu": {
+    "Monday": { "lunch": { "recipe_id": "ID_REAL", "name": "NOMBRE_REAL" }, "dinner": { "recipe_id": "ID_REAL", "name": "NOMBRE_REAL" } },
+    "Tuesday": { "lunch": { "recipe_id": "...", "name": "..." }, "dinner": { "recipe_id": "...", "name": "..." } },
+    "Wednesday": { "lunch": { "recipe_id": "...", "name": "..." }, "dinner": { "recipe_id": "...", "name": "..." } },
+    "Thursday": { "lunch": { "recipe_id": "...", "name": "..." }, "dinner": { "recipe_id": "...", "name": "..." } },
+    "Friday": { "lunch": { "recipe_id": "...", "name": "..." }, "dinner": { "recipe_id": "...", "name": "..." } },
+    "Saturday": { "lunch": { "recipe_id": "...", "name": "..." }, "dinner": { "recipe_id": "...", "name": "..." } },
+    "Sunday": { "lunch": { "recipe_id": "...", "name": "..." }, "dinner": { "recipe_id": "...", "name": "..." } }
+  },
+  "shopping_list": [
+    { "item": "Nombre del ingrediente", "amount": "cantidad", "unit": "unidad" }
+  ]
+}
+`
 
     try {
-        const genAI = new GoogleGenerativeAI(apiKey)
-        const model = genAI.getGenerativeModel({
-            model: "gemini-2.0-flash",
-            generationConfig: {
-                responseMimeType: "application/json"
-            }
+        const groq = new Groq({ apiKey })
+
+        const chatCompletion = await groq.chat.completions.create({
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt }
+            ],
+            model: 'llama-3.3-70b-versatile',
+            temperature: 0.3,
+            response_format: { type: 'json_object' }
         })
 
-        const resultAI = await model.generateContent(`${systemPrompt}\n\n${userPrompt}`)
-        const responseText = resultAI.response.text()
+        const responseText = chatCompletion.choices[0]?.message?.content
+        if (!responseText) {
+            return { error: 'La IA no devolvió contenido.' }
+        }
+
         const result = JSON.parse(responseText)
 
+        // 4. Save to Database
         const { error: saveError } = await supabase
             .from('weekly_menus')
             .upsert({
@@ -182,13 +201,13 @@ export async function generateWeeklyMenu(startDate: string) {
             }, { onConflict: 'user_id, start_date' })
 
         if (saveError) {
-            return { error: `Error al guardar: ${saveError.message}` }
+            return { error: `Error al guardar en BD: ${saveError.message}. ¿Ejecutaste el SQL de migraciones?` }
         }
 
         revalidatePath('/meals')
         return { data: result }
     } catch (err: any) {
         console.error('Error in generateWeeklyMenu:', err)
-        return { error: err.message || 'Error desconocido al generar el menú.' }
+        return { error: `Error al generar el menú: ${err.message}` }
     }
 }
