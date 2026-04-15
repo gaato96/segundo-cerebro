@@ -89,8 +89,8 @@ export function RecipeForm({ onClose }: { onClose: () => void }) {
                                 <input name="protein_type" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none" placeholder="Ej: Pollo" />
                             </div>
                             <div>
-                                <label className="text-xs font-bold uppercase text-muted-foreground tracking-widest block mb-2">Carbohidrato</label>
-                                <input name="carb_type" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none" placeholder="Ej: Papa" />
+                                <label className="text-xs font-bold uppercase text-muted-foreground tracking-widest block mb-2">Guarnición/es (separadas por coma)</label>
+                                <input name="carb_type" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none" placeholder="Ej: Papa, Puré, Arroz, Fideos" />
                             </div>
                         </div>
 

@@ -148,11 +148,11 @@ export async function generateWeeklyMenu(startDate: string, isSingleDay: boolean
         name: r.name,
         complexity: r.complexity,
         protein: r.protein_type,
-        carb: r.carb_type,
+        side_dishes: r.carb_type, // Renamed for AI
         ingredients: r.ingredients
     }))
 
-    const systemPrompt = `Eres un asistente de nutrición. Tu tarea es organizar alimentación equilibrada basándote EXCLUSIVAMENTE en el catálogo. Responde SOLO con JSON válido, sin bloques markdown.`
+    const systemPrompt = `Eres un asistente de nutrición avanzado. Organiza una alimentación equilibrada basándote EXCLUSIVAMENTE en el catálogo. Responde SOLO con JSON válido, sin bloques markdown.`
 
     const fullWeekPrompt = `
 Catálogo de recetas:
@@ -161,10 +161,10 @@ ${JSON.stringify(recipeList)}
 Fecha de inicio: ${startDate}
 
 INSTRUCCIONES CLAVE (SEMANA COMPLETA):
-1. Asignar recetas para los 7 días de la semana (Monday a Sunday).
-2. MUY IMPORTANTE: Asignar la MISMA receta para Almuerzo (lunch) y Cena (dinner) en un mismo día (para cocinar una sola vez).
-3. Variar las recetas a lo largo de los distintos días para una semana equilibrada.
-4. Generar lista de compras consolidada.
+1. Asignar recetas para los 7 días (Monday a Sunday).
+2. MISMA COMIDA: Asignar la MISMA receta para Almuerzo y Cena en un mismo día.
+3. GUARNICIONES MÚLTIPLES: Si el campo 'side_dishes' tiene varias opciones (separadas por coma, ej: 'Papa, Puré, Arroz'), elige SOLO UNA al azar. El "name" en el JSON final debe reflejar el plato principal + la guarnición elegida (ej: "Plato Fuerte con Arroz").
+4. LISTA DE COMPRAS: Generar la lista sumando los ingredientes. Intenta deducir qué ingredientes corresponden a la guarnición elegida si no están explícitos, pero cíñete a lo provisto.
 
 Responde EXACTAMENTE así:
 {
@@ -183,8 +183,9 @@ ${JSON.stringify(recipeList)}
 Generar SOLO un plato para el día: ${targetDay}
 
 INSTRUCCIONES CLAVE (SOBRESCRIBIR UN DÍA):
-1. Elige 1 receta aleatoria del catálogo adecuada para un almuerzo o cena.
-2. Devuelve los datos con la misma estructura pero especificando SOLO el día solicitado y repitiendo el plato en lunch y dinner.
+1. Elige 1 receta aleatoria del catálogo.
+2. GUARNICIONES MÚLTIPLES: Si 'side_dishes' tiene varias opciones separadas por coma, elige SOLO UNA al azar y genera el "name" compuesto (ej: "Pollo con Arroz").
+3. Especifica SOLO el día solicitado repitiendo el plato en lunch y dinner.
 
 Responde EXACTAMENTE así:
 {
