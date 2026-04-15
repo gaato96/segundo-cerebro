@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
 // --- RECIPES CRUD ---
 
@@ -57,6 +58,22 @@ export async function createRecipe(formData: FormData) {
 
     if (error) throw error
     revalidatePath('/meals')
+}
+
+export async function deleteRecipe(recipeId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    const { error } = await supabase
+        .from('recipes')
+        .delete()
+        .eq('id', recipeId)
+        .eq('user_id', user.id)
+
+    if (error) return { error: error.message }
+    revalidatePath('/meals')
+    return { success: true }
 }
 
 // --- WEEKLY MENU ---
@@ -138,31 +155,21 @@ export async function generateWeeklyMenu(startDate: string) {
 
     const apiKey = process.env.GEMINI_API_KEY
     if (!apiKey) {
-        return { error: 'GEMINI_API_KEY no configurada en Vercel.' }
+        return { error: 'GEMINI_API_KEY no configurada en Vercel. Ve a Settings -> Environment Variables y agrégala.' }
     }
 
     try {
-        // Probamos con gemini-1.5-flash-latest en v1beta
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [{
-                        text: `${systemPrompt}\n\n${userPrompt}\n\nResponde únicamente el JSON, sin bloques de código markdown.`
-                    }]
-                }]
-            })
+        const genAI = new GoogleGenerativeAI(apiKey)
+        const model = genAI.getGenerativeModel({
+            model: "gemini-1.5-flash",
+            generationConfig: {
+                responseMimeType: "application/json"
+            }
         })
 
-        const aiData = await response.json()
-        if (aiData.error) {
-            return { error: `Error de Gemini: ${aiData.error.message}` }
-        }
-
-        let contentText = aiData.candidates[0].content.parts[0].text
-        contentText = contentText.replace(/```json|```/g, '').trim()
-        const result = JSON.parse(contentText)
+        const resultAI = await model.generateContent(`${systemPrompt}\n\n${userPrompt}`)
+        const responseText = resultAI.response.text()
+        const result = JSON.parse(responseText)
 
         const { error: saveError } = await supabase
             .from('weekly_menus')

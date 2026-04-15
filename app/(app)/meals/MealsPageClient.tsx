@@ -12,6 +12,8 @@ import { format, addDays } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { RecipeForm } from './RecipeForm'
+import { RecipeManager } from './RecipeManager'
+
 
 interface Recipe {
     id: string
@@ -36,6 +38,8 @@ export default function MealsPageClient({ initialRecipes, initialMenu, startDate
     const [selectedDay, setSelectedDay] = useState<string | null>(null)
     const [isRecipeModalOpen, setIsRecipeModalOpen] = useState(false)
     const [isAddRecipeOpen, setIsAddRecipeOpen] = useState(false)
+    const [isManageRecipesOpen, setIsManageRecipesOpen] = useState(false)
+
 
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
@@ -74,6 +78,14 @@ export default function MealsPageClient({ initialRecipes, initialMenu, startDate
                         Nueva Receta
                     </button>
                     <button
+                        onClick={() => setIsManageRecipesOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl transition-colors font-medium text-sm"
+                    >
+                        <ListChecks className="w-4 h-4" />
+                        Mis Recetas
+                    </button>
+
+                    <button
                         onClick={handleGenerateMenu}
                         disabled={isLoading}
                         className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 rounded-xl transition-all font-medium text-sm shadow-lg shadow-indigo-500/20"
@@ -98,8 +110,12 @@ export default function MealsPageClient({ initialRecipes, initialMenu, startDate
                     {isAddRecipeOpen && (
                         <RecipeForm onClose={() => setIsAddRecipeOpen(false)} />
                     )}
+                    {isManageRecipesOpen && (
+                        <RecipeManager recipes={recipes} onClose={() => setIsManageRecipesOpen(false)} />
+                    )}
                 </AnimatePresence>
             </div>
+
 
             {/* Weekly Grid */}
             <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
