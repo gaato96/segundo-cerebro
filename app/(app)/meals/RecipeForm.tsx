@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Trash2, Save, X } from 'lucide-react'
+import { Plus, Trash2, Save, X, Link as LinkIcon } from 'lucide-react'
 import { createRecipe } from '@/lib/actions/meals'
 
 export function RecipeForm({ onClose }: { onClose: () => void }) {
@@ -62,12 +62,25 @@ export function RecipeForm({ onClose }: { onClose: () => void }) {
                             />
                         </div>
 
+                        <div>
+                            <label className="text-xs font-bold uppercase text-muted-foreground tracking-widest block mb-2 flex items-center gap-2">
+                                <LinkIcon className="w-3 h-3" />
+                                Enlace a la Receta (Video/Web) Opcional
+                            </label>
+                            <input
+                                name="link"
+                                type="url"
+                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-indigo-500 outline-none transition-all text-indigo-300"
+                                placeholder="https://youtube.com/..."
+                            />
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label className="text-xs font-bold uppercase text-muted-foreground tracking-widest block mb-2">Complejidad</label>
-                                <select name="complexity" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none">
+                                <select name="complexity" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none" defaultValue="Medium">
                                     <option value="Fast">Rápida</option>
-                                    <option value="Medium" selected>Media</option>
+                                    <option value="Medium">Media</option>
                                     <option value="Complex">Compleja</option>
                                 </select>
                             </div>

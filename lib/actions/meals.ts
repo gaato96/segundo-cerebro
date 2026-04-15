@@ -39,6 +39,7 @@ export async function createRecipe(formData: FormData) {
     const protein_type = formData.get('protein_type') as string
     const carb_type = formData.get('carb_type') as string
     const steps = formData.get('steps') as string
+    const link = formData.get('link') as string
     const tags = (formData.get('tags') as string)?.split(',').map(t => t.trim()) || []
     const ingredients = JSON.parse(formData.get('ingredients') as string || '[]')
 
@@ -52,6 +53,7 @@ export async function createRecipe(formData: FormData) {
             protein_type,
             carb_type,
             steps,
+            link,
             tags,
             ingredients
         })
@@ -102,34 +104,45 @@ export async function getWeeklyMenu(startDate: string) {
     }
 }
 
-// --- THE MEAL ENGINE (AI AGENT via Groq/Llama) ---
-
-export async function generateWeeklyMenu(startDate: string) {
+export async function saveMenuState(startDate: string, menuData: any, shoppingList: any) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
 
-    // 1. Fetch all user recipes
+    const { error: saveError } = await supabase
+        .from('weekly_menus')
+        .upsert({
+            user_id: user.id,
+            start_date: startDate,
+            menu_data: menuData,
+            shopping_list: shoppingList,
+            updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id, start_date' })
+
+    if (saveError) return { error: saveError.message }
+
+    revalidatePath('/meals')
+    return { success: true }
+}
+
+// --- THE MEAL ENGINE (AI AGENT via Groq/Llama) ---
+
+export async function generateWeeklyMenu(startDate: string, isSingleDay: boolean = false, targetDay: string = '') {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
     const { data: recipes, error: recipesError } = await supabase
         .from('recipes')
         .select('*')
         .eq('user_id', user.id)
 
-    if (recipesError) {
-        return { error: `Error Base de Datos: ${recipesError.message}. ¿Ejecutaste el SQL de migraciones en Supabase?` }
-    }
+    if (recipesError) return { error: `Error BD: ${recipesError.message}` }
+    if (!recipes || recipes.length === 0) return { error: 'No tienes recetas guardadas.' }
 
-    if (!recipes || recipes.length === 0) {
-        return { error: 'No tienes recetas guardadas. Agrega al menos una receta antes de generar el menú.' }
-    }
-
-    // 2. Check API Key
     const apiKey = process.env.GROQ_API_KEY
-    if (!apiKey) {
-        return { error: 'GROQ_API_KEY no configurada. Agrega la key en Vercel → Settings → Environment Variables.' }
-    }
+    if (!apiKey) return { error: 'GROQ_API_KEY no configurada.' }
 
-    // 3. Build prompts
     const recipeList = recipes.map(r => ({
         id: r.id,
         name: r.name,
@@ -139,75 +152,79 @@ export async function generateWeeklyMenu(startDate: string) {
         ingredients: r.ingredients
     }))
 
-    const systemPrompt = `Eres un asistente de nutrición. Tu tarea es organizar una semana de alimentación equilibrada basándote EXCLUSIVAMENTE en el catálogo de recetas proporcionado. Responde SOLO con JSON válido, sin texto adicional ni bloques de código markdown.`
+    const systemPrompt = `Eres un asistente de nutrición. Tu tarea es organizar alimentación equilibrada basándote EXCLUSIVAMENTE en el catálogo. Responde SOLO con JSON válido, sin bloques markdown.`
 
-    const userPrompt = `
+    const fullWeekPrompt = `
 Catálogo de recetas:
 ${JSON.stringify(recipeList)}
 
-Fecha de inicio: ${startDate} (Lunes)
+Fecha de inicio: ${startDate}
 
-INSTRUCCIONES:
-- Asignar Almuerzo y Cena para Lunes a Domingo (7 días)
-- Variar las proteínas y carbohidratos a lo largo de la semana
-- Generar una lista de compras consolidada
+INSTRUCCIONES CLAVE (SEMANA COMPLETA):
+1. Asignar recetas para los 7 días de la semana (Monday a Sunday).
+2. MUY IMPORTANTE: Asignar la MISMA receta para Almuerzo (lunch) y Cena (dinner) en un mismo día (para cocinar una sola vez).
+3. Variar las recetas a lo largo de los distintos días para una semana equilibrada.
+4. Generar lista de compras consolidada.
 
-Responde EXACTAMENTE con esta estructura JSON:
+Responde EXACTAMENTE así:
 {
   "menu": {
-    "Monday": { "lunch": { "recipe_id": "ID_REAL", "name": "NOMBRE_REAL" }, "dinner": { "recipe_id": "ID_REAL", "name": "NOMBRE_REAL" } },
-    "Tuesday": { "lunch": { "recipe_id": "...", "name": "..." }, "dinner": { "recipe_id": "...", "name": "..." } },
-    "Wednesday": { "lunch": { "recipe_id": "...", "name": "..." }, "dinner": { "recipe_id": "...", "name": "..." } },
-    "Thursday": { "lunch": { "recipe_id": "...", "name": "..." }, "dinner": { "recipe_id": "...", "name": "..." } },
-    "Friday": { "lunch": { "recipe_id": "...", "name": "..." }, "dinner": { "recipe_id": "...", "name": "..." } },
-    "Saturday": { "lunch": { "recipe_id": "...", "name": "..." }, "dinner": { "recipe_id": "...", "name": "..." } },
-    "Sunday": { "lunch": { "recipe_id": "...", "name": "..." }, "dinner": { "recipe_id": "...", "name": "..." } }
+    "Monday": { "lunch": { "recipe_id": "...", "name": "..." }, "dinner": { "recipe_id": "...", "name": "..." } },
+    ... (resto de la semana hasta Sunday)
   },
-  "shopping_list": [
-    { "item": "Nombre del ingrediente", "amount": "cantidad", "unit": "unidad" }
-  ]
+  "shopping_list": [ { "item": "...", "amount": "...", "unit": "..." } ]
 }
 `
 
+    const singleDayPrompt = `
+Catálogo de recetas:
+${JSON.stringify(recipeList)}
+
+Generar SOLO un plato para el día: ${targetDay}
+
+INSTRUCCIONES CLAVE (SOBRESCRIBIR UN DÍA):
+1. Elige 1 receta aleatoria del catálogo adecuada para un almuerzo o cena.
+2. Devuelve los datos con la misma estructura pero especificando SOLO el día solicitado y repitiendo el plato en lunch y dinner.
+
+Responde EXACTAMENTE así:
+{
+  "menu": {
+    "${targetDay}": { "lunch": { "recipe_id": "...", "name": "..." }, "dinner": { "recipe_id": "...", "name": "..." } }
+  }
+}
+`
+
+    const userPrompt = isSingleDay ? singleDayPrompt : fullWeekPrompt
+
     try {
         const groq = new Groq({ apiKey })
-
         const chatCompletion = await groq.chat.completions.create({
             messages: [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: userPrompt }
             ],
             model: 'llama-3.3-70b-versatile',
-            temperature: 0.3,
+            temperature: isSingleDay ? 0.7 : 0.4, // Más variedad si es un solo día
             response_format: { type: 'json_object' }
         })
 
         const responseText = chatCompletion.choices[0]?.message?.content
-        if (!responseText) {
-            return { error: 'La IA no devolvió contenido.' }
-        }
+        if (!responseText) return { error: 'La IA no devolvió contenido.' }
 
         const result = JSON.parse(responseText)
 
-        // 4. Save to Database
-        const { error: saveError } = await supabase
-            .from('weekly_menus')
-            .upsert({
-                user_id: user.id,
-                start_date: startDate,
-                menu_data: result.menu,
-                shopping_list: result.shopping_list,
-                updated_at: new Date().toISOString()
-            }, { onConflict: 'user_id, start_date' })
-
-        if (saveError) {
-            return { error: `Error al guardar en BD: ${saveError.message}. ¿Ejecutaste el SQL de migraciones?` }
+        if (isSingleDay) {
+            // No guardamos directamente a BD si es un día suelto, lo devolvemos al frontend para que haga merge.
+            return { data: result }
         }
 
-        revalidatePath('/meals')
+        // Si es semana completa, guardamos en BD
+        const { error: saveError } = await saveMenuState(startDate, result.menu, result.shopping_list)
+        if (saveError) return { error: saveError }
+
         return { data: result }
     } catch (err: any) {
-        console.error('Error in generateWeeklyMenu:', err)
-        return { error: `Error al generar el menú: ${err.message}` }
+        console.error('Error generating menu:', err)
+        return { error: `Error al generar: ${err.message}` }
     }
 }

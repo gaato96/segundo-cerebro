@@ -5,14 +5,15 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
     Plus, Wand2, RefreshCw, ShoppingCart,
     ChevronLeft, ChevronRight, X, Loader2,
-    Clock, Tag, ListChecks
+    Clock, Tag, ListChecks, Bike, ExternalLink
 } from 'lucide-react'
-import { generateWeeklyMenu, createRecipe } from '@/lib/actions/meals'
+import { generateWeeklyMenu, createRecipe, saveMenuState } from '@/lib/actions/meals'
 import { format, addDays } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { RecipeForm } from './RecipeForm'
 import { RecipeManager } from './RecipeManager'
+import { ShoppingListModal } from './ShoppingListModal'
 
 
 interface Recipe {
@@ -22,28 +23,23 @@ interface Recipe {
     ingredients: any[]
     steps?: string
     complexity: string
-}
-
-interface MenuData {
-    [key: string]: {
-        lunch: { recipe_id: string, name: string }
-        dinner: { recipe_id: string, name: string }
-    }
+    link?: string
 }
 
 export default function MealsPageClient({ initialRecipes, initialMenu, startDate }: any) {
     const [recipes, setRecipes] = useState<Recipe[]>(initialRecipes)
     const [menu, setMenu] = useState<any>(initialMenu)
     const [isLoading, setIsLoading] = useState(false)
+    const [isRegeneratingDay, setIsRegeneratingDay] = useState(false)
     const [selectedDay, setSelectedDay] = useState<string | null>(null)
-    const [isRecipeModalOpen, setIsRecipeModalOpen] = useState(false)
     const [isAddRecipeOpen, setIsAddRecipeOpen] = useState(false)
     const [isManageRecipesOpen, setIsManageRecipesOpen] = useState(false)
-
+    const [isShoppingListOpen, setIsShoppingListOpen] = useState(false)
 
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
     async function handleGenerateMenu() {
+        if (!confirm('Esto reemplazará todo tu menú de esta semana. ¿Continuar?')) return
         setIsLoading(true)
         try {
             const result = await generateWeeklyMenu(startDate)
@@ -61,9 +57,35 @@ export default function MealsPageClient({ initialRecipes, initialMenu, startDate
         }
     }
 
+    async function handleRegenerateDay(day: string) {
+        setIsRegeneratingDay(true)
+        try {
+            const result = await generateWeeklyMenu(startDate, true, day)
+            if (result.error) {
+                alert(result.error)
+                return
+            }
+            if (result.data) {
+                const newMenuData = { ...menu.menu_data, [day]: result.data.menu[day] }
+                setMenu({ ...menu, menu_data: newMenuData })
+                await saveMenuState(startDate, newMenuData, menu.shopping_list)
+            }
+        } catch (error: any) {
+            alert('Error crítico: ' + error.message)
+        } finally {
+            setIsRegeneratingDay(false)
+        }
+    }
 
-    const selectedRecipeId = selectedDay && menu?.menu_data?.[selectedDay]?.lunch?.recipe_id
-    const selectedRecipe = recipes.find(r => r.id === selectedRecipeId)
+    async function handleSetDelivery(day: string) {
+        const newMenuData = { ...menu.menu_data }
+        newMenuData[day] = {
+            lunch: { recipe_id: 'delivery', name: '🛵 Delivery / Pedir Comida' },
+            dinner: { recipe_id: 'delivery', name: '🛵 Delivery / Pedir Comida' }
+        }
+        setMenu({ ...menu, menu_data: newMenuData })
+        await saveMenuState(startDate, newMenuData, menu.shopping_list)
+    }
 
     return (
         <div className="space-y-8">
@@ -88,20 +110,23 @@ export default function MealsPageClient({ initialRecipes, initialMenu, startDate
                     <button
                         onClick={handleGenerateMenu}
                         disabled={isLoading}
-                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 rounded-xl transition-all font-medium text-sm shadow-lg shadow-indigo-500/20"
+                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 rounded-xl transition-all font-medium text-sm shadow-lg shadow-indigo-500/20 ml-4"
                     >
                         {isLoading ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
                             <Wand2 className="w-4 h-4" />
                         )}
-                        {menu ? 'Regenerar con IA' : 'Magic Generate'}
+                        {menu ? 'Regenerar Toda la Semana' : 'Magic Generate'}
                     </button>
                 </div>
 
                 {menu?.shopping_list && (
-                    <button className="flex items-center gap-2 px-4 py-2 glass hover:bg-white/10 rounded-xl transition-colors text-sm">
-                        <ShoppingCart className="w-4 h-4 text-indigo-400" />
+                    <button
+                        onClick={() => setIsShoppingListOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2 glass hover:bg-white/10 border-indigo-500/30 text-indigo-300 rounded-xl transition-colors text-sm font-medium shadow-md shadow-indigo-500/10"
+                    >
+                        <ShoppingCart className="w-4 h-4" />
                         Ver Lista de Compras ({menu.shopping_list.length})
                     </button>
                 )}
@@ -113,6 +138,9 @@ export default function MealsPageClient({ initialRecipes, initialMenu, startDate
                     {isManageRecipesOpen && (
                         <RecipeManager recipes={recipes} onClose={() => setIsManageRecipesOpen(false)} />
                     )}
+                    {isShoppingListOpen && (
+                        <ShoppingListModal shoppingList={menu?.shopping_list} onClose={() => setIsShoppingListOpen(false)} />
+                    )}
                 </AnimatePresence>
             </div>
 
@@ -121,25 +149,35 @@ export default function MealsPageClient({ initialRecipes, initialMenu, startDate
             <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
                 {days.map((day) => {
                     const dayData = menu?.menu_data?.[day]
+                    const isDelivery = dayData?.lunch?.recipe_id === 'delivery'
                     return (
                         <div key={day} className="flex flex-col gap-3">
                             <h3 className="font-heading font-semibold text-center text-sm text-muted-foreground uppercase tracking-wider">
                                 {format(addDays(new Date(startDate), days.indexOf(day)), 'EEEE', { locale: es })}
                             </h3>
 
-                            <div className="space-y-3">
-                                {/* Almuerzo */}
-                                <MealCard
-                                    type="Almuerzo"
-                                    recipe={dayData?.lunch}
-                                    onClick={() => setSelectedDay(day)}
-                                />
-                                {/* Cena */}
-                                <MealCard
-                                    type="Cena"
-                                    recipe={dayData?.dinner}
-                                    onClick={() => setSelectedDay(day)}
-                                />
+                            <div className={`space-y-3 p-2 rounded-2xl ${isRegeneratingDay && selectedDay === day ? 'animate-pulse opacity-50 bg-indigo-500/10' : ''}`}>
+                                {isDelivery ? (
+                                    <MealCard
+                                        type="Almuerzo & Cena"
+                                        recipe={dayData?.lunch}
+                                        onClick={() => setSelectedDay(day)}
+                                        isDelivery={true}
+                                    />
+                                ) : (
+                                    <>
+                                        <MealCard
+                                            type="Almuerzo"
+                                            recipe={dayData?.lunch}
+                                            onClick={() => setSelectedDay(day)}
+                                        />
+                                        <MealCard
+                                            type="Cena"
+                                            recipe={dayData?.dinner}
+                                            onClick={() => setSelectedDay(day)}
+                                        />
+                                    </>
+                                )}
                             </div>
                         </div>
                     )
@@ -148,13 +186,13 @@ export default function MealsPageClient({ initialRecipes, initialMenu, startDate
 
             {/* Recipe Modal */}
             <AnimatePresence>
-                {selectedDay && (
+                {selectedDay && menu?.menu_data?.[selectedDay] && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
                         <motion.div
                             initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
-                            className="bg-[#1a1b26] border border-white/10 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl p-8 relative"
+                            className="bg-[#1a1b26] border border-white/10 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl p-8 relative flex flex-col"
                         >
                             <button
                                 onClick={() => setSelectedDay(null)}
@@ -164,17 +202,46 @@ export default function MealsPageClient({ initialRecipes, initialMenu, startDate
                             </button>
 
                             <div className="space-y-6">
-                                <div>
-                                    <h2 className="text-3xl font-heading font-bold mb-2">Detalles del Día</h2>
-                                    <p className="text-indigo-400 font-medium">
-                                        {format(addDays(new Date(startDate), days.indexOf(selectedDay)), "EEEE d 'de' MMMM", { locale: es })}
-                                    </p>
+                                <div className="flex justify-between items-end">
+                                    <div>
+                                        <h2 className="text-3xl font-heading font-bold mb-2">Detalles del Día</h2>
+                                        <p className="text-indigo-400 font-medium">
+                                            {format(addDays(new Date(startDate), days.indexOf(selectedDay)), "EEEE d 'de' MMMM", { locale: es })}
+                                        </p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => handleSetDelivery(selectedDay)}
+                                            className="px-3 py-1.5 flex items-center gap-2 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 rounded-lg text-sm font-medium transition-colors"
+                                        >
+                                            <Bike className="w-4 h-4" />
+                                            Pedir Delivery
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                handleRegenerateDay(selectedDay)
+                                                setSelectedDay(null)
+                                            }}
+                                            className="px-3 py-1.5 flex items-center gap-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-lg text-sm font-medium transition-colors"
+                                        >
+                                            <RefreshCw className="w-4 h-4" />
+                                            Regenerar Día
+                                        </button>
+                                    </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <RecipeSection title="Almuerzo" recipeData={menu.menu_data[selectedDay].lunch} recipes={recipes} />
-                                    <RecipeSection title="Cena" recipeData={menu.menu_data[selectedDay].dinner} recipes={recipes} />
-                                </div>
+                                {menu.menu_data[selectedDay].lunch.recipe_id === 'delivery' ? (
+                                    <div className="p-10 text-center glass rounded-2xl border-dashed border-2 border-yellow-500/20">
+                                        <Bike className="w-12 h-12 text-yellow-500/50 mx-auto mb-4" />
+                                        <h3 className="text-xl font-bold text-yellow-500">Día de Delivery</h3>
+                                        <p className="text-muted-foreground mt-2">Relájate y pide algo rico para hoy.</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white/5 p-6 rounded-2xl border border-white/5">
+                                        <RecipeSection title="Almuerzo" recipeData={menu.menu_data[selectedDay].lunch} recipes={recipes} />
+                                        <RecipeSection title="Cena" recipeData={menu.menu_data[selectedDay].dinner} recipes={recipes} />
+                                    </div>
+                                )}
                             </div>
                         </motion.div>
                     </div>
@@ -197,16 +264,18 @@ export default function MealsPageClient({ initialRecipes, initialMenu, startDate
     )
 }
 
-function MealCard({ type, recipe, onClick }: any) {
+function MealCard({ type, recipe, onClick, isDelivery }: any) {
     return (
         <button
             onClick={onClick}
-            className="w-full text-left glass hover:border-indigo-500/50 p-4 rounded-2xl transition-all group"
+            className={`w-full text-left p-4 rounded-2xl transition-all group border ${isDelivery ? 'bg-yellow-500/5 border-yellow-500/20 hover:bg-yellow-500/10' : 'glass border-white/10 hover:border-indigo-500/50'}`}
         >
-            <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest block mb-2">{type}</span>
+            <span className={`text-[10px] font-bold uppercase tracking-widest block mb-2 ${isDelivery ? 'text-yellow-500' : 'text-indigo-400'}`}>
+                {type}
+            </span>
             {recipe ? (
                 <div>
-                    <h4 className="font-heading font-bold text-sm group-hover:text-indigo-300 transition-colors line-clamp-2">
+                    <h4 className="font-heading font-bold text-sm group-hover:opacity-80 transition-colors line-clamp-2">
                         {recipe.name}
                     </h4>
                 </div>
@@ -231,8 +300,23 @@ function RecipeSection({ title, recipeData, recipes }: any) {
         <div className="space-y-4">
             <h3 className="font-heading font-bold text-xl flex items-center gap-2">
                 <span className="w-1.5 h-6 bg-indigo-500 rounded-full" />
-                {title}: {recipe.name}
+                {title}
             </h3>
+
+            <div className="space-y-1 relative group">
+                <p className="font-bold text-lg leading-tight pr-8">{recipe.name}</p>
+                {recipe.link && (
+                    <a
+                        href={recipe.link}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="absolute right-0 top-0 p-2 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500 hover:text-white rounded-lg transition-colors"
+                        title="Ver receta externa"
+                    >
+                        <ExternalLink className="w-4 h-4" />
+                    </a>
+                )}
+            </div>
 
             <div className="flex gap-4">
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-white/5 px-2 py-1 rounded-lg">
@@ -262,7 +346,7 @@ function RecipeSection({ title, recipeData, recipes }: any) {
             {recipe.steps && (
                 <div className="space-y-2">
                     <h4 className="text-xs font-bold uppercase text-muted-foreground tracking-widest">Pasos</h4>
-                    <p className="text-sm text-sidebar-foreground/80 leading-relaxed">
+                    <p className="text-sm text-sidebar-foreground/80 leading-relaxed bg-black/20 p-3 rounded-lg border border-white/5">
                         {recipe.steps}
                     </p>
                 </div>
