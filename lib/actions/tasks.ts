@@ -33,6 +33,7 @@ export async function createTask(formData: FormData) {
     const priority = parseInt(formData.get('priority') as string) || 2
     const category = formData.get('category') as string || 'Personal'
     const dueDateStr = formData.get('due_date') as string
+    const energy_level = formData.get('energy_level') as string || 'Deep Work'
 
     const dueDate = dueDateStr ? new Date(dueDateStr).toISOString() : null
 
@@ -44,6 +45,7 @@ export async function createTask(formData: FormData) {
             description,
             priority,
             category,
+            energy_level,
             due_date: dueDate,
             status: 'Todo'
         })

@@ -14,6 +14,7 @@ interface Task {
     priority: number
     category: string
     due_date: string | null
+    energy_level?: string
 }
 
 interface Habit {
@@ -222,6 +223,11 @@ export function DailySnapshot({ tasks: initialTasks, habits, completedHabitIds: 
                                             <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-muted text-muted-foreground border border-border">
                                                 {task.category}
                                             </span>
+                                            {task.energy_level && (
+                                                <span className="text-[10px] px-2 py-0.5 rounded-full font-medium border border-indigo-500/30 text-indigo-500 dark:text-indigo-400 bg-indigo-500/10 flex items-center gap-1">
+                                                    {task.energy_level === 'Deep Work' ? '⚡' : task.energy_level === 'Low Energy' ? '🔋' : '📱'} {task.energy_level}
+                                                </span>
+                                            )}
                                             {task.due_date && (
                                                 <span className="text-[10px] flex items-center gap-1 text-muted-foreground ml-auto">
                                                     <CalendarIcon className="w-3 h-3" />

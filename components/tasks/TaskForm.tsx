@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createTask } from '@/lib/actions/tasks'
-import { X, Loader2, Calendar as CalendarIcon, Flag, Tag } from 'lucide-react'
+import { X, Loader2, Calendar as CalendarIcon, Flag, Tag, Zap } from 'lucide-react'
 
 interface TaskFormProps {
     onClose: () => void
@@ -110,6 +110,26 @@ export function TaskForm({ onClose }: TaskFormProps) {
                                 >
                                     <option value="Work">Trabajo</option>
                                     <option value="Personal">Personal</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Energy Level */}
+                        <div className="space-y-2 col-span-2">
+                            <label htmlFor="energy_level" className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                                <Zap className="w-3.5 h-3.5" />
+                                Nivel de Energía
+                            </label>
+                            <div className="relative">
+                                <select
+                                    id="energy_level"
+                                    name="energy_level"
+                                    defaultValue="Deep Work"
+                                    className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 appearance-none text-foreground"
+                                >
+                                    <option value="Deep Work">⚡ Deep Work (Alta Energía)</option>
+                                    <option value="Low Energy">🔋 Low Energy (Baja Energía)</option>
+                                    <option value="Phone-only">📱 Phone-only (Solo Celular)</option>
                                 </select>
                             </div>
                         </div>

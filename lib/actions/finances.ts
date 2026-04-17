@@ -29,7 +29,7 @@ export async function getFinances(monthYear: string) {
         .select('*')
         .eq('user_id', user.id)
         .gt('remaining_amount', 0)
-        .order('due_day', { ascending: true })
+        .order('remaining_amount', { ascending: true })
 
     if (debtsError) throw debtsError
 

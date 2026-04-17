@@ -5,6 +5,8 @@ import { PomodoroWidget } from '@/components/dashboard/PomodoroWidget'
 import { QuickStats } from '@/components/dashboard/QuickStats'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { DailyWinWidget } from '@/components/dashboard/DailyWinWidget'
+import { getDailyWin } from '@/lib/actions/daily_wins'
 
 export default async function DashboardPage() {
     const supabase = await createClient()
@@ -66,6 +68,7 @@ export default async function DashboardPage() {
         .reduce((sum: number, f: { amount: number }) => sum + f.amount, 0)
 
     const todayFormatted = format(now, "EEEE d 'de' MMMM", { locale: es })
+    const todayWin = await getDailyWin(todayStr)
 
     return (
         <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6 animate-fade-in">
@@ -80,6 +83,8 @@ export default async function DashboardPage() {
                     </p>
                 </div>
             </div>
+
+            <DailyWinWidget initialWin={todayWin?.win || null} dateStr={todayStr} />
 
             {/* Quick Stats */}
             <QuickStats
