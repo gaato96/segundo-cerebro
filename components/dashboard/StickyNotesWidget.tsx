@@ -38,10 +38,11 @@ export function StickyNotesWidget({ initialNotes }: StickyNotesWidgetProps) {
         setIsCreating(true)
         try {
             const newNote = await createStickyNote('', COLORS[0])
-            // optimistic UI update wouldn't hurt, but the server action already revalidates.
-            // We can just rely on the server revalidation to pass the new note via `initialNotes`,
-            // but let's aggressively update UI anyway.
-            setNotes(prev => [...prev, newNote])
+            if (newNote && 'isError' in newNote) {
+                alert("Database Error: " + newNote.message)
+                return
+            }
+            setNotes(prev => [...prev, newNote as any])
         } catch (error) {
             console.error('Failed to create note', error)
         } finally {
