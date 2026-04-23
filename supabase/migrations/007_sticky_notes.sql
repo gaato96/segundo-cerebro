@@ -12,3 +12,4 @@ CREATE TABLE IF NOT EXISTS sticky_notes (
 ALTER TABLE sticky_notes ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage their own sticky notes" ON sticky_notes
     FOR ALL USING (auth.uid() = user_id);
+    

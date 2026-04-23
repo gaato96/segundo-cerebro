@@ -35,9 +35,7 @@ export async function createStickyNote(content: string = '', color: string = 'bg
         .select()
         .single()
 
-    if (error) {
-        return { isError: true, message: error.message }
-    }
+    if (error) throw error
 
     revalidatePath('/')
     return data

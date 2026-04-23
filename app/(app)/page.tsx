@@ -71,13 +71,7 @@ export default async function DashboardPage() {
 
     const todayFormatted = format(now, "EEEE d 'de' MMMM", { locale: es })
     const todayWin = await getDailyWin(todayStr)
-    let stickyNotes = []
-    try {
-        stickyNotes = await getStickyNotes()
-    } catch (e: any) {
-        console.error("=== ERROR FETCHING STICKY NOTES ===")
-        console.error(e)
-    }
+    const stickyNotes = await getStickyNotes()
 
     return (
         <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6 animate-fade-in">

@@ -38,11 +38,7 @@ export function StickyNotesWidget({ initialNotes }: StickyNotesWidgetProps) {
         setIsCreating(true)
         try {
             const newNote = await createStickyNote('', COLORS[0])
-            if (newNote && 'isError' in newNote) {
-                alert("Database Error: " + newNote.message)
-                return
-            }
-            setNotes(prev => [...prev, newNote as any])
+            setNotes(prev => [...prev, newNote])
         } catch (error) {
             console.error('Failed to create note', error)
         } finally {
