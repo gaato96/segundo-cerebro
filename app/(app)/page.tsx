@@ -7,6 +7,8 @@ import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { DailyWinWidget } from '@/components/dashboard/DailyWinWidget'
 import { getDailyWin } from '@/lib/actions/daily_wins'
+import { StickyNotesWidget } from '@/components/dashboard/StickyNotesWidget'
+import { getStickyNotes } from '@/lib/actions/sticky_notes'
 
 export default async function DashboardPage() {
     const supabase = await createClient()
@@ -69,6 +71,7 @@ export default async function DashboardPage() {
 
     const todayFormatted = format(now, "EEEE d 'de' MMMM", { locale: es })
     const todayWin = await getDailyWin(todayStr)
+    const stickyNotes = await getStickyNotes()
 
     return (
         <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6 animate-fade-in">
@@ -85,6 +88,8 @@ export default async function DashboardPage() {
             </div>
 
             <DailyWinWidget initialWin={todayWin?.win || null} dateStr={todayStr} />
+
+            <StickyNotesWidget initialNotes={stickyNotes} />
 
             {/* Quick Stats */}
             <QuickStats
