@@ -9,8 +9,8 @@ CREATE TABLE IF NOT EXISTS monthly_budgets (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   month_year TEXT NOT NULL, -- e.g. '2026-03'
-  expected_income NUMERIC(12, 2) DEFAULT 0,
-  expected_expenses NUMERIC(12, 2) DEFAULT 0,
+  incomes_json JSONB DEFAULT '[]',
+  expenses_json JSONB DEFAULT '[]',
   notes TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),

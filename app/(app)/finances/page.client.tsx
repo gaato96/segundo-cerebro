@@ -17,15 +17,32 @@ export function FinancesClient({ transactions, debts, initialBudget, initialGoal
     const [selectedGoal, setSelectedGoal] = useState<any | null>(null)
     const [loading, setLoading] = useState<string | null>(null)
 
-    // Calculations
-    const income = transactions.filter(t => t.type === 'Income').reduce((acc, t) => acc + t.amount, 0)
-    const fixedExpenses = transactions.filter(t => t.type === 'Fixed_Expense').reduce((acc, t) => acc + t.amount, 0)
-    const variableExpenses = transactions.filter(t => t.type === 'Variable').reduce((acc, t) => acc + t.amount, 0)
-    const debtPayments = transactions.filter(t => t.type === 'Debt_Payment').reduce((acc, t) => acc + t.amount, 0)
+    // Advanced Budget States
+    const [budgetIncomes, setBudgetIncomes] = useState<any[]>(initialBudget?.incomes_json || [])
+    const [budgetExpenses, setBudgetExpenses] = useState<any[]>(initialBudget?.expenses_json || [])
 
-    const totalExpenses = fixedExpenses + variableExpenses + debtPayments
-    const balance = income - totalExpenses
+    // Real Calculations
+    const realIncome = transactions.filter(t => t.type === 'Income').reduce((acc, t) => acc + t.amount, 0)
+    const realFixedExpenses = transactions.filter(t => t.type === 'Fixed_Expense').reduce((acc, t) => acc + t.amount, 0)
+    const realVariableExpenses = transactions.filter(t => t.type === 'Variable').reduce((acc, t) => acc + t.amount, 0)
+    const realDebtPayments = transactions.filter(t => t.type === 'Debt_Payment').reduce((acc, t) => acc + t.amount, 0)
+
+    const realTotalExpenses = realFixedExpenses + realVariableExpenses + realDebtPayments
+    const realBalance = realIncome - realTotalExpenses
     const totalDebt = debts.reduce((acc, d) => acc + d.remaining_amount, 0)
+
+    // Budget Calculations
+    const securedIncomes = budgetIncomes.filter(i => i.is_secured).reduce((acc, i) => acc + i.amount, 0)
+    const potentialIncomes = budgetIncomes.filter(i => !i.is_secured).reduce((acc, i) => acc + i.amount, 0)
+    const totalProjectedIncome = securedIncomes + potentialIncomes
+
+    const fixedProjectedExpenses = budgetExpenses.filter(e => e.is_fixed).reduce((acc, e) => acc + e.amount, 0)
+    const variableProjectedExpenses = budgetExpenses.filter(e => !e.is_fixed).reduce((acc, e) => acc + e.amount, 0)
+    const totalProjectedExpenses = fixedProjectedExpenses + variableProjectedExpenses
+
+    const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(amount)
+    }
 
     // Handlers
     async function handleTxSubmit(formData: FormData) {
@@ -70,11 +87,10 @@ export function FinancesClient({ transactions, debts, initialBudget, initialGoal
         }
     }
 
-    // New handlers
-    async function handleBudgetSubmit(formData: FormData) {
+    async function handleBudgetSave() {
         setLoading('budget')
         try {
-            await saveMonthlyBudget(monthYear, formData)
+            await saveMonthlyBudget(monthYear, JSON.stringify(budgetIncomes), JSON.stringify(budgetExpenses))
             setIsBudgetFormOpen(false)
         } catch (e) {
             alert('Error guardando presupuesto')
@@ -141,10 +157,6 @@ export function FinancesClient({ transactions, debts, initialBudget, initialGoal
         }
     }
 
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(amount)
-    }
-
     // Weekly calculations for goals
     const calculateWeeklyDeposit = (goal: any) => {
         if (!goal.target_date) return null
@@ -158,7 +170,7 @@ export function FinancesClient({ transactions, debts, initialBudget, initialGoal
         const diffTime = Math.abs(target.getTime() - now.getTime())
         const diffWeeks = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 7))
 
-        if (diffWeeks <= 0) return remainingAmount // Due immediately! Return full amount
+        if (diffWeeks <= 0) return remainingAmount
 
         return remainingAmount / diffWeeks
     }
@@ -173,7 +185,7 @@ export function FinancesClient({ transactions, debts, initialBudget, initialGoal
                         <Wallet className="w-6 h-6 text-emerald-400" />
                     </h1>
                     <p className="text-muted-foreground text-sm mt-1">
-                        Control de presupuesto, ahorros y amortización de deudas.
+                        Control de presupuesto, previsiones y amortización de deudas.
                     </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -181,7 +193,7 @@ export function FinancesClient({ transactions, debts, initialBudget, initialGoal
                         onClick={() => setIsBudgetFormOpen(true)}
                         className="glass hover:bg-secondary/80 text-foreground px-4 py-2 rounded-xl text-sm font-medium transition-all"
                     >
-                        Presupuesto Mes
+                        Forecast Mensual
                     </button>
                     <button
                         onClick={() => setIsGoalFormOpen(true)}
@@ -205,26 +217,27 @@ export function FinancesClient({ transactions, debts, initialBudget, initialGoal
                 </div>
             </div>
 
-            {/* Budget Display */}
-            {initialBudget && (
+            {/* Budget Display Widget */}
+            {initialBudget && (totalProjectedIncome > 0 || totalProjectedExpenses > 0) && (
                 <div className="glass p-5 rounded-3xl border border-border/50 relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-4 opacity-10">
                         <Wallet className="w-32 h-32 text-foreground" />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 relative z-10">
                         <div>
-                            <h2 className="text-lg font-heading font-semibold">Presupuesto</h2>
+                            <h2 className="text-lg font-heading font-semibold">Forecast</h2>
                             <p className="text-sm text-muted-foreground">{monthYear}</p>
+                            <button onClick={() => setIsBudgetFormOpen(true)} className="mt-4 text-xs font-medium text-emerald-500 hover:underline">Ver Detalles →</button>
                         </div>
 
                         <div className="bg-secondary/30 rounded-2xl p-4">
                             <p className="text-xs text-muted-foreground mb-1 uppercase font-semibold">Previsión vs Real</p>
                             <p className="text-sm font-medium">Ingresos</p>
                             <div className="flex gap-2 items-baseline mt-1">
-                                <span className={`text-xl font-bold ${income >= initialBudget.expected_income ? 'text-emerald-500' : 'text-foreground'}`}>
-                                    {formatCurrency(income)}
+                                <span className={`text-xl font-bold ${realIncome >= totalProjectedIncome ? 'text-emerald-500' : 'text-foreground'}`}>
+                                    {formatCurrency(realIncome)}
                                 </span>
-                                <span className="text-xs text-muted-foreground">/ {formatCurrency(initialBudget.expected_income)}</span>
+                                <span className="text-xs text-muted-foreground">/ {formatCurrency(totalProjectedIncome)}</span>
                             </div>
                         </div>
 
@@ -232,10 +245,10 @@ export function FinancesClient({ transactions, debts, initialBudget, initialGoal
                             <p className="text-xs text-muted-foreground mb-1 uppercase font-semibold">Previsión vs Real</p>
                             <p className="text-sm font-medium">Gastos</p>
                             <div className="flex gap-2 items-baseline mt-1">
-                                <span className={`text-xl font-bold ${totalExpenses > initialBudget.expected_expenses ? 'text-red-500' : 'text-foreground'}`}>
-                                    {formatCurrency(totalExpenses)}
+                                <span className={`text-xl font-bold ${realTotalExpenses > totalProjectedExpenses ? 'text-red-500' : 'text-foreground'}`}>
+                                    {formatCurrency(realTotalExpenses)}
                                 </span>
-                                <span className="text-xs text-muted-foreground">/ {formatCurrency(initialBudget.expected_expenses)}</span>
+                                <span className="text-xs text-muted-foreground">/ {formatCurrency(totalProjectedExpenses)}</span>
                             </div>
                         </div>
 
@@ -243,8 +256,8 @@ export function FinancesClient({ transactions, debts, initialBudget, initialGoal
                             <p className="text-xs text-muted-foreground mb-1 uppercase font-semibold">Margen Planificado</p>
                             <p className="text-sm font-medium">Gap Esperado</p>
                             <div className="flex gap-2 items-baseline mt-1">
-                                <span className={`text-xl font-bold ${(initialBudget.expected_income - initialBudget.expected_expenses) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                                    {formatCurrency(initialBudget.expected_income - initialBudget.expected_expenses)}
+                                <span className={`text-xl font-bold ${(totalProjectedIncome - totalProjectedExpenses) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                                    {formatCurrency(totalProjectedIncome - totalProjectedExpenses)}
                                 </span>
                             </div>
                         </div>
@@ -259,7 +272,7 @@ export function FinancesClient({ transactions, debts, initialBudget, initialGoal
                         <TrendingUp className="w-16 h-16 text-emerald-500" />
                     </div>
                     <p className="text-sm font-medium text-muted-foreground mb-1">Ingresos</p>
-                    <p className="text-2xl font-bold text-emerald-500">{formatCurrency(income)}</p>
+                    <p className="text-2xl font-bold text-emerald-500">{formatCurrency(realIncome)}</p>
                 </div>
 
                 <div className="glass p-5 rounded-3xl border border-border/50 shadow-sm relative overflow-hidden group">
@@ -267,7 +280,7 @@ export function FinancesClient({ transactions, debts, initialBudget, initialGoal
                         <TrendingDown className="w-16 h-16 text-red-500" />
                     </div>
                     <p className="text-sm font-medium text-muted-foreground mb-1">Gastos (Total)</p>
-                    <p className="text-2xl font-bold text-red-400">{formatCurrency(totalExpenses)}</p>
+                    <p className="text-2xl font-bold text-red-400">{formatCurrency(realTotalExpenses)}</p>
                 </div>
 
                 <div className="glass p-5 rounded-3xl border border-border/50 shadow-sm relative overflow-hidden group">
@@ -275,8 +288,8 @@ export function FinancesClient({ transactions, debts, initialBudget, initialGoal
                         <Wallet className="w-16 h-16 text-indigo-500" />
                     </div>
                     <p className="text-sm font-medium text-muted-foreground mb-1">Balance Real</p>
-                    <p className={`text-2xl font-bold ${balance >= 0 ? 'text-foreground' : 'text-red-400'}`}>
-                        {formatCurrency(balance)}
+                    <p className={`text-2xl font-bold ${realBalance >= 0 ? 'text-foreground' : 'text-red-400'}`}>
+                        {formatCurrency(realBalance)}
                     </p>
                 </div>
 
@@ -481,13 +494,249 @@ export function FinancesClient({ transactions, debts, initialBudget, initialGoal
             {/* Various Modals... */}
 
             <AnimatePresence>
+                {/* Advanced Budget Modal (Drawer/Full Screen) */}
+                {isBudgetFormOpen && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-4">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsBudgetFormOpen(false)} className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
+                        <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="bg-card w-full h-full md:max-w-6xl md:h-[95dvh] flex flex-col md:rounded-2xl border border-border shadow-2xl relative z-10">
+
+                            <div className="flex items-center justify-between p-6 border-b border-border/50 shrink-0">
+                                <h2 className="text-2xl font-bold font-heading flex flex-col md:flex-row md:items-center gap-2">
+                                    Forecast Previsional <span className="text-muted-foreground text-sm font-medium bg-secondary px-3 py-1 rounded-full">{monthYear}</span>
+                                </h2>
+                                <button onClick={() => setIsBudgetFormOpen(false)} className="text-muted-foreground hover:text-foreground bg-secondary/50 p-2 rounded-full"><X className="w-5 h-5" /></button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
+                                {/* Editor Column */}
+                                <div className="lg:col-span-8 flex flex-col gap-8">
+
+                                    {/* Incomes Section */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="text-lg font-heading font-semibold text-emerald-500 flex items-center gap-2"><TrendingUp className="w-5 h-5" /> Ingresos Proyectados</h3>
+                                            <button
+                                                onClick={() => setBudgetIncomes([...budgetIncomes, { id: Date.now(), description: '', amount: 0, expected_date: '', is_secured: false }])}
+                                                className="text-xs font-medium bg-secondary hover:bg-secondary/80 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors"
+                                            >
+                                                <Plus className="w-3 h-3" /> Añadir
+                                            </button>
+                                        </div>
+                                        <div className="border border-border/50 rounded-xl overflow-hidden bg-background">
+                                            <div className="divide-y divide-border/50">
+                                                {budgetIncomes.length === 0 && <p className="p-4 text-sm text-muted-foreground text-center">No has agregado ingresos.</p>}
+                                                {budgetIncomes.map((inc, index) => (
+                                                    <div key={inc.id} className="p-3 md:p-4 flex flex-col sm:flex-row gap-3 items-start sm:items-center bg-card hover:bg-secondary/20 transition-colors">
+                                                        <div className="flex-1 w-full">
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Descripción (Ej. Sueldo, Venta Cliente X...)"
+                                                                value={inc.description}
+                                                                onChange={(e) => {
+                                                                    const nv = [...budgetIncomes]; nv[index].description = e.target.value; setBudgetIncomes(nv);
+                                                                }}
+                                                                className="w-full bg-transparent border-none focus:ring-0 text-sm font-medium p-0"
+                                                            />
+                                                        </div>
+                                                        <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 w-full sm:w-auto shrink-0">
+                                                            <div className="flex items-center gap-1 bg-secondary/50 rounded-lg px-2 py-1">
+                                                                <span className="text-muted-foreground text-sm">$</span>
+                                                                <input
+                                                                    type="number"
+                                                                    placeholder="0"
+                                                                    value={inc.amount || ''}
+                                                                    onChange={(e) => {
+                                                                        const nv = [...budgetIncomes]; nv[index].amount = parseFloat(e.target.value) || 0; setBudgetIncomes(nv);
+                                                                    }}
+                                                                    className="w-24 bg-transparent border-none focus:ring-0 text-sm p-0 text-right"
+                                                                />
+                                                            </div>
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Día o Fecha"
+                                                                value={inc.expected_date}
+                                                                onChange={(e) => {
+                                                                    const nv = [...budgetIncomes]; nv[index].expected_date = e.target.value; setBudgetIncomes(nv);
+                                                                }}
+                                                                className="w-28 bg-secondary/50 border border-border/50 rounded-lg px-2 py-1 text-sm focus:ring-1 focus:ring-emerald-500"
+                                                            />
+                                                            <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={inc.is_secured}
+                                                                    onChange={(e) => {
+                                                                        const nv = [...budgetIncomes]; nv[index].is_secured = e.target.checked; setBudgetIncomes(nv);
+                                                                    }}
+                                                                    className="rounded text-emerald-500 focus:ring-emerald-500"
+                                                                />
+                                                                Seguro
+                                                            </label>
+                                                            <button
+                                                                onClick={() => setBudgetIncomes(budgetIncomes.filter(i => i.id !== inc.id))}
+                                                                className="text-muted-foreground hover:text-red-400 p-1"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Expenses Section */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="text-lg font-heading font-semibold text-red-400 flex items-center gap-2"><TrendingDown className="w-5 h-5" /> Gastos Proyectados</h3>
+                                            <button
+                                                onClick={() => setBudgetExpenses([...budgetExpenses, { id: Date.now(), description: '', amount: 0, due_date: '', is_fixed: true }])}
+                                                className="text-xs font-medium bg-secondary hover:bg-secondary/80 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors"
+                                            >
+                                                <Plus className="w-3 h-3" /> Añadir
+                                            </button>
+                                        </div>
+                                        <div className="border border-border/50 rounded-xl overflow-hidden bg-background">
+                                            <div className="divide-y divide-border/50">
+                                                {budgetExpenses.length === 0 && <p className="p-4 text-sm text-muted-foreground text-center">No has agregado gastos.</p>}
+                                                {budgetExpenses.map((exp, index) => (
+                                                    <div key={exp.id} className="p-3 md:p-4 flex flex-col sm:flex-row gap-3 items-start sm:items-center bg-card hover:bg-secondary/20 transition-colors">
+                                                        <div className="flex-1 w-full">
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Descripción (Ej. Alquiler, Salida al cine...)"
+                                                                value={exp.description}
+                                                                onChange={(e) => {
+                                                                    const nv = [...budgetExpenses]; nv[index].description = e.target.value; setBudgetExpenses(nv);
+                                                                }}
+                                                                className="w-full bg-transparent border-none focus:ring-0 text-sm font-medium p-0"
+                                                            />
+                                                        </div>
+                                                        <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 w-full sm:w-auto shrink-0">
+                                                            <div className="flex items-center gap-1 bg-secondary/50 rounded-lg px-2 py-1">
+                                                                <span className="text-muted-foreground text-sm">$</span>
+                                                                <input
+                                                                    type="number"
+                                                                    placeholder="0"
+                                                                    value={exp.amount || ''}
+                                                                    onChange={(e) => {
+                                                                        const nv = [...budgetExpenses]; nv[index].amount = parseFloat(e.target.value) || 0; setBudgetExpenses(nv);
+                                                                    }}
+                                                                    className="w-24 bg-transparent border-none focus:ring-0 text-sm p-0 text-right"
+                                                                />
+                                                            </div>
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Vencimiento"
+                                                                value={exp.due_date}
+                                                                onChange={(e) => {
+                                                                    const nv = [...budgetExpenses]; nv[index].due_date = e.target.value; setBudgetExpenses(nv);
+                                                                }}
+                                                                className="w-28 bg-secondary/50 border border-border/50 rounded-lg px-2 py-1 text-sm focus:ring-1 focus:ring-red-500"
+                                                            />
+                                                            <div className="flex border border-border/50 rounded-lg overflow-hidden shrink-0">
+                                                                <button
+                                                                    onClick={() => { const nv = [...budgetExpenses]; nv[index].is_fixed = true; setBudgetExpenses(nv); }}
+                                                                    className={`px-2 py-1 text-[10px] font-medium transition-colors ${exp.is_fixed ? 'bg-red-500 text-white' : 'bg-secondary text-muted-foreground hover:bg-secondary/80'}`}
+                                                                >
+                                                                    Fijo
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => { const nv = [...budgetExpenses]; nv[index].is_fixed = false; setBudgetExpenses(nv); }}
+                                                                    className={`px-2 py-1 text-[10px] font-medium transition-colors ${!exp.is_fixed ? 'bg-orange-500 text-white' : 'bg-secondary text-muted-foreground hover:bg-secondary/80'}`}
+                                                                >
+                                                                    Variable
+                                                                </button>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => setBudgetExpenses(budgetExpenses.filter(i => i.id !== exp.id))}
+                                                                className="text-muted-foreground hover:text-red-400 p-1 ml-1"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                {/* Dashboard Column */}
+                                <div className="lg:col-span-4 space-y-6">
+                                    <div className="glass p-6 rounded-2xl border border-border shadow-lg sticky top-0">
+                                        <h3 className="font-heading font-semibold text-lg border-b border-border/50 pb-4 mb-4">Resumen de Previsión</h3>
+
+                                        <div className="space-y-4">
+                                            <div>
+                                                <div className="flex justify-between items-end mb-1">
+                                                    <span className="text-sm font-medium text-emerald-500">Ingresos Ajustados</span>
+                                                    <span className="font-bold text-lg">{formatCurrency(securedIncomes)}</span>
+                                                </div>
+                                                <p className="text-xs text-muted-foreground flex justify-between">
+                                                    <span>(+ Potencial: {formatCurrency(potentialIncomes)})</span>
+                                                    <span>Total: {formatCurrency(totalProjectedIncome)}</span>
+                                                </p>
+                                            </div>
+
+                                            <div className="border-t border-border/50 pt-4">
+                                                <div className="flex justify-between items-end mb-1">
+                                                    <span className="text-sm font-medium text-red-500">Gastos Base (Fijos)</span>
+                                                    <span className="font-bold text-lg">{formatCurrency(fixedProjectedExpenses)}</span>
+                                                </div>
+                                                <p className="text-xs text-muted-foreground flex justify-between">
+                                                    <span>(+ Variables: {formatCurrency(variableProjectedExpenses)})</span>
+                                                    <span>Total: {formatCurrency(totalProjectedExpenses)}</span>
+                                                </p>
+                                            </div>
+
+                                            <div className="border-t border-border/50 pt-4 mt-2">
+                                                <p className="text-xs font-semibold uppercase text-muted-foreground mb-2 tracking-wider">Balances</p>
+
+                                                <div className="bg-secondary/30 rounded-xl p-3 mb-2 flex justify-between items-center">
+                                                    <span className="text-sm">Margen Seguro (Ing.Seguro - Gastos)</span>
+                                                    <span className={`font-bold ${(securedIncomes - totalProjectedExpenses) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                                                        {formatCurrency(securedIncomes - totalProjectedExpenses)}
+                                                    </span>
+                                                </div>
+
+                                                <div className="glass bg-card/50 rounded-xl p-3 flex justify-between items-center border border-border/50">
+                                                    <span className="text-sm font-medium">Margen Potencial Total</span>
+                                                    <span className={`font-bold ${(totalProjectedIncome - totalProjectedExpenses) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                                                        {formatCurrency(totalProjectedIncome - totalProjectedExpenses)}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            onClick={handleBudgetSave}
+                                            disabled={loading === 'budget'}
+                                            className="w-full mt-6 bg-foreground text-background hover:bg-foreground/90 font-medium rounded-xl py-3 shadow flex items-center justify-center transition-all"
+                                        >
+                                            {loading === 'budget' ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Guardar Forecast Mensual'}
+                                        </button>
+                                        {(totalProjectedIncome - totalProjectedExpenses) < 0 && (
+                                            <p className="text-xs text-red-400 mt-4 text-center">
+                                                Tu forecast da números rojos. Evaluá aumentar tus ingresos potenciales o recortar gastos variables.
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                        </motion.div>
+                    </div>
+                )}
+
+
                 {/* Transaction Modal */}
                 {isTxFormOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsTxFormOpen(false)} className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
                         <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="bg-card w-full max-w-md max-h-[90dvh] flex flex-col rounded-2xl border border-border shadow-2xl relative z-10">
                             <div className="flex items-center justify-between p-6 border-b border-border/50">
-                                <h2 className="text-xl font-bold font-heading">Nuevo Movimiento</h2>
+                                <h2 className="text-xl font-bold font-heading">Nuevo Movimiento Real</h2>
                                 <button onClick={() => { setIsTxFormOpen(false); setPrefilledDebtId('') }} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
                             </div>
                             <form action={handleTxSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
@@ -576,35 +825,6 @@ export function FinancesClient({ transactions, debts, initialBudget, initialGoal
                                     <button type="button" onClick={() => { setIsDebtFormOpen(false); setEditingDebt(null) }} className="px-5 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-secondary">Cancelar</button>
                                     <button disabled={loading === 'debt'} type="submit" className="bg-red-600 hover:bg-red-500 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-md flex items-center justify-center min-w-[100px]">
                                         {loading === 'debt' ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Guardar'}
-                                    </button>
-                                </div>
-                            </form>
-                        </motion.div>
-                    </div>
-                )}
-
-                {/* Budget Modal */}
-                {isBudgetFormOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsBudgetFormOpen(false)} className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
-                        <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="bg-card w-full max-w-md max-h-[90dvh] flex flex-col rounded-2xl border border-border shadow-2xl relative z-10">
-                            <div className="flex items-center justify-between p-6 border-b border-border/50">
-                                <h2 className="text-xl font-bold font-heading">Presupuesto: {monthYear}</h2>
-                                <button onClick={() => setIsBudgetFormOpen(false)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
-                            </div>
-                            <form action={handleBudgetSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Ingresos Esperados ($)</label>
-                                    <input required type="number" step="0.01" name="expected_income" defaultValue={initialBudget?.expected_income} placeholder="0.00" className="w-full bg-secondary border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500" />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Gastos Esperados ($)</label>
-                                    <input required type="number" step="0.01" name="expected_expenses" defaultValue={initialBudget?.expected_expenses} placeholder="0.00" className="w-full bg-secondary border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-500" />
-                                </div>
-                                <div className="pt-4 mt-6 border-t border-border flex justify-end gap-3 shrink-0">
-                                    <button type="button" onClick={() => setIsBudgetFormOpen(false)} className="px-5 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-secondary">Cancelar</button>
-                                    <button disabled={loading === 'budget'} type="submit" className="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-md flex items-center justify-center min-w-[100px]">
-                                        {loading === 'budget' ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Guardar'}
                                     </button>
                                 </div>
                             </form>

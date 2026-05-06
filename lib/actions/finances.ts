@@ -174,21 +174,25 @@ export async function deleteTransaction(id: string) {
 // ==========================================
 // BUDGETS & GOALS
 // ==========================================
-export async function saveMonthlyBudget(monthYear: string, formData: FormData) {
+export async function saveMonthlyBudget(monthYear: string, incomesJson: string, expensesJson: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
 
-    const expected_income = parseFloat(formData.get('expected_income') as string) || 0
-    const expected_expenses = parseFloat(formData.get('expected_expenses') as string) || 0
+    let incomes = []
+    let expenses = []
+    try {
+        incomes = JSON.parse(incomesJson)
+        expenses = JSON.parse(expensesJson)
+    } catch (e) { }
 
     const { error } = await supabase
         .from('monthly_budgets')
         .upsert({
             user_id: user.id,
             month_year: monthYear,
-            expected_income,
-            expected_expenses
+            incomes_json: incomes,
+            expenses_json: expenses
         }, { onConflict: 'user_id, month_year' })
 
     if (error) throw error
