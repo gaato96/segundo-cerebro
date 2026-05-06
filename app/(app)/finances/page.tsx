@@ -9,5 +9,11 @@ export default async function FinancesPage() {
 
     const data = await getFinances(monthYear)
 
-    return <FinancesClient transactions={data.transactions} debts={data.debts} />
+    return <FinancesClient
+        transactions={data.transactions}
+        debts={data.debts}
+        initialBudget={data.budget}
+        initialGoals={data.goals}
+        monthYear={monthYear}
+    />
 }

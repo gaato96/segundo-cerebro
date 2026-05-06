@@ -31,9 +31,29 @@ export async function getFinances(monthYear: string) {
         .gt('remaining_amount', 0)
         .order('remaining_amount', { ascending: true })
 
-    if (debtsError) throw debtsError
+    const { data: budget, error: budgetError } = await supabase
+        .from('monthly_budgets')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('month_year', monthYear)
+        .maybeSingle()
 
-    return { transactions: transactions || [], debts: debts || [] }
+    const { data: goals, error: goalsError } = await supabase
+        .from('financial_goals')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true })
+
+    if (debtsError) throw debtsError
+    if (budgetError && budgetError.code !== 'PGRST116') throw budgetError
+    if (goalsError) throw goalsError
+
+    return {
+        transactions: transactions || [],
+        debts: debts || [],
+        budget: budget || null,
+        goals: goals || []
+    }
 }
 
 export async function createTransaction(formData: FormData) {
@@ -143,6 +163,88 @@ export async function deleteTransaction(id: string) {
 
     const { error } = await supabase
         .from('finances')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id)
+
+    if (error) throw error
+    revalidatePath('/finances')
+}
+
+// ==========================================
+// BUDGETS & GOALS
+// ==========================================
+export async function saveMonthlyBudget(monthYear: string, formData: FormData) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    const expected_income = parseFloat(formData.get('expected_income') as string) || 0
+    const expected_expenses = parseFloat(formData.get('expected_expenses') as string) || 0
+
+    const { error } = await supabase
+        .from('monthly_budgets')
+        .upsert({
+            user_id: user.id,
+            month_year: monthYear,
+            expected_income,
+            expected_expenses
+        }, { onConflict: 'user_id, month_year' })
+
+    if (error) throw error
+    revalidatePath('/finances')
+}
+
+export async function createFinancialGoal(formData: FormData) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    const title = formData.get('title') as string
+    const target_amount = parseFloat(formData.get('target_amount') as string)
+    const target_date_str = formData.get('target_date') as string
+    const target_date = target_date_str ? target_date_str : null
+    const color_hex = formData.get('color_hex') as string || '#10b981'
+
+    const { error } = await supabase
+        .from('financial_goals')
+        .insert({
+            user_id: user.id,
+            title,
+            target_amount,
+            current_amount: 0,
+            target_date,
+            color_hex
+        })
+
+    if (error) throw error
+    revalidatePath('/finances')
+}
+
+export async function updateFinancialGoal(id: string, formData: FormData) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    const current_amount = parseFloat(formData.get('current_amount') as string)
+
+    const { error } = await supabase
+        .from('financial_goals')
+        .update({ current_amount })
+        .eq('id', id)
+        .eq('user_id', user.id)
+
+    if (error) throw error
+    revalidatePath('/finances')
+}
+
+export async function deleteFinancialGoal(id: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    const { error } = await supabase
+        .from('financial_goals')
         .delete()
         .eq('id', id)
         .eq('user_id', user.id)

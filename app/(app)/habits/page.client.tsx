@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Flame, Target, Trash2, X, PlusCircle, Loader2 } from 'lucide-react'
 import { createHabit, deleteHabit } from '@/lib/actions/habits'
+import { startOfWeek } from 'date-fns'
 
 export function HabitsClient({ habits, logs }: { habits: any[], logs: any[] }) {
     const [isFormOpen, setIsFormOpen] = useState(false)
@@ -13,7 +14,14 @@ export function HabitsClient({ habits, logs }: { habits: any[], logs: any[] }) {
     const todayStr = new Date().toISOString().split('T')[0]
 
     const getCompletionsThisWeek = (habitId: string) => {
-        return logs.filter(log => log.habit_id === habitId).length
+        const now = new Date()
+        const start = startOfWeek(now, { weekStartsOn: 1 })
+
+        return logs.filter(log => {
+            if (log.habit_id !== habitId) return false
+            const logDate = new Date(log.completed_at)
+            return logDate >= start
+        }).length
     }
 
     const isCompletedToday = (habitId: string) => {
