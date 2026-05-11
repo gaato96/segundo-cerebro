@@ -15,6 +15,7 @@ export function TasksClient({ initialTasks }: TaskPageProps) {
     const [isFormOpen, setIsFormOpen] = useState(false)
     const [search, setSearch] = useState('')
     const [filterCategory, setFilterCategory] = useState<string | null>(null)
+    const [filterEnergy, setFilterEnergy] = useState<string | null>(null)
 
     useEffect(() => {
         setTasks(initialTasks)
@@ -23,6 +24,7 @@ export function TasksClient({ initialTasks }: TaskPageProps) {
     const filteredTasks = tasks.filter(task => {
         if (search && !task.title.toLowerCase().includes(search.toLowerCase())) return false
         if (filterCategory && task.category !== filterCategory) return false
+        if (filterEnergy && task.energy_level !== filterEnergy) return false
         return true
     })
 
@@ -96,6 +98,16 @@ export function TasksClient({ initialTasks }: TaskPageProps) {
                         <option value="">Todas las áreas</option>
                         <option value="Work">Trabajo</option>
                         <option value="Personal">Personal</option>
+                    </select>
+                    <select
+                        value={filterEnergy || ''}
+                        onChange={(e) => setFilterEnergy(e.target.value || null)}
+                        className="bg-secondary border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 appearance-none min-w-[160px]"
+                    >
+                        <option value="">Cualquier energía</option>
+                        <option value="Deep Work">Deep Work</option>
+                        <option value="Low Energy">Low Energy</option>
+                        <option value="Phone-only">Phone-only</option>
                     </select>
                 </div>
             </div>

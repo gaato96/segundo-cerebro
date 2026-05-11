@@ -60,3 +60,32 @@ export async function saveJournalEntry(date: string, content: string, mood?: num
 
     revalidatePath('/journal')
 }
+
+export async function appendToJournal(date: string, newContent: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    const { data: existing } = await supabase
+        .from('journal_entries')
+        .select('id, content')
+        .eq('user_id', user.id)
+        .eq('date', date)
+        .single()
+
+    const fullContent = existing && existing.content ? existing.content + '\n\n' + newContent : newContent
+
+    if (existing) {
+        const { error } = await supabase
+            .from('journal_entries')
+            .update({ content: fullContent, updated_at: new Date().toISOString() })
+            .eq('id', existing.id)
+        if (error) throw error
+    } else {
+        const { error } = await supabase
+            .from('journal_entries')
+            .insert({ user_id: user.id, date, content: fullContent })
+        if (error) throw error
+    }
+    revalidatePath('/journal')
+}

@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Check, Trash2, ArrowRight, Loader2, Brain, Calendar, Flag, Zap } from 'lucide-react'
+import { Check, Trash2, ArrowRight, Loader2, Brain, BookOpen } from 'lucide-react'
 import { processMentalNote, deleteMentalNote } from '@/lib/actions/mental_notes'
 import { createTask } from '@/lib/actions/tasks'
+import { appendToJournal } from '@/lib/actions/journal'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -73,6 +74,28 @@ export function InboxList({ initialNotes, userId }: InboxListProps) {
         }
     }
 
+    async function handleConvertToJournal(note: MentalNote) {
+        setProcessingId(note.id)
+        try {
+            const today = new Date()
+            // YYYY-MM-DD
+            const argDate = new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'America/Argentina/Buenos_Aires',
+                year: 'numeric', month: '2-digit', day: '2-digit'
+            }).format(today)
+
+            await appendToJournal(argDate, note.content)
+            await processMentalNote(note.id)
+
+            setNotes(prev => prev.filter(n => n.id !== note.id))
+            router.refresh()
+        } catch (error) {
+            console.error('Failed to append note to journal:', error)
+        } finally {
+            setProcessingId(null)
+        }
+    }
+
     if (notes.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-20 text-center glass rounded-2xl border border-dashed border-border">
@@ -120,6 +143,22 @@ export function InboxList({ initialNotes, userId }: InboxListProps) {
                                         <>
                                             <ArrowRight className="w-4 h-4" />
                                             <span>Tarea</span>
+                                        </>
+                                    )}
+                                </button>
+
+                                <button
+                                    onClick={() => handleConvertToJournal(note)}
+                                    disabled={!!processingId || !!loadingId}
+                                    title="Añadir al Journaling"
+                                    className="p-2.5 rounded-xl bg-orange-500/10 text-orange-500 hover:bg-orange-500 hover:text-white transition-all border border-orange-500/20 flex items-center gap-2 text-sm font-medium"
+                                >
+                                    {processingId === note.id ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <>
+                                            <BookOpen className="w-4 h-4" />
+                                            <span>Journal</span>
                                         </>
                                     )}
                                 </button>

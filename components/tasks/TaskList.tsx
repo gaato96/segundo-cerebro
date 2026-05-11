@@ -129,6 +129,12 @@ export function TaskList({ pendingTasks, completedTasks }: TaskListProps) {
                         {task.category}
                     </span>
 
+                    {task.energy_level && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-secondary text-muted-foreground border border-border flex items-center gap-1">
+                            {task.energy_level === 'Deep Work' ? '⚡' : task.energy_level === 'Low Energy' ? '🔋' : '📱'} {task.energy_level}
+                        </span>
+                    )}
+
                     {task.due_date && (
                         <span className={`text-[10px] flex items-center gap-1 ml-auto ${!isCompleted && new Date(task.due_date) < new Date() && new Date(task.due_date).toDateString() !== new Date().toDateString()
                             ? 'text-red-400 font-medium'
@@ -218,6 +224,11 @@ export function TaskList({ pendingTasks, completedTasks }: TaskListProps) {
                                                 <div className={`w-1.5 h-1.5 rounded-full ${selectedTask.category === 'Work' ? 'bg-orange-500' : 'bg-blue-500'}`} />
                                                 {selectedTask.category}
                                             </span>
+                                            {selectedTask.energy_level && (
+                                                <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-secondary text-muted-foreground border border-border flex items-center gap-1">
+                                                    {selectedTask.energy_level === 'Deep Work' ? '⚡' : selectedTask.energy_level === 'Low Energy' ? '🔋' : '📱'} {selectedTask.energy_level}
+                                                </span>
+                                            )}
                                             {selectedTask.due_date && (
                                                 <span className="text-[10px] flex items-center gap-1 text-muted-foreground">
                                                     <CalendarIcon className="w-3 h-3" />

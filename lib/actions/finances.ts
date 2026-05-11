@@ -193,9 +193,12 @@ export async function saveMonthlyBudget(monthYear: string, incomesJson: string, 
             month_year: monthYear,
             incomes_json: incomes,
             expenses_json: expenses
-        }, { onConflict: 'user_id, month_year' })
+        }, { onConflict: 'user_id,month_year' })
 
-    if (error) throw error
+    if (error) {
+        console.error('Error saving budget:', error);
+        throw error;
+    }
     revalidatePath('/finances')
 }
 
