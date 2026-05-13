@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createTask } from '@/lib/actions/tasks'
-import { X, Loader2, Calendar as CalendarIcon, Flag, Tag, Zap } from 'lucide-react'
+import { X, Loader2, Calendar as CalendarIcon, Flag, Tag, Zap, Bell } from 'lucide-react'
 
 interface TaskFormProps {
     onClose: () => void
@@ -11,6 +11,8 @@ interface TaskFormProps {
 
 export function TaskForm({ onClose }: TaskFormProps) {
     const [loading, setLoading] = useState(false)
+    const [dueDate, setDueDate] = useState('')
+    const [reminderEnabled, setReminderEnabled] = useState(false)
 
     const router = useRouter()
 
@@ -145,9 +147,56 @@ export function TaskForm({ onClose }: TaskFormProps) {
                             id="due_date"
                             name="due_date"
                             type="date"
+                            value={dueDate}
+                            onChange={(e) => {
+                                setDueDate(e.target.value)
+                                if (!e.target.value) setReminderEnabled(false)
+                            }}
                             className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-foreground [color-scheme:dark]"
                         />
                     </div>
+
+                    {/* Reminder Time — only visible when due_date is set */}
+                    {dueDate && (
+                        <div className="space-y-3 p-4 rounded-xl bg-indigo-500/5 border border-indigo-500/20 transition-all">
+                            <div className="flex items-center justify-between">
+                                <label className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                                    <Bell className="w-3.5 h-3.5 text-indigo-400" />
+                                    Recordatorio
+                                </label>
+                                <button
+                                    type="button"
+                                    onClick={() => setReminderEnabled(!reminderEnabled)}
+                                    className={`relative w-10 h-[22px] rounded-full transition-colors duration-200 ${
+                                        reminderEnabled ? 'bg-indigo-600' : 'bg-secondary border border-border'
+                                    }`}
+                                >
+                                    <span
+                                        className={`absolute top-[3px] w-4 h-4 rounded-full transition-all duration-200 ${
+                                            reminderEnabled
+                                                ? 'left-[22px] bg-white'
+                                                : 'left-[3px] bg-muted-foreground'
+                                        }`}
+                                    />
+                                </button>
+                            </div>
+
+                            {reminderEnabled && (
+                                <div className="space-y-2">
+                                    <p className="text-xs text-muted-foreground">
+                                        Recibí una notificación a esta hora el día de la tarea
+                                    </p>
+                                    <input
+                                        id="reminder_time"
+                                        name="reminder_time"
+                                        type="time"
+                                        defaultValue="09:00"
+                                        className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-foreground [color-scheme:dark]"
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* Footer Actions */}
@@ -171,3 +220,4 @@ export function TaskForm({ onClose }: TaskFormProps) {
         </div>
     )
 }
+

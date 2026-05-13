@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Check, Circle, Trash2, Calendar as CalendarIcon, MoreVertical, GripVertical, X } from 'lucide-react'
+import { Check, Circle, Trash2, Calendar as CalendarIcon, MoreVertical, GripVertical, X, Bell } from 'lucide-react'
 import { updateTaskStatus, deleteTask } from '@/lib/actions/tasks'
 import { getPriorityColor, getPriorityLabel, formatDate } from '@/lib/utils'
 import confetti from 'canvas-confetti'
@@ -144,6 +144,13 @@ export function TaskList({ pendingTasks, completedTasks }: TaskListProps) {
                             {formatDate(task.due_date)}
                         </span>
                     )}
+
+                    {task.reminder_time && !isCompleted && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center gap-1">
+                            <Bell className="w-3 h-3" />
+                            {task.reminder_time.substring(0, 5)}
+                        </span>
+                    )}
                 </div>
             </div>
 
@@ -233,6 +240,12 @@ export function TaskList({ pendingTasks, completedTasks }: TaskListProps) {
                                                 <span className="text-[10px] flex items-center gap-1 text-muted-foreground">
                                                     <CalendarIcon className="w-3 h-3" />
                                                     {formatDate(selectedTask.due_date)}
+                                                </span>
+                                            )}
+                                            {selectedTask.reminder_time && (
+                                                <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center gap-1">
+                                                    <Bell className="w-3 h-3" />
+                                                    {selectedTask.reminder_time.substring(0, 5)}
                                                 </span>
                                             )}
                                         </div>

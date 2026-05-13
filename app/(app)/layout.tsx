@@ -1,6 +1,7 @@
 import { Sidebar } from '@/components/layout/Sidebar'
 import { BottomBar } from '@/components/layout/BottomBar'
 import { QuickCaptureButton } from '@/components/shared/QuickCaptureButton'
+import { NotificationProvider } from '@/components/shared/NotificationProvider'
 
 export default function AppLayout({
     children,
@@ -21,6 +22,9 @@ export default function AppLayout({
 
             {/* Mobile Bottom Bar */}
             <BottomBar />
+
+            {/* Task reminder notifications (client-side) */}
+            <NotificationProvider />
         </div>
     )
 }

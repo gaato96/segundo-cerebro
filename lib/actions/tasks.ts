@@ -34,8 +34,11 @@ export async function createTask(formData: FormData) {
     const category = formData.get('category') as string || 'Personal'
     const dueDateStr = formData.get('due_date') as string
     const energy_level = formData.get('energy_level') as string || 'Deep Work'
+    const reminderTimeStr = formData.get('reminder_time') as string
 
     const dueDate = dueDateStr ? new Date(dueDateStr).toISOString() : null
+    // reminder_time comes as "HH:MM" from the time input
+    const reminderTime = reminderTimeStr ? `${reminderTimeStr}:00` : null
 
     const { error } = await supabase
         .from('tasks')
@@ -47,6 +50,8 @@ export async function createTask(formData: FormData) {
             category,
             energy_level,
             due_date: dueDate,
+            reminder_time: reminderTime,
+            reminder_fired: false,
             status: 'Todo'
         })
 
