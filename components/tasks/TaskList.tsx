@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Check, Circle, Trash2, Calendar as CalendarIcon, MoreVertical, GripVertical, X, Bell } from 'lucide-react'
+import { Check, Circle, Trash2, Calendar as CalendarIcon, MoreVertical, GripVertical, X, Bell, CalendarPlus } from 'lucide-react'
 import { updateTaskStatus, deleteTask } from '@/lib/actions/tasks'
 import { getPriorityColor, getPriorityLabel, formatDate } from '@/lib/utils'
 import confetti from 'canvas-confetti'
@@ -15,6 +15,45 @@ interface TaskListProps {
 export function TaskList({ pendingTasks, completedTasks }: TaskListProps) {
     const [loading, setLoading] = useState<string | null>(null)
     const [selectedTask, setSelectedTask] = useState<any | null>(null)
+
+    function getGoogleCalendarUrl(task: any) {
+        const baseUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
+        const title = encodeURIComponent(task.title || '')
+        const details = encodeURIComponent(task.description ? `${task.description}\n\n---\nGenerado desde Segundo Cerebro` : 'Generado desde Segundo Cerebro')
+        
+        let dates = ''
+        if (task.due_date) {
+            // task.due_date is "YYYY-MM-DD"
+            const [y, m, d] = task.due_date.split('-')
+            
+            if (task.reminder_time) {
+                // task.reminder_time is "HH:MM" or "HH:MM:SS"
+                const [hours, minutes] = task.reminder_time.split(':')
+                const startStr = `${y}${m}${d}T${hours}${minutes}00`
+                
+                // Add 30 minutes for the end time
+                const endDate = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), parseInt(hours), parseInt(minutes) + 30)
+                const endY = endDate.getFullYear()
+                const endM = String(endDate.getMonth() + 1).padStart(2, '0')
+                const endD = String(endDate.getDate()).padStart(2, '0')
+                const endH = String(endDate.getHours()).padStart(2, '0')
+                const endMin = String(endDate.getMinutes()).padStart(2, '0')
+                
+                const endStr = `${endY}${endM}${endD}T${endH}${endMin}00`
+                
+                dates = `&dates=${startStr}/${endStr}&ctz=America/Argentina/Buenos_Aires`
+            } else {
+                // All day event
+                const nextDay = new Date(parseInt(y), parseInt(m) - 1, parseInt(d) + 1)
+                const ny = nextDay.getFullYear()
+                const nm = String(nextDay.getMonth() + 1).padStart(2, '0')
+                const nd = String(nextDay.getDate()).padStart(2, '0')
+                dates = `&dates=${y}${m}${d}/${ny}${nm}${nd}`
+            }
+        }
+        
+        return `${baseUrl}&text=${title}${dates}&details=${details}`
+    }
 
     async function handleToggleStatus(taskId: string, currentStatus: string, priority: number) {
         if (loading) return
@@ -258,7 +297,21 @@ export function TaskList({ pendingTasks, completedTasks }: TaskListProps) {
                                 {selectedTask.description ? selectedTask.description : <span className="text-muted-foreground italic">No hay descripción para esta tarea.</span>}
                             </div>
 
-                            <div className="p-4 border-t border-border/50 bg-secondary/10 flex justify-end">
+                            <div className="p-4 border-t border-border/50 bg-secondary/10 flex justify-between items-center flex-wrap gap-3">
+                                {selectedTask.due_date ? (
+                                    <a
+                                        href={getGoogleCalendarUrl(selectedTask)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-2 px-4 py-2 bg-[#4285F4] hover:bg-[#3367D6] text-white rounded-xl text-sm font-medium transition-colors"
+                                    >
+                                        <CalendarPlus className="w-4 h-4" />
+                                        Añadir a Google Calendar
+                                    </a>
+                                ) : (
+                                    <div />
+                                )}
+
                                 <button
                                     onClick={() => handleDelete(selectedTask.id)}
                                     className="flex items-center gap-2 px-4 py-2 text-red-500 hover:bg-red-500/10 rounded-xl text-sm font-medium transition-colors"
