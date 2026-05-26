@@ -5,9 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
     Plus, Wand2, RefreshCw, ShoppingCart,
     ChevronLeft, ChevronRight, X, Loader2,
-    Clock, Tag, ListChecks, Bike, ExternalLink
+    Clock, Tag, ListChecks, Bike, ExternalLink, Sparkles
 } from 'lucide-react'
-import { generateWeeklyMenu, createRecipe, saveMenuState } from '@/lib/actions/meals'
+import { generateWeeklyMenu, createRecipe, saveMenuState, importFrequentRecipes } from '@/lib/actions/meals'
 import { format, addDays } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
@@ -249,7 +249,41 @@ export default function MealsPageClient({ initialRecipes, initialMenu, startDate
             </AnimatePresence>
 
             {/* Empty State */}
-            {!menu && !isLoading && (
+            {recipes.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center space-y-6 glass rounded-3xl border-dashed border-2 border-white/10">
+                    <div className="p-4 rounded-full bg-indigo-600/10 text-indigo-400 animate-pulse">
+                        <Sparkles className="w-8 h-8" />
+                    </div>
+                    <div className="space-y-2 max-w-md px-4">
+                        <h3 className="text-2xl font-heading font-bold">Comienza cargando tus comidas</h3>
+                        <p className="text-muted-foreground text-sm">
+                            Necesitas recetas guardadas para que el planificador con IA pueda armar tu menú semanal. 
+                            Puedes cargar las 24 comidas que preparás con más frecuencia al instante.
+                        </p>
+                    </div>
+                    <button
+                        onClick={async () => {
+                            setIsLoading(true)
+                            try {
+                                const res = await importFrequentRecipes()
+                                if (res.success) {
+                                    alert(`¡Éxito! Se importaron ${res.count} recetas frecuentes.`);
+                                    window.location.reload()
+                                }
+                            } catch (err: any) {
+                                alert('Error al cargar recetas: ' + err.message)
+                            } finally {
+                                setIsLoading(false)
+                            }
+                        }}
+                        disabled={isLoading}
+                        className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition-all font-semibold shadow-lg shadow-indigo-600/20 flex items-center gap-2"
+                    >
+                        {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                        Cargar 24 Recetas Frecuentes
+                    </button>
+                </div>
+            ) : !menu && !isLoading && (
                 <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 glass rounded-3xl border-dashed border-2 border-white/10">
                     <div className="p-4 rounded-full bg-indigo-600/10 text-indigo-400">
                         <Wand2 className="w-8 h-8" />

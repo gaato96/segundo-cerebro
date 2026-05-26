@@ -4,11 +4,13 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     Heart, Plus, Trash2, X, Loader2, ExternalLink, Star,
-    CheckCircle2, Circle, List, Pencil, MoreHorizontal, FolderPlus
+    CheckCircle2, Circle, List, Pencil, MoreHorizontal, FolderPlus,
+    ChevronDown, ChevronUp
 } from 'lucide-react'
 import {
     createWish, deleteWish, toggleWishPurchased,
-    createWishlistList, updateWishlistList, deleteWishlistList
+    createWishlistList, updateWishlistList, deleteWishlistList,
+    deletePurchasedWishes
 } from '@/lib/actions/wishlist'
 
 type WishItem = {
@@ -40,6 +42,7 @@ export function WishlistClient({ items, lists }: { items: WishItem[]; lists: Wis
     const [editingList, setEditingList] = useState<WishList | null>(null)
     const [listMenuOpen, setListMenuOpen] = useState<string | null>(null)
     const [loading, setLoading] = useState<string | null>(null)
+    const [isArchiveExpanded, setIsArchiveExpanded] = useState(false)
 
     // Filter items by selected list
     const filteredItems = activeList === null
@@ -238,7 +241,7 @@ export function WishlistClient({ items, lists }: { items: WishItem[]; lists: Wis
 
             {/* Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredItems.length === 0 ? (
+                {pendingItems.length === 0 ? (
                     <div className="col-span-full glass rounded-2xl p-12 text-center border border-dashed border-border flex flex-col items-center">
                         <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center mb-4">
                             <Heart className="w-8 h-8 text-rose-500" />
@@ -254,7 +257,7 @@ export function WishlistClient({ items, lists }: { items: WishItem[]; lists: Wis
                     </div>
                 ) : (
                     <AnimatePresence mode="popLayout">
-                        {filteredItems.map(item => {
+                        {pendingItems.map(item => {
                             const itemList = lists.find(l => l.id === item.list_id)
                             return (
                                 <motion.div
@@ -266,19 +269,17 @@ export function WishlistClient({ items, lists }: { items: WishItem[]; lists: Wis
                                     className="glass p-5 rounded-2xl border border-border/50 group relative hover:bg-secondary/20 transition-colors"
                                 >
                                     <div className="flex items-start justify-between">
-                                        <h3 className={`font-semibold text-lg pr-8 ${item.purchased ? 'line-through text-muted-foreground' : ''}`}>
+                                        <h3 className="font-semibold text-lg pr-8">
                                             {item.name}
                                         </h3>
                                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button
                                                 onClick={() => handleTogglePurchased(item.id, item.purchased)}
                                                 disabled={loading === item.id}
-                                                className={`p-1.5 transition-colors rounded-lg hover:bg-secondary ${item.purchased ? 'text-emerald-500' : 'text-muted-foreground hover:text-rose-400'}`}
+                                                className="p-1.5 transition-colors rounded-lg hover:bg-secondary text-muted-foreground hover:text-rose-400"
                                             >
                                                 {loading === item.id ? (
                                                     <Loader2 className="w-4 h-4 animate-spin" />
-                                                ) : item.purchased ? (
-                                                    <CheckCircle2 className="w-5 h-5" />
                                                 ) : (
                                                     <Circle className="w-5 h-5" />
                                                 )}
@@ -312,7 +313,7 @@ export function WishlistClient({ items, lists }: { items: WishItem[]; lists: Wis
                                         <div className="flex items-center gap-0.5">
                                             {desireStars(item.desire_level)}
                                         </div>
-                                        <span className={`font-bold text-lg ${item.purchased ? 'text-muted-foreground' : 'text-rose-400'}`}>
+                                        <span className="font-bold text-lg text-rose-400">
                                             {item.price > 0 ? formatCurrency(item.price) : 'Sin precio'}
                                         </span>
                                     </div>
@@ -322,6 +323,127 @@ export function WishlistClient({ items, lists }: { items: WishItem[]; lists: Wis
                     </AnimatePresence>
                 )}
             </div>
+
+            {/* Archivados / Cumplidos section */}
+            {purchasedItems.length > 0 && (
+                <div className="pt-6 border-t border-border/50 space-y-4">
+                    <div className="flex items-center justify-between">
+                        <button
+                            onClick={() => setIsArchiveExpanded(!isArchiveExpanded)}
+                            className="flex items-center gap-2 text-muted-foreground hover:text-foreground font-medium text-sm transition-colors"
+                        >
+                            {isArchiveExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                            <span>Artículos Cumplidos ({purchasedItems.length})</span>
+                            <span className="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                                {formatCurrency(purchasedCost)} invertidos
+                            </span>
+                        </button>
+                        {isArchiveExpanded && (
+                            <button
+                                onClick={async () => {
+                                    if (!confirm('¿Estás seguro de que deseas eliminar permanentemente todos los elementos comprados?')) return
+                                    setLoading('clear-archive')
+                                    try {
+                                        await deletePurchasedWishes()
+                                    } catch {
+                                        alert('Error al vaciar el archivo')
+                                    } finally {
+                                        setLoading(null)
+                                    }
+                                }}
+                                disabled={loading === 'clear-archive'}
+                                className="text-xs text-red-400 hover:text-red-300 font-medium transition-colors flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-red-500/10"
+                            >
+                                {loading === 'clear-archive' ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                )}
+                                Vaciar Archivados
+                            </button>
+                        )}
+                    </div>
+
+                    <AnimatePresence>
+                        {isArchiveExpanded && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="overflow-hidden"
+                            >
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2 pb-6">
+                                    {purchasedItems.map(item => {
+                                        const itemList = lists.find(l => l.id === item.list_id)
+                                        return (
+                                            <motion.div
+                                                key={item.id}
+                                                layout
+                                                initial={{ opacity: 0, scale: 0.95 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                exit={{ opacity: 0, scale: 0.95 }}
+                                                className="glass p-5 rounded-2xl border border-border/30 bg-emerald-500/[0.02] group relative hover:bg-secondary/10 transition-colors"
+                                            >
+                                                <div className="flex items-start justify-between">
+                                                    <h3 className="font-semibold text-lg pr-8 line-through text-muted-foreground">
+                                                        {item.name}
+                                                    </h3>
+                                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <button
+                                                            onClick={() => handleTogglePurchased(item.id, item.purchased)}
+                                                            disabled={loading === item.id}
+                                                            className="p-1.5 transition-colors rounded-lg hover:bg-secondary text-emerald-500 hover:text-rose-400"
+                                                            title="Restaurar a pendientes"
+                                                        >
+                                                            {loading === item.id ? (
+                                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                            ) : (
+                                                                <CheckCircle2 className="w-5 h-5" />
+                                                            )}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDelete(item.id)}
+                                                            className="p-1.5 text-muted-foreground hover:text-red-400 rounded-md hover:bg-red-500/10 transition-all"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                                    <span className="text-xs bg-secondary/50 px-2 py-0.5 rounded-full text-muted-foreground/80 border border-border/50">
+                                                        {item.category}
+                                                    </span>
+                                                    {itemList && activeList === null && (
+                                                        <span className="text-xs bg-rose-500/5 text-rose-400/80 px-2 py-0.5 rounded-full border border-rose-500/10">
+                                                            {itemList.icon} {itemList.name}
+                                                        </span>
+                                                    )}
+                                                    {item.url && (
+                                                        <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-400/80 hover:text-indigo-300 flex items-center gap-1">
+                                                            <ExternalLink className="w-3 h-3" /> Link
+                                                        </a>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/30">
+                                                    <div className="flex items-center gap-0.5">
+                                                        {desireStars(item.desire_level)}
+                                                    </div>
+                                                    <span className="font-bold text-lg text-muted-foreground">
+                                                        {item.price > 0 ? formatCurrency(item.price) : 'Sin precio'}
+                                                    </span>
+                                                </div>
+                                            </motion.div>
+                                        )
+                                    })}
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+            )}
+
 
             {/* Click-away to close list menus */}
             {listMenuOpen && (

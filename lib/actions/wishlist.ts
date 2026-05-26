@@ -178,3 +178,18 @@ export async function deleteWish(id: string) {
     if (error) throw error
     revalidatePath('/wishlist')
 }
+
+export async function deletePurchasedWishes() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    const { error } = await supabase
+        .from('wishlist')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('purchased', true)
+
+    if (error) throw error
+    revalidatePath('/wishlist')
+}

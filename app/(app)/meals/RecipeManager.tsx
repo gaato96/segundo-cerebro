@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Trash2, AlertTriangle, Loader2 } from 'lucide-react'
-import { deleteRecipe } from '@/lib/actions/meals'
+import { Trash2, AlertTriangle, Loader2, Sparkles } from 'lucide-react'
+import { deleteRecipe, importFrequentRecipes } from '@/lib/actions/meals'
 
 interface Recipe {
     id: string
@@ -15,6 +15,22 @@ interface Recipe {
 
 export function RecipeManager({ recipes, onClose }: { recipes: Recipe[], onClose: () => void }) {
     const [isDeleting, setIsDeleting] = useState<string | null>(null)
+    const [isImporting, setIsImporting] = useState(false)
+
+    async function handleImportPresets() {
+        setIsImporting(true)
+        try {
+            const result = await importFrequentRecipes()
+            if (result.success) {
+                alert(`¡Éxito! Se importaron ${result.count} nuevas recetas frecuentes. La página se actualizará.`);
+                window.location.reload()
+            }
+        } catch (error: any) {
+            alert('Error al importar: ' + error.message)
+        } finally {
+            setIsImporting(false)
+        }
+    }
 
     async function handleDelete(recipeId: string) {
         if (!confirm('¿Estás seguro de que deseas eliminar esta receta? Si está en algún menú actual, este podría no mostrarse correctamente.')) return
@@ -25,7 +41,8 @@ export function RecipeManager({ recipes, onClose }: { recipes: Recipe[], onClose
             if (result.error) {
                 alert('Error al eliminar: ' + result.error)
             } else {
-                // The page will revalidate and update automatically via revalidatePath
+                // Forzamos recarga para actualizar el estado local del cliente
+                window.location.reload()
             }
         } catch (error: any) {
             alert('Error: ' + error.message)
@@ -37,27 +54,47 @@ export function RecipeManager({ recipes, onClose }: { recipes: Recipe[], onClose
     return (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
             <div className="bg-[#1a1b26] border border-white/10 w-full max-w-2xl max-h-[80vh] flex flex-col rounded-3xl relative overflow-hidden">
-                <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
+                <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5 flex-wrap gap-4">
                     <h2 className="text-2xl font-heading font-bold flex items-center gap-2">
                         Mis Recetas
                         <span className="text-xs font-mono font-normal bg-indigo-500/20 text-indigo-400 px-2 py-1 rounded-full">
                             {recipes.length} guardadas
                         </span>
                     </h2>
-                    <button
-                        onClick={onClose}
-                        className="px-4 py-2 hover:bg-white/10 rounded-xl transition-colors text-sm font-medium"
-                    >
-                        Cerrar
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleImportPresets}
+                            disabled={isImporting}
+                            className="px-4 py-2 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 border border-indigo-500/30 rounded-xl transition-colors text-sm font-medium disabled:opacity-50 flex items-center gap-1.5"
+                        >
+                            {isImporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                            Cargar Frecuentes
+                        </button>
+                        <button
+                            onClick={onClose}
+                            className="px-4 py-2 hover:bg-white/10 rounded-xl transition-colors text-sm font-medium"
+                        >
+                            Cerrar
+                        </button>
+                    </div>
                 </div>
 
                 <div className="overflow-y-auto p-4 space-y-3 flex-1">
                     {recipes.length === 0 ? (
-                        <div className="text-center py-10 text-muted-foreground flex flex-col items-center">
-                            <AlertTriangle className="w-10 h-10 mb-3 opacity-50" />
-                            <p>No tienes recetas guardadas.</p>
-                            <p className="text-sm opacity-70">Añade algunas desde el formulario para poder generar menús.</p>
+                        <div className="text-center py-12 text-muted-foreground flex flex-col items-center gap-4">
+                            <div className="flex flex-col items-center">
+                                <AlertTriangle className="w-10 h-10 mb-3 opacity-50" />
+                                <p>No tienes recetas guardadas.</p>
+                                <p className="text-sm opacity-70">Añade algunas desde el formulario o importa las recetas frecuentes.</p>
+                            </div>
+                            <button
+                                onClick={handleImportPresets}
+                                disabled={isImporting}
+                                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition-colors text-sm font-semibold disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-indigo-600/20"
+                            >
+                                {isImporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                                Cargar 24 Recetas Frecuentes
+                            </button>
                         </div>
                     ) : (
                         recipes.map((recipe) => (
@@ -89,3 +126,4 @@ export function RecipeManager({ recipes, onClose }: { recipes: Recipe[], onClose
         </div>
     )
 }
+
