@@ -158,6 +158,15 @@ export async function getAIMediaRecommendations(category: 'cine' | 'books_games'
 
     if (error) throw error
 
+    // Also fetch ALL items (any status) so we can tell the AI to NOT recommend them
+    const { data: allItems } = await supabase
+        .from('media_backlog')
+        .select('title, status')
+        .eq('user_id', user.id)
+        .in('type', typesToFetch)
+
+    const excludedTitles = (allItems || []).map(i => `"${i.title}"` ).join(', ')
+
     const historySummary = (history || [])
         .map(h => {
             const displayType = h.type === 'Movie' ? 'Película' : 
@@ -219,11 +228,15 @@ Devuelve ÚNICAMENTE un objeto JSON con este formato exacto, sin bloques markdow
 
 Intenta que las recomendaciones sean variadas y de alta calidad.`
 
+    const exclusionBlock = excludedTitles
+        ? `\nIMPORTANTE — TÍTULOS PROHIBIDOS (ya están en mi lista, NO los recomiendes bajo ninguna circunstancia):\n${excludedTitles}\n`
+        : ''
+
     const userPrompt = historySummary.length > 0 
-        ? `Aquí está mi historial de elementos terminados con mis calificaciones:\n${historySummary}\n\nPor favor, recomiéndame 4 títulos nuevos en base a esto.`
+        ? `Aquí está mi historial de elementos terminados con mis calificaciones:\n${historySummary}${exclusionBlock}\nPor favor, recomiéndame 4 títulos NUEVOS y DIFERENTES que no estén en la lista prohibida de arriba.`
         : isCine
-            ? `Aún no he calificado películas o series en este sistema. Por favor, recomiéndame 4 películas o series excelentes y populares de géneros variados (drama, ciencia ficción, thriller, comedia) para empezar a llenar mi lista.`
-            : `Aún no he calificado libros o videojuegos en este sistema. Por favor, recomiéndame 4 libros o juegos excelentes y aclamados de géneros variados para empezar a llenar mi lista.`
+            ? `Aún no he calificado películas o series en este sistema.${exclusionBlock}\nPor favor, recomiéndame 4 películas o series excelentes y populares de géneros variados (drama, ciencia ficción, thriller, comedia) que NO estén en la lista prohibida de arriba.`
+            : `Aún no he calificado libros o videojuegos en este sistema.${exclusionBlock}\nPor favor, recomiéndame 4 libros o juegos excelentes y aclamados de géneros variados que NO estén en la lista prohibida de arriba.`
 
     const geminiKey = process.env.GEMINI_API_KEY
     const groqKey = process.env.GROQ_API_KEY
