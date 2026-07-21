@@ -5,14 +5,11 @@ import { revalidatePath } from 'next/cache'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import Groq from 'groq-sdk'
 
-// Interface representing the quiz response
+// Interface — free-form text for maximum personalization
 export interface ReorganizeInput {
-    sleepWake: string // "07:00 - 23:00" or similar
-    occupation: string // "Trabajo", "Estudio", "Mixto"
-    energy: string // "Alta", "Media", "Baja"
-    painPoints: string[] // "Falta de rutina", "Falta de motivación", "Exceso de tareas", "Malos hábitos"
-    focusAreas: string[] // "Salud", "Trabajo", "Desarrollo Personal", "Estudio"
-    customHabitGoals: string
+    aboutMe: string           // Who I am, my real schedule, work hours, lifestyle
+    problemsAndGoals: string  // What's failing, what I want to achieve
+    extraContext?: string     // Optional: anything else
 }
 
 // Server action to query AI and get the reorganization plan
@@ -24,35 +21,37 @@ export async function generateLifePlan(input: ReorganizeInput) {
     const geminiKey = process.env.GEMINI_API_KEY
     const groqKey = process.env.GROQ_API_KEY
 
-    const systemPrompt = `Eres un coach de productividad avanzado y psicólogo del comportamiento. Tu objetivo es estructurar un plan de reorganización de vida personalizado para el usuario basado en su situación actual.
-Debes devolver ÚNICAMENTE un objeto JSON estructurado exactamente con el siguiente formato, sin bloques markdown de código (como \`\`\`json):
+    const systemPrompt = `Eres un coach de productividad avanzado. Tu mision es leer la situacion real del usuario en sus propias palabras y crear un plan 100% adaptado a SU realidad.
 
+IMPORTANTE: Respeta EXACTAMENTE los horarios que menciona. Si trabaja de 5am a 12am, NO pongas actividades en ese bloque. Si se despierta a las 14:00, la rutina empieza ahi. NUNCA uses horarios genericos.
+
+Devuelve UNICAMENTE un JSON valido sin bloques markdown:
 {
   "routine": [
-    { "time": "HH:MM - HH:MM", "activity": "Breve descripción de la actividad", "category": "Salud | Trabajo | Personal | Estudio" }
+    { "time": "HH:MM - HH:MM", "activity": "descripcion", "category": "Salud | Trabajo | Personal | Estudio" }
   ],
   "habits": [
-    { "title": "Nombre del hábito corto y accionable", "frequency": "daily", "goal_count": 1, "color_hex": "#código_color_hexadecimal_armonioso" }
+    { "title": "nombre corto", "frequency": "daily", "goal_count": 1, "color_hex": "#hexcolor" }
   ],
   "tasks": [
-    { "title": "Título de la tarea inicial clave", "description": "Explicación breve de cómo realizarla", "priority": 1, "category": "Work | Personal" }
+    { "title": "titulo", "description": "como hacerla", "priority": 1, "category": "Work" }
   ]
 }
 
-Pautas para la generación:
-1. Rutina: Crea entre 4 y 7 bloques horarios realistas que cubran su día, adaptándolos a su horario de dormir/despertar (${input.sleepWake}) y su ocupación (${input.occupation}).
-2. Hábitos: Recomienda de 2 a 4 hábitos cruciales alineados con sus áreas de enfoque (${input.focusAreas.join(', ')}). Usa colores hexadecimales vibrantes pero armoniosos (ej. #6366f1, #10b981, #f59e0b, #ec4899).
-3. Tareas: Recomienda de 2 a 4 tareas iniciales accionables de prioridad alta (1) o media (2) para romper la inercia de la desorganización.`
+Reglas:
+- routine: 5-8 bloques que cubran el dia REAL del usuario
+- habits: 2-5 habitos, colores hex vibrantes (ej: #6366f1, #10b981, #f59e0b, #ec4899)
+- tasks: 2-4 tareas, priority=1 o 2 (numeros), category EXACTAMENTE "Work" o "Personal"`
 
-    const userPrompt = `Respuestas del usuario al cuestionario:
-- Horario de sueño/despertar: ${input.sleepWake}
-- Ocupación: ${input.occupation}
-- Nivel de energía promedio: ${input.energy}
-- Puntos de dolor / problemas: ${input.painPoints.join(', ')}
-- Áreas de interés/enfoque: ${input.focusAreas.join(', ')}
-- Comentarios sobre hábitos/metas deseadas: ${input.customHabitGoals || 'Ninguno'}
+    const userPrompt = `=== SOBRE MI / MI DIA A DIA ===
+${input.aboutMe}
 
-Genera el plan de reorganización en base a esto.`
+=== PROBLEMAS Y OBJETIVOS ===
+${input.problemsAndGoals}
+
+${input.extraContext ? '=== CONTEXTO ADICIONAL ===\n' + input.extraContext : ''}
+
+Genera un plan completamente personalizado basado en lo que escribi arriba.`
 
     let resultText = ''
 
@@ -146,20 +145,20 @@ export async function applyLifeReorganization(
 
         if (habitsError) {
             console.error('Error seeding habits:', habitsError)
-            return { error: 'Error al crear los hábitos seleccionados.' }
+            return { error: 'Error al crear los habitos seleccionados: ' + habitsError.message }
         }
     }
 
-    // 3. Insert selected tasks
+    // 3. Insert selected tasks — only valid schema columns (no energy_level column exists)
     if (selectedTasks.length > 0) {
+        const validCats = ['Work', 'Personal']
         const tasksToInsert = selectedTasks.map(t => ({
             user_id: user.id,
             title: t.title,
             description: t.description || '',
-            priority: t.priority || 2,
-            category: t.category || 'Personal',
-            status: 'Todo',
-            energy_level: 'Deep Work'
+            priority: [1, 2, 3].includes(Number(t.priority)) ? Number(t.priority) : 2,
+            category: validCats.includes(t.category) ? t.category : 'Personal',
+            status: 'Todo'
         }))
 
         const { error: tasksError } = await supabase
