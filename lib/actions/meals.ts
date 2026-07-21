@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import Groq from 'groq-sdk'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
 // --- RECIPES CRUD ---
 
@@ -669,3 +670,162 @@ export async function importFrequentRecipes() {
     revalidatePath('/meals')
     return { success: true, count: toInsert.length }
 }
+
+export async function updateSingleMeal(
+    startDate: string,
+    day: string,
+    type: 'lunch' | 'dinner',
+    recipeId: string,
+    recipeName: string
+) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    // Get current menu state
+    const currentMenu = await getWeeklyMenu(startDate)
+    let menuData: any = {}
+    let shoppingList: any[] = []
+
+    if (currentMenu) {
+        menuData = { ...currentMenu.menu_data }
+        shoppingList = [...currentMenu.shopping_list]
+    }
+
+    // Initialize day if it doesn't exist
+    if (!menuData[day]) {
+        menuData[day] = {
+            lunch: { recipe_id: '', name: 'Sin asignar' },
+            dinner: { recipe_id: '', name: 'Sin asignar' }
+        }
+    }
+
+    // Set delivery or custom or specific recipe
+    if (recipeId === 'delivery') {
+        menuData[day] = {
+            lunch: { recipe_id: 'delivery', name: '🛵 Delivery / Pedir Comida' },
+            dinner: { recipe_id: 'delivery', name: '🛵 Delivery / Pedir Comida' }
+        }
+    } else {
+        menuData[day][type] = {
+            recipe_id: recipeId,
+            name: recipeName
+        }
+    }
+
+    const { error } = await supabase
+        .from('weekly_menus')
+        .upsert({
+            user_id: user.id,
+            start_date: startDate,
+            menu_data: menuData,
+            shopping_list: shoppingList,
+            updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id, start_date' })
+
+    if (error) {
+        console.error('Error updating single meal:', error)
+        return { error: error.message }
+    }
+
+    revalidatePath('/meals')
+    return { success: true }
+}
+
+// AI Recipe Recommender Action using Gemini
+export async function getRecipeRecommendations() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    // Fetch existing recipes
+    const { data: recipes, error } = await supabase
+        .from('recipes')
+        .select('name, complexity, protein_type, carb_type')
+        .eq('user_id', user.id)
+
+    if (error) throw error
+
+    const recipesSummary = (recipes || [])
+        .map(r => `- ${r.name} (${r.complexity}, Pro: ${r.protein_type || 'N/A'}, Carbo: ${r.carb_type || 'N/A'})`)
+        .join('\n')
+
+    const systemPrompt = `Eres un chef profesional y asesor gastronómico. Tu tarea es analizar las recetas actuales del usuario y proponer exactamente 3 recetas adicionales nuevas y creativas que complementarían su menú.
+Debes devolver ÚNICAMENTE un objeto JSON estructurado exactamente con el siguiente formato, sin bloques markdown de código (como \`\`\`json):
+
+{
+  "recommendations": [
+    {
+      "name": "Nombre de la receta recomendado",
+      "description": "Una breve descripción tentadora de 2 frases",
+      "complexity": "Fast | Medium | Complex",
+      "protein_type": "Pollo | Carne vacuna | Cerdo | Pescado | Legumbres | etc.",
+      "carb_type": "Fideos | Arroz | Papas | Masa | Ensalada | etc. (puedes listar varios separados por coma)",
+      "ingredients": [
+        { "item": "Ingrediente", "amount": "100", "unit": "g | u | cda | ml | al gusto" }
+      ],
+      "steps": "Instrucciones paso a paso separadas por saltos de línea (\\n)",
+      "tags": ["Tag1", "Tag2"]
+    }
+  ]
+}
+
+Asegúrate de que las recetas propuestas sean diferentes a las que ya tiene y fáciles de preparar.`
+
+    const userPrompt = recipesSummary.length > 0
+        ? `Aquí están mis recetas guardadas actualmente:\n${recipesSummary}\n\nRecomiéndame 3 recetas nuevas basadas en esto.`
+        : `Aún no he cargado recetas. Recomiéndame 3 recetas caseras populares y deliciosas para empezar mi catálogo.`
+
+    const geminiKey = process.env.GEMINI_API_KEY
+    const groqKey = process.env.GROQ_API_KEY
+
+    let resultText = ''
+
+    if (geminiKey) {
+        try {
+            const genAI = new GoogleGenerativeAI(geminiKey)
+            const model = genAI.getGenerativeModel({
+                model: 'gemini-1.5-flash',
+                generationConfig: { responseMimeType: 'application/json' }
+            })
+            const chatResult = await model.generateContent([systemPrompt, userPrompt])
+            resultText = chatResult.response.text()
+        } catch (e) {
+            console.error('Error in Gemini recipe recommendations:', e)
+        }
+    }
+
+    if (!resultText && groqKey) {
+        try {
+            const groq = new Groq({ apiKey: groqKey })
+            const chatCompletion = await groq.chat.completions.create({
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userPrompt }
+                ],
+                model: 'llama-3.3-70b-versatile',
+                response_format: { type: 'json_object' }
+            })
+            resultText = chatCompletion.choices[0]?.message?.content || ''
+        } catch (e) {
+            console.error('Error in Groq recipe recommendations:', e)
+        }
+    }
+
+    if (!resultText) {
+        return { error: 'No se pudo generar recomendaciones de recetas por falta de API Key.' }
+    }
+
+    try {
+        let cleaned = resultText.trim()
+        if (cleaned.startsWith('```')) {
+            cleaned = cleaned.replace(/^```json\s*/, '').replace(/```$/, '').trim()
+        }
+        const data = JSON.parse(cleaned)
+        return { data }
+    } catch (err: any) {
+        console.error('Failed parsing recipe recommendations JSON:', resultText)
+        return { error: 'Error parseando recomendaciones de recetas: ' + err.message }
+    }
+}
+

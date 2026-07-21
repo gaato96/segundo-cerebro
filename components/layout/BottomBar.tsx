@@ -5,12 +5,13 @@ import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
     LayoutDashboard, CheckSquare, Flame, DollarSign,
-    Baby, Tv, Target, BookOpen, Heart, Utensils, Inbox
+    Baby, Tv, Target, BookOpen, Heart, Utensils, Inbox, Sparkles
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const bottomNavItems = [
     { href: '/', icon: LayoutDashboard, label: 'Inicio' },
+    { href: '/reorganize', icon: Sparkles, label: 'Orden' },
     { href: '/inbox', icon: Inbox, label: 'Inbox' },
     { href: '/tasks', icon: CheckSquare, label: 'Tareas' },
     { href: '/habits', icon: Flame, label: 'Hábitos' },

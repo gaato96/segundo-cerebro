@@ -2,6 +2,8 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { GoogleGenerativeAI } from '@google/generative-ai'
+import Groq from 'groq-sdk'
 
 export async function getMediaBacklog() {
     const supabase = await createClient()
@@ -34,10 +36,39 @@ export async function createMediaItem(formData: FormData) {
             title,
             type,
             status,
-            // Optional defaults
-            progress: '',
+            progress: type === 'Series' ? 'S1 Ep 1' : '',
             rating: null,
             notes: ''
+        })
+
+    if (error) throw error
+    revalidatePath('/media')
+}
+
+export async function createDetailedMediaItem(item: {
+    title: string
+    type: 'Movie' | 'Series' | 'Book' | 'Game'
+    status: 'Backlog' | 'Active' | 'Finished'
+    cover_url?: string
+    author_or_studio?: string
+    notes?: string
+}) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    const { error } = await supabase
+        .from('media_backlog')
+        .insert({
+            user_id: user.id,
+            title: item.title,
+            type: item.type,
+            status: item.status,
+            cover_url: item.cover_url || null,
+            author_or_studio: item.author_or_studio || null,
+            notes: item.notes || '',
+            progress: item.type === 'Series' ? 'S1 Ep 1' : '',
+            rating: null
         })
 
     if (error) throw error
@@ -74,6 +105,21 @@ export async function updateMediaProgress(id: string, progress: string) {
     revalidatePath('/media')
 }
 
+export async function updateMediaRating(id: string, rating: number) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    const { error } = await supabase
+        .from('media_backlog')
+        .update({ rating })
+        .eq('id', id)
+        .eq('user_id', user.id)
+
+    if (error) throw error
+    revalidatePath('/media')
+}
+
 export async function deleteMediaItem(id: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -87,4 +133,97 @@ export async function deleteMediaItem(id: string) {
 
     if (error) throw error
     revalidatePath('/media')
+}
+
+// AI recommendations for media using Gemini (or Groq fallback)
+export async function getAIMediaRecommendations() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    // Get user's finished series/movies with their ratings
+    const { data: history, error } = await supabase
+        .from('media_backlog')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'Finished')
+        .in('type', ['Movie', 'Series'])
+        .order('rating', { ascending: false })
+
+    if (error) throw error
+
+    const historySummary = (history || [])
+        .map(h => `${h.type === 'Movie' ? 'Película' : 'Serie'}: "${h.title}" (Calificación: ${h.rating}/10)`)
+        .join('\n')
+
+    const systemPrompt = `Eres un experto crítico de cine y series. Analiza el historial de visualización y calificaciones del usuario y recomiéndale 4 títulos específicos (películas o series) en formato JSON.
+Debes devolver ÚNICAMENTE un objeto JSON estructurado exactamente con el siguiente formato, sin bloques markdown de código (como \`\`\`json):
+
+{
+  "recommendations": [
+    {
+      "title": "Título sugerido",
+      "type": "Movie | Series",
+      "reason": "Explicación breve de 2 frases de por qué se recomienda (ej. 'Como te gustó X, disfrutarás de esta serie por su narrativa...')"
+    }
+  ]
+}
+
+Intenta que las recomendaciones sean variadas, lógicas en base a sus gustos y de alta calidad.`
+
+    const userPrompt = historySummary.length > 0 
+        ? `Aquí está mi historial de series y películas terminadas con mis calificaciones:\n${historySummary}\n\nPor favor, recomiéndame 4 películas o series nuevas en base a esto.`
+        : `Aún no he calificado películas o series en este sistema. Por favor, recomiéndame 4 películas o series excelentes y populares de géneros variados (drama, ciencia ficción, thriller, comedia) para empezar a llenar mi lista.`
+
+    const geminiKey = process.env.GEMINI_API_KEY
+    const groqKey = process.env.GROQ_API_KEY
+
+    let resultText = ''
+
+    if (geminiKey) {
+        try {
+            const genAI = new GoogleGenerativeAI(geminiKey)
+            const model = genAI.getGenerativeModel({
+                model: 'gemini-1.5-flash',
+                generationConfig: { responseMimeType: 'application/json' }
+            })
+            const chatResult = await model.generateContent([systemPrompt, userPrompt])
+            resultText = chatResult.response.text()
+        } catch (e) {
+            console.error('Error in Gemini recommendation:', e)
+        }
+    }
+
+    if (!resultText && groqKey) {
+        try {
+            const groq = new Groq({ apiKey: groqKey })
+            const chatCompletion = await groq.chat.completions.create({
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userPrompt }
+                ],
+                model: 'llama-3.3-70b-versatile',
+                response_format: { type: 'json_object' }
+            })
+            resultText = chatCompletion.choices[0]?.message?.content || ''
+        } catch (e) {
+            console.error('Error in Groq recommendation:', e)
+        }
+    }
+
+    if (!resultText) {
+        return { error: 'No se pudo generar recomendaciones por falta de API Key.' }
+    }
+
+    try {
+        let cleaned = resultText.trim()
+        if (cleaned.startsWith('```')) {
+            cleaned = cleaned.replace(/^```json\s*/, '').replace(/```$/, '').trim()
+        }
+        const data = JSON.parse(cleaned)
+        return { data }
+    } catch (err: any) {
+        console.error('Failed parsing recommendations JSON:', resultText)
+        return { error: 'Error parseando recomendaciones: ' + err.message }
+    }
 }

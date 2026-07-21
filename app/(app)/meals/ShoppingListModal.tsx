@@ -1,16 +1,36 @@
 'use client'
 
 import { useState } from 'react'
-import { CheckCircle2, Circle, X } from 'lucide-react'
+import { CheckCircle2, Circle, X, Loader2 } from 'lucide-react'
 
-export function ShoppingListModal({ shoppingList, onClose }: { shoppingList: any[], onClose: () => void }) {
-    const [checkedItems, setCheckedItems] = useState<string[]>([])
+export function ShoppingListModal({ 
+    shoppingList, 
+    onClose,
+    onToggleItem
+}: { 
+    shoppingList: any[]
+    onClose: () => void 
+    onToggleItem: (itemName: string, checked: boolean) => Promise<void>
+}) {
+    const [checkedItems, setCheckedItems] = useState<string[]>(() =>
+        (shoppingList || []).filter(item => item.checked).map(item => item.item)
+    )
+    const [toggling, setToggling] = useState<string | null>(null)
 
-    const toggleItem = (itemName: string) => {
-        if (checkedItems.includes(itemName)) {
-            setCheckedItems(checkedItems.filter(i => i !== itemName))
-        } else {
-            setCheckedItems([...checkedItems, itemName])
+    const toggleItem = async (itemName: string) => {
+        const isChecked = checkedItems.includes(itemName)
+        setToggling(itemName)
+        try {
+            await onToggleItem(itemName, !isChecked)
+            if (isChecked) {
+                setCheckedItems(checkedItems.filter(i => i !== itemName))
+            } else {
+                setCheckedItems([...checkedItems, itemName])
+            }
+        } catch (e) {
+            alert('Error actualizando ingrediente')
+        } finally {
+            setToggling(null)
         }
     }
 
@@ -20,7 +40,7 @@ export function ShoppingListModal({ shoppingList, onClose }: { shoppingList: any
                 <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
                     <div>
                         <h2 className="text-2xl font-heading font-bold">Lista de Compras</h2>
-                        <p className="text-sm text-muted-foreground mt-1">Marca los ingredientes que ya tienes o compraste.</p>
+                        <p className="text-sm text-muted-foreground mt-1">Marca los ingredientes que ya tienes o compraste. Tus cambios se guardan automáticamente.</p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
                         <X className="w-5 h-5" />
@@ -29,14 +49,18 @@ export function ShoppingListModal({ shoppingList, onClose }: { shoppingList: any
                 <div className="p-4 overflow-y-auto space-y-2 flex-1">
                     {shoppingList?.map((item: any, i: number) => {
                         const isChecked = checkedItems.includes(item.item)
+                        const isToggling = toggling === item.item
                         return (
                             <button
                                 key={i}
+                                disabled={toggling !== null}
                                 onClick={() => toggleItem(item.item)}
                                 className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all ${isChecked ? 'bg-indigo-500/10 border-indigo-500/20 opacity-60' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
                             >
                                 <div className="flex items-center gap-4">
-                                    {isChecked ? (
+                                    {isToggling ? (
+                                        <Loader2 className="w-6 h-6 text-indigo-400 shrink-0 animate-spin" />
+                                    ) : isChecked ? (
                                         <CheckCircle2 className="w-6 h-6 text-indigo-400 shrink-0" />
                                     ) : (
                                         <Circle className="w-6 h-6 text-muted-foreground shrink-0" />
@@ -59,7 +83,7 @@ export function ShoppingListModal({ shoppingList, onClose }: { shoppingList: any
                 </div>
                 <div className="p-4 bg-white/5 border-t border-white/10 flex justify-between items-center text-sm font-medium">
                     <span className="text-muted-foreground">{checkedItems.length} comprados</span>
-                    <span>{shoppingList?.length - checkedItems.length} pendientes</span>
+                    <span>{(shoppingList?.length || 0) - checkedItems.length} pendientes</span>
                 </div>
             </div>
         </div>

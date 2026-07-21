@@ -9,6 +9,7 @@ import { DailyWinWidget } from '@/components/dashboard/DailyWinWidget'
 import { getDailyWin } from '@/lib/actions/daily_wins'
 import { StickyNotesWidget } from '@/components/dashboard/StickyNotesWidget'
 import { getStickyNotes } from '@/lib/actions/sticky_notes'
+import { IdealRoutineWidget } from '@/components/dashboard/IdealRoutineWidget'
 
 export default async function DashboardPage() {
     const supabase = await createClient()
@@ -27,6 +28,13 @@ export default async function DashboardPage() {
 
     const todayStr = `${yr}-${mo}-${da}`
     const monthYear = `${yr}-${mo}`
+
+    // Fetch profile for routine
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('ideal_routine_json')
+        .eq('id', user.id)
+        .single()
 
     // Fetch today's tasks (including overdue and no due date)
     const { data: todayTasks } = await supabase
@@ -88,6 +96,8 @@ export default async function DashboardPage() {
             </div>
 
             <DailyWinWidget initialWin={todayWin?.win || null} dateStr={todayStr} />
+
+            <IdealRoutineWidget routine={profile?.ideal_routine_json || null} />
 
             <StickyNotesWidget initialNotes={stickyNotes} />
 

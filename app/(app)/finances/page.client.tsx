@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Wallet, TrendingUp, TrendingDown, Landmark, Trash2, X, Loader2, Edit3, Target, Calendar } from 'lucide-react'
+import { Plus, Wallet, TrendingUp, TrendingDown, Landmark, Trash2, X, Loader2, Edit3, Target, Calendar, Search } from 'lucide-react'
 import { createTransaction, createDebt, deleteTransaction, deleteDebt, updateDebt, saveMonthlyBudget, createFinancialGoal, updateFinancialGoal, deleteFinancialGoal } from '@/lib/actions/finances'
+import { FinancesChart } from '@/components/finances/FinancesChart'
 
 export function FinancesClient({ transactions, debts, initialBudget, initialGoals, monthYear }: { transactions: any[], debts: any[], initialBudget: any, initialGoals: any[], monthYear: string }) {
     const [isTxFormOpen, setIsTxFormOpen] = useState(false)
@@ -16,6 +17,10 @@ export function FinancesClient({ transactions, debts, initialBudget, initialGoal
     const [prefilledDebtId, setPrefilledDebtId] = useState<string>('')
     const [selectedGoal, setSelectedGoal] = useState<any | null>(null)
     const [loading, setLoading] = useState<string | null>(null)
+
+    // Transaction search and filter states
+    const [txSearch, setTxSearch] = useState('')
+    const [txFilterTab, setTxFilterTab] = useState<'All' | 'Income' | 'Expenses'>('All')
 
     // Advanced Budget States
     const [budgetIncomes, setBudgetIncomes] = useState<any[]>(initialBudget?.incomes_json || [])
@@ -175,6 +180,17 @@ export function FinancesClient({ transactions, debts, initialBudget, initialGoal
         return remainingAmount / diffWeeks
     }
 
+    // Filter transactions
+    const filteredTxs = transactions.filter(tx => {
+        const matchesSearch = tx.description.toLowerCase().includes(txSearch.toLowerCase()) ||
+                            (tx.category && tx.category.toLowerCase().includes(txSearch.toLowerCase()))
+        if (!matchesSearch) return false
+
+        if (txFilterTab === 'Income') return tx.type === 'Income'
+        if (txFilterTab === 'Expenses') return tx.type !== 'Income'
+        return true
+    })
+
     return (
         <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6 animate-fade-in pb-24">
             {/* Header */}
@@ -264,6 +280,14 @@ export function FinancesClient({ transactions, debts, initialBudget, initialGoal
                     </div>
                 </div>
             )}
+
+            {/* SVG Visual Breakdown Chart */}
+            <FinancesChart
+                income={realIncome}
+                fixedExpenses={realFixedExpenses}
+                variableExpenses={realVariableExpenses}
+                debtPayments={realDebtPayments}
+            />
 
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -377,15 +401,54 @@ export function FinancesClient({ transactions, debts, initialBudget, initialGoal
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
                 {/* Transactions List */}
                 <div className="lg:col-span-2 space-y-4">
-                    <h2 className="text-xl font-heading font-semibold px-1">Movimientos del mes</h2>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
+                        <h2 className="text-xl font-heading font-semibold">Movimientos del mes</h2>
+                        
+                        <div className="flex gap-2 w-full sm:w-auto">
+                            {/* Search bar */}
+                            <div className="relative flex-1 sm:flex-none">
+                                <input
+                                    type="text"
+                                    value={txSearch}
+                                    onChange={(e) => setTxSearch(e.target.value)}
+                                    placeholder="Buscar movimientos..."
+                                    className="w-full sm:w-48 bg-secondary/35 border border-border rounded-xl pl-8 pr-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-emerald-500 transition-all"
+                                />
+                                <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-2.5" />
+                            </div>
+
+                            {/* Tabs selector */}
+                            <div className="flex border border-border/50 rounded-xl overflow-hidden shrink-0">
+                                {[
+                                    { id: 'All', label: 'Todos' },
+                                    { id: 'Income', label: 'Ingresos' },
+                                    { id: 'Expenses', label: 'Gastos' }
+                                ].map(tab => (
+                                    <button
+                                        key={tab.id}
+                                        type="button"
+                                        onClick={() => setTxFilterTab(tab.id as any)}
+                                        className={`px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+                                            txFilterTab === tab.id
+                                                ? 'bg-emerald-600 text-white'
+                                                : 'bg-secondary/40 text-muted-foreground hover:text-white'
+                                        }`}
+                                    >
+                                        {tab.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
                     <div className="glass rounded-2xl border border-border/50 overflow-hidden">
-                        {transactions.length === 0 ? (
+                        {filteredTxs.length === 0 ? (
                             <div className="p-12 text-center text-muted-foreground text-sm">
-                                No hay movimientos este mes.
+                                {transactions.length === 0 ? 'No hay movimientos este mes.' : 'No se encontraron movimientos con esos filtros.'}
                             </div>
                         ) : (
                             <div className="divide-y divide-border/50 max-h-[500px] overflow-y-auto">
-                                {transactions.map(tx => (
+                                {filteredTxs.map(tx => (
                                     <div key={tx.id} className="p-4 flex items-center justify-between hover:bg-secondary/30 transition-colors group">
                                         <div className="flex items-center gap-4">
                                             <div className={`p-2 rounded-full ${tx.type === 'Income' ? 'bg-emerald-500/10 text-emerald-500' :

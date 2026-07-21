@@ -7,13 +7,15 @@ import {
     ChevronLeft, ChevronRight, X, Loader2,
     Clock, Tag, ListChecks, Bike, ExternalLink, Sparkles
 } from 'lucide-react'
-import { generateWeeklyMenu, createRecipe, saveMenuState, importFrequentRecipes } from '@/lib/actions/meals'
+import { generateWeeklyMenu, createRecipe, saveMenuState, importFrequentRecipes, updateSingleMeal } from '@/lib/actions/meals'
 import { format, addDays } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { RecipeForm } from './RecipeForm'
 import { RecipeManager } from './RecipeManager'
 import { ShoppingListModal } from './ShoppingListModal'
+import { ManualMealSelectorModal } from '@/components/meals/ManualMealSelectorModal'
+import { RecipeRecommenderWidget } from '@/components/meals/RecipeRecommenderWidget'
 
 
 interface Recipe {
@@ -35,6 +37,45 @@ export default function MealsPageClient({ initialRecipes, initialMenu, startDate
     const [isAddRecipeOpen, setIsAddRecipeOpen] = useState(false)
     const [isManageRecipesOpen, setIsManageRecipesOpen] = useState(false)
     const [isShoppingListOpen, setIsShoppingListOpen] = useState(false)
+    const [editingMealSlot, setEditingMealSlot] = useState<{ day: string, type: 'lunch' | 'dinner' | 'Almuerzo' | 'Cena' } | null>(null)
+
+    async function handleManualSelectMeal(recipeId: string, recipeName: string) {
+        if (!editingMealSlot) return
+        const { day, type } = editingMealSlot
+        const slotType = type === 'Almuerzo' || type === 'lunch' ? 'lunch' : 'dinner'
+        
+        try {
+            await updateSingleMeal(startDate, day, slotType, recipeId, recipeName)
+            
+            // Update local state menu
+            const currentDayData = menu?.menu_data?.[day] || {
+                lunch: { recipe_id: '', name: 'Sin asignar' },
+                dinner: { recipe_id: '', name: 'Sin asignar' }
+            }
+            
+            let updatedDayData = { ...currentDayData }
+            if (recipeId === 'delivery') {
+                updatedDayData = {
+                    lunch: { recipe_id: 'delivery', name: '🛵 Delivery / Pedir Comida' },
+                    dinner: { recipe_id: 'delivery', name: '🛵 Delivery / Pedir Comida' }
+                }
+            } else {
+                updatedDayData[slotType] = { recipe_id: recipeId, name: recipeName || 'Sin asignar' }
+            }
+
+            const updatedMenuData = {
+                ...menu?.menu_data,
+                [day]: updatedDayData
+            }
+
+            setMenu({
+                ...menu,
+                menu_data: updatedMenuData
+            })
+        } catch (e: any) {
+            alert('Error asignando comida: ' + e.message)
+        }
+    }
 
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
@@ -127,7 +168,7 @@ export default function MealsPageClient({ initialRecipes, initialMenu, startDate
                         className="flex items-center gap-2 px-4 py-2 glass hover:bg-white/10 border-indigo-500/30 text-indigo-300 rounded-xl transition-colors text-sm font-medium shadow-md shadow-indigo-500/10"
                     >
                         <ShoppingCart className="w-4 h-4" />
-                        Ver Lista de Compras ({menu.shopping_list.length})
+                        Ver Lista de Compras ({(menu.shopping_list || []).filter((i: any) => !i.checked).length} pendientes)
                     </button>
                 )}
 
@@ -139,7 +180,26 @@ export default function MealsPageClient({ initialRecipes, initialMenu, startDate
                         <RecipeManager recipes={recipes} onClose={() => setIsManageRecipesOpen(false)} />
                     )}
                     {isShoppingListOpen && (
-                        <ShoppingListModal shoppingList={menu?.shopping_list} onClose={() => setIsShoppingListOpen(false)} />
+                        <ShoppingListModal
+                            shoppingList={menu?.shopping_list}
+                            onClose={() => setIsShoppingListOpen(false)}
+                            onToggleItem={async (itemName, checked) => {
+                                const updatedList = (menu.shopping_list || []).map((item: any) =>
+                                    item.item === itemName ? { ...item, checked } : item
+                                )
+                                setMenu({ ...menu, shopping_list: updatedList })
+                                await saveMenuState(startDate, menu.menu_data, updatedList)
+                            }}
+                        />
+                    )}
+                    {editingMealSlot && (
+                        <ManualMealSelectorModal
+                            dayName={format(addDays(new Date(startDate), days.indexOf(editingMealSlot.day)), "EEEE d 'de' MMMM", { locale: es })}
+                            mealType={editingMealSlot.type as any}
+                            recipes={recipes}
+                            onClose={() => setEditingMealSlot(null)}
+                            onSelect={handleManualSelectMeal}
+                        />
                     )}
                 </AnimatePresence>
             </div>
@@ -238,8 +298,18 @@ export default function MealsPageClient({ initialRecipes, initialMenu, startDate
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white/5 p-6 rounded-2xl border border-white/5">
-                                        <RecipeSection title="Almuerzo" recipeData={menu.menu_data[selectedDay].lunch} recipes={recipes} />
-                                        <RecipeSection title="Cena" recipeData={menu.menu_data[selectedDay].dinner} recipes={recipes} />
+                                        <RecipeSection 
+                                            title="Almuerzo" 
+                                            recipeData={menu.menu_data[selectedDay].lunch} 
+                                            recipes={recipes} 
+                                            onChangeMeal={() => setEditingMealSlot({ day: selectedDay, type: 'Almuerzo' })}
+                                        />
+                                        <RecipeSection 
+                                            title="Cena" 
+                                            recipeData={menu.menu_data[selectedDay].dinner} 
+                                            recipes={recipes} 
+                                            onChangeMeal={() => setEditingMealSlot({ day: selectedDay, type: 'Cena' })}
+                                        />
                                     </div>
                                 )}
                             </div>
@@ -294,6 +364,11 @@ export default function MealsPageClient({ initialRecipes, initialMenu, startDate
                     </div>
                 </div>
             )}
+
+            {/* AI Recommender section */}
+            <div className="pt-6 border-t border-white/5">
+                <RecipeRecommenderWidget />
+            </div>
         </div>
     )
 }
@@ -320,22 +395,36 @@ function MealCard({ type, recipe, onClick, isDelivery }: any) {
     )
 }
 
-function RecipeSection({ title, recipeData, recipes }: any) {
-    const recipe = recipes.find((r: any) => r.id === recipeData.recipe_id)
+function RecipeSection({ title, recipeData, recipes, onChangeMeal }: any) {
+    const recipe = recipes.find((r: any) => r.id === recipeData?.recipe_id)
 
     if (!recipe) return (
-        <div className="space-y-2">
-            <h3 className="font-heading font-bold text-lg">{title}</h3>
-            <p className="text-muted-foreground italic text-sm">No se encontró información de la receta.</p>
+        <div className="space-y-3 p-4 rounded-2xl border border-white/5 bg-white/5 flex flex-col items-center justify-center text-center">
+            <h3 className="font-heading font-bold text-sm text-indigo-300">{title}</h3>
+            <p className="text-muted-foreground italic text-xs">Sin asignar</p>
+            <button
+                onClick={onChangeMeal}
+                className="mt-2 text-xs px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 font-bold border border-indigo-500/20 rounded-xl transition-all"
+            >
+                Asignar comida
+            </button>
         </div>
     )
 
     return (
         <div className="space-y-4">
-            <h3 className="font-heading font-bold text-xl flex items-center gap-2">
-                <span className="w-1.5 h-6 bg-indigo-500 rounded-full" />
-                {title}
-            </h3>
+            <div className="flex justify-between items-center">
+                <h3 className="font-heading font-bold text-xl flex items-center gap-2">
+                    <span className="w-1.5 h-6 bg-indigo-500 rounded-full" />
+                    {title}
+                </h3>
+                <button
+                    onClick={onChangeMeal}
+                    className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold hover:underline"
+                >
+                    Cambiar
+                </button>
+            </div>
 
             <div className="space-y-1 relative group">
                 <p className="font-bold text-lg leading-tight pr-8">{recipe.name}</p>
