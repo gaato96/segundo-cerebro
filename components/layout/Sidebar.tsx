@@ -7,7 +7,7 @@ import {
     Brain, LayoutDashboard, CheckSquare, Flame,
     DollarSign, Baby, Tv, Target, BookOpen,
     Heart, LogOut, ChevronLeft, ChevronRight,
-    Settings, Utensils, Inbox, Sparkles
+    Settings, Utensils, Inbox
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useState } from 'react'
@@ -15,7 +15,6 @@ import { cn } from '@/lib/utils'
 
 const navItems = [
     { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
-    { href: '/reorganize', icon: Sparkles, label: 'Reorganizar Vida' },
     { href: '/inbox', icon: Inbox, label: 'Inbox' },
     { href: '/tasks', icon: CheckSquare, label: 'Tareas' },
     { href: '/habits', icon: Flame, label: 'Hábitos' },
