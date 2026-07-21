@@ -50,6 +50,7 @@ export function MediaClient({ initialItems }: { initialItems: MediaItem[] }) {
     const [rouletteOpen, setRouletteOpen] = useState(false)
     const [ratingItem, setRatingItem] = useState<MediaItem | null>(null)
     const [ratingTMDBItem, setRatingTMDBItem] = useState<any | null>(null)
+    const [ratingRecItem, setRatingRecItem] = useState<{ rec: any; idx: number } | null>(null)
     const [selectedSearchItem, setSelectedSearchItem] = useState<any | null>(null)
     
     // Manual Creation States
@@ -277,6 +278,74 @@ export function MediaClient({ initialItems }: { initialItems: MediaItem[] }) {
             setItems(updated)
         } catch (e) {
             alert('Error agregando recomendación')
+        } finally {
+            setActionLoading(null)
+        }
+    }
+
+    // Add recommended item as Finished ("Ya la vi") - fetches TMDB metadata then opens rating modal
+    async function handleAddRecAsFinished(rec: any, idx: number) {
+        setActionLoading(`rec-seen-${idx}`)
+        const apiKey = tmdbApiKey || process.env.NEXT_PUBLIC_TMDB_API_KEY
+        let enrichedRec = { ...rec }
+
+        if (apiKey && (rec.type === 'Movie' || rec.type === 'Series')) {
+            try {
+                const searchType = rec.type === 'Series' ? 'tv' : 'movie'
+                const url = `https://api.themoviedb.org/3/search/multi?api_key=${apiKey}&query=${encodeURIComponent(rec.title)}&language=es-AR`
+                const res = await fetch(url)
+                const data = await res.json()
+                if (data.results) {
+                    const match = data.results.find((r: any) =>
+                        r.media_type === searchType &&
+                        (rec.type === 'Series'
+                            ? r.name?.toLowerCase() === rec.title.toLowerCase()
+                            : r.title?.toLowerCase() === rec.title.toLowerCase()
+                        )
+                    ) || data.results.find((r: any) => r.media_type === searchType)
+
+                    if (match) {
+                        enrichedRec.poster_path = match.poster_path
+                        enrichedRec.overview = match.overview || rec.reason
+                        enrichedRec.first_air_date = match.first_air_date
+                        enrichedRec.release_date = match.release_date
+                        enrichedRec.tmdb_id = match.id
+                    }
+                }
+            } catch (e) {
+                console.error('Failed fetching TMDB details for rec rating:', e)
+            }
+        }
+
+        setActionLoading(null)
+        setRatingRecItem({ rec: enrichedRec, idx })
+    }
+
+    // Submit rating for a recommended item (marks it as Finished)
+    async function handleSubmitRecRating(rating: number) {
+        if (!ratingRecItem) return
+        const { rec } = ratingRecItem
+        const cover_url = rec.poster_path ? `https://image.tmdb.org/t/p/w500${rec.poster_path}` : undefined
+        const notes = rec.overview || rec.reason || 'Recomendado por IA'
+        const author_or_studio = rec.first_air_date ? rec.first_air_date.substring(0, 4)
+            : rec.release_date ? rec.release_date.substring(0, 4) : ''
+
+        setActionLoading(`rec-seen-submit`)
+        try {
+            await createDetailedMediaItem({
+                title: rec.title,
+                type: rec.type,
+                status: 'Finished',
+                cover_url,
+                author_or_studio,
+                notes,
+                rating
+            })
+            const updated = await fetchUpdatedItems()
+            setItems(updated)
+            setRatingRecItem(null)
+        } catch (e) {
+            alert('Error al guardar el elemento calificado.')
         } finally {
             setActionLoading(null)
         }
@@ -842,14 +911,25 @@ export function MediaClient({ initialItems }: { initialItems: MediaItem[] }) {
                                         </span>
                                         <p className="text-xs text-muted-foreground leading-relaxed">{rec.reason}</p>
                                         
-                                        <button
-                                            onClick={() => handleAddRecommendation(rec, i)}
-                                            disabled={actionLoading === `rec-${i}`}
-                                            className="text-xs text-indigo-400 font-semibold flex items-center gap-1 hover:text-indigo-300 transition-colors pt-1"
-                                        >
-                                            {actionLoading === `rec-${i}` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PlusCircle className="w-3.5 h-3.5" />}
-                                            Añadir a pendientes
-                                        </button>
+                                        <div className="flex items-center gap-3 pt-1 flex-wrap">
+                                            <button
+                                                onClick={() => handleAddRecommendation(rec, i)}
+                                                disabled={actionLoading === `rec-${i}` || actionLoading === `rec-seen-${i}`}
+                                                className="text-xs text-indigo-400 font-semibold flex items-center gap-1 hover:text-indigo-300 transition-colors disabled:opacity-40"
+                                            >
+                                                {actionLoading === `rec-${i}` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PlusCircle className="w-3.5 h-3.5" />}
+                                                Añadir a pendientes
+                                            </button>
+                                            <span className="text-white/10">|</span>
+                                            <button
+                                                onClick={() => handleAddRecAsFinished(rec, i)}
+                                                disabled={actionLoading === `rec-${i}` || actionLoading === `rec-seen-${i}`}
+                                                className="text-xs text-yellow-400 font-semibold flex items-center gap-1 hover:text-yellow-300 transition-colors disabled:opacity-40"
+                                            >
+                                                {actionLoading === `rec-seen-${i}` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Star className="w-3.5 h-3.5" />}
+                                                Ya la vi · Calificar
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -1119,6 +1199,15 @@ export function MediaClient({ initialItems }: { initialItems: MediaItem[] }) {
                     title={ratingTMDBItem.media_type === 'movie' || ratingTMDBItem.title !== undefined ? ratingTMDBItem.title : ratingTMDBItem.name}
                     onClose={() => setRatingTMDBItem(null)}
                     onSubmit={handleAddTMDBItemWithRating}
+                />
+            )}
+
+            {/* Rating Modal for AI recommendations marked as already seen */}
+            {ratingRecItem && (
+                <RatingModal
+                    title={ratingRecItem.rec.title}
+                    onClose={() => setRatingRecItem(null)}
+                    onSubmit={handleSubmitRecRating}
                 />
             )}
 
