@@ -10,6 +10,7 @@ import { createMediaItem, createDetailedMediaItem, updateMediaStatus, updateMedi
 import { TMDBConfigCard } from '@/components/media/TMDBConfigCard'
 import { MediaRouletteModal } from '@/components/media/MediaRouletteModal'
 import { RatingModal } from '@/components/media/RatingModal'
+import { TMDBDetailsModal } from '@/components/media/TMDBDetailsModal'
 
 interface MediaItem {
     id: string
@@ -49,6 +50,7 @@ export function MediaClient({ initialItems }: { initialItems: MediaItem[] }) {
     const [rouletteOpen, setRouletteOpen] = useState(false)
     const [ratingItem, setRatingItem] = useState<MediaItem | null>(null)
     const [ratingTMDBItem, setRatingTMDBItem] = useState<any | null>(null)
+    const [selectedSearchItem, setSelectedSearchItem] = useState<any | null>(null)
     
     // Manual Creation States
     const [isManualOpen, setIsManualOpen] = useState(false)
@@ -550,7 +552,7 @@ export function MediaClient({ initialItems }: { initialItems: MediaItem[] }) {
 
                             return (
                                 <div key={res.id} className="py-3 flex items-center justify-between gap-4 hover:bg-white/[0.02] px-2 rounded-lg group">
-                                    <div className="flex items-center gap-3 min-w-0">
+                                    <div className="flex items-center gap-3 min-w-0 cursor-pointer flex-1" onClick={() => setSelectedSearchItem(res)}>
                                         {poster ? (
                                             <img src={poster} alt={title} className="w-10 h-14 rounded-md object-cover border border-white/10 shrink-0" />
                                         ) : (
@@ -559,7 +561,7 @@ export function MediaClient({ initialItems }: { initialItems: MediaItem[] }) {
                                             </div>
                                         )}
                                         <div className="min-w-0">
-                                            <p className="font-semibold text-sm text-white/90 truncate">{title} {year}</p>
+                                            <p className="font-semibold text-sm text-white/90 truncate group-hover:text-pink-400 transition-colors">{title} {year}</p>
                                             <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">
                                                 {isMovie ? 'Película' : 'Serie'}
                                             </span>
@@ -645,7 +647,7 @@ export function MediaClient({ initialItems }: { initialItems: MediaItem[] }) {
                                                     <div className="w-full h-full flex items-center justify-center text-muted-foreground"><Clapperboard className="w-8 h-8" /></div>
                                                 )}
                                                 <div className="absolute inset-0 bg-black/85 opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col justify-end p-2.5 space-y-1.5 z-20">
-                                                    <p className="text-[11px] font-bold text-white line-clamp-2 leading-tight">{movie.title}</p>
+                                                    <p onClick={() => setSelectedSearchItem(movie)} className="text-[11px] font-bold text-white line-clamp-2 leading-tight cursor-pointer hover:text-pink-400 transition-colors">{movie.title}</p>
                                                     <div className="flex flex-col gap-1">
                                                         <button onClick={() => handleAddTMDBItem(movie, 'Backlog')} className="py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-[9px] font-semibold border border-white/10">
                                                             + Pendiente
@@ -689,7 +691,7 @@ export function MediaClient({ initialItems }: { initialItems: MediaItem[] }) {
                                                     <div className="w-full h-full flex items-center justify-center text-muted-foreground"><Tv className="w-8 h-8" /></div>
                                                 )}
                                                 <div className="absolute inset-0 bg-black/85 opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col justify-end p-2.5 space-y-1.5 z-20">
-                                                    <p className="text-[11px] font-bold text-white line-clamp-2 leading-tight">{series.name}</p>
+                                                    <p onClick={() => setSelectedSearchItem(series)} className="text-[11px] font-bold text-white line-clamp-2 leading-tight cursor-pointer hover:text-pink-400 transition-colors">{series.name}</p>
                                                     <div className="flex flex-col gap-1">
                                                         <button onClick={() => handleAddTMDBItem(series, 'Backlog')} className="py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-[9px] font-semibold border border-white/10">
                                                             + Pendiente
@@ -1223,6 +1225,25 @@ export function MediaClient({ initialItems }: { initialItems: MediaItem[] }) {
                             </form>
                         </motion.div>
                     </div>
+                )}
+            </AnimatePresence>
+
+            {/* TMDB Details Modal */}
+            <AnimatePresence>
+                {selectedSearchItem && (
+                    <TMDBDetailsModal
+                        item={selectedSearchItem}
+                        onClose={() => setSelectedSearchItem(null)}
+                        onAdd={async (status) => {
+                            if (status === 'Finished') {
+                                setRatingTMDBItem(selectedSearchItem)
+                                setSelectedSearchItem(null)
+                                return
+                            }
+                            await handleAddTMDBItem(selectedSearchItem, status)
+                            setSelectedSearchItem(null)
+                        }}
+                    />
                 )}
             </AnimatePresence>
         </div>
