@@ -170,34 +170,54 @@ export async function getAIMediaRecommendations(category: 'cine' | 'books_games'
     const isCine = category === 'cine'
 
     const systemPrompt = isCine
-        ? `Eres un experto crítico de cine y series. Analiza el historial de visualización y calificaciones del usuario y recomiéndale 4 títulos específicos (películas o series) en formato JSON.
-Debes devolver ÚNICAMENTE un objeto JSON estructurado exactamente con el siguiente formato, sin bloques markdown de código (como \`\`\`json):
+        ? `Eres un experto crítico de cine y series. Analiza el historial de visualización y calificaciones del usuario y recomiéndale 4 títulos.
+IMPORTANTE — REGLA ESTRICTA DE TIPOS:
+- El campo "type" SOLO puede tener el valor "Movie" (para películas) o "Series" (para series de TV).
+- NUNCA uses "Game", "Book" u otro valor. Si el título es una serie de televisión como Peaky Blinders, Breaking Bad, etc., usa "Series". Si es una película, usa "Movie".
+- Esta regla no tiene excepciones.
+
+Devuelve ÚNICAMENTE un objeto JSON con este formato exacto, sin bloques markdown:
 
 {
   "recommendations": [
     {
       "title": "Título sugerido",
-      "type": "Movie | Series",
-      "reason": "Explicación breve de 2 frases de por qué se recomienda (ej. 'Como te gustó X, disfrutarás de esta serie por su narrativa...')"
+      "type": "Movie",
+      "reason": "Explicación breve de 2 frases de por qué se recomienda"
+    },
+    {
+      "title": "Otra Serie",
+      "type": "Series",
+      "reason": "Explicación breve de 2 frases de por qué se recomienda"
     }
   ]
 }
 
-Intenta que las recomendaciones sean variadas, lógicas en base a sus gustos y de alta calidad.`
-        : `Eres un experto literario y crítico de videojuegos. Analiza el historial de lectura y juegos finalizados del usuario con sus calificaciones y recomiéndale 4 títulos específicos (libros o videojuegos) en formato JSON.
-Debes devolver ÚNICAMENTE un objeto JSON estructurado exactamente con el siguiente formato, sin bloques markdown de código (como \`\`\`json):
+Intenta que las recomendaciones sean variadas y de alta calidad.`
+        : `Eres un experto literario y crítico de videojuegos. Analiza el historial del usuario y recomiéndale 4 títulos.
+IMPORTANTE — REGLA ESTRICTA DE TIPOS:
+- El campo "type" SOLO puede tener el valor "Book" (para libros) o "Game" (para videojuegos).
+- NUNCA uses "Movie", "Series" u otro valor.
+- Esta regla no tiene excepciones.
+
+Devuelve ÚNICAMENTE un objeto JSON con este formato exacto, sin bloques markdown:
 
 {
   "recommendations": [
     {
       "title": "Título sugerido",
-      "type": "Book | Game",
-      "reason": "Explicación breve de 2 frases de por qué se recomienda (ej. 'Ideal si disfrutaste de X por su profundidad narrativa y mecánicas...')"
+      "type": "Book",
+      "reason": "Explicación breve de 2 frases de por qué se recomienda"
+    },
+    {
+      "title": "Otro Juego",
+      "type": "Game",
+      "reason": "Explicación breve de 2 frases de por qué se recomienda"
     }
   ]
 }
 
-Intenta que las recomendaciones sean variadas, lógicas en base a sus gustos y de alta calidad.`
+Intenta que las recomendaciones sean variadas y de alta calidad.`
 
     const userPrompt = historySummary.length > 0 
         ? `Aquí está mi historial de elementos terminados con mis calificaciones:\n${historySummary}\n\nPor favor, recomiéndame 4 títulos nuevos en base a esto.`
@@ -251,6 +271,24 @@ Intenta que las recomendaciones sean variadas, lógicas en base a sus gustos y d
             cleaned = cleaned.replace(/^```json\s*/, '').replace(/```$/, '').trim()
         }
         const data = JSON.parse(cleaned)
+
+        // Sanitize: clamp type to valid values for the requested category
+        const validCineTypes = ['Movie', 'Series']
+        const validBookGameTypes = ['Book', 'Game']
+        if (Array.isArray(data.recommendations)) {
+            data.recommendations = data.recommendations.map((rec: any) => {
+                if (isCine && !validCineTypes.includes(rec.type)) {
+                    // Best-effort guess: if it looks like a TV show, make it Series, else Movie
+                    const looksLikeSeries = /series|temporada|season|episodio|episode|tv|show/i.test(rec.reason || '')
+                    rec.type = looksLikeSeries ? 'Series' : 'Movie'
+                } else if (!isCine && !validBookGameTypes.includes(rec.type)) {
+                    const looksLikeGame = /juego|game|videojuego|gaming|jugador/i.test(rec.reason || '')
+                    rec.type = looksLikeGame ? 'Game' : 'Book'
+                }
+                return rec
+            })
+        }
+
         return { data }
     } catch (err: any) {
         console.error('Failed parsing recommendations JSON:', resultText)
