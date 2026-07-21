@@ -52,10 +52,14 @@ export async function createDetailedMediaItem(item: {
     cover_url?: string
     author_or_studio?: string
     notes?: string
+    rating?: number | null
+    progress?: string
 }) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
+
+    const defaultProgress = item.type === 'Series' ? 'S1 Ep 1' : (item.type === 'Book' ? 'Pág 1' : '')
 
     const { error } = await supabase
         .from('media_backlog')
@@ -67,8 +71,8 @@ export async function createDetailedMediaItem(item: {
             cover_url: item.cover_url || null,
             author_or_studio: item.author_or_studio || null,
             notes: item.notes || '',
-            progress: item.type === 'Series' ? 'S1 Ep 1' : '',
-            rating: null
+            progress: item.progress !== undefined ? item.progress : defaultProgress,
+            rating: item.rating !== undefined ? item.rating : null
         })
 
     if (error) throw error
@@ -136,27 +140,37 @@ export async function deleteMediaItem(id: string) {
 }
 
 // AI recommendations for media using Gemini (or Groq fallback)
-export async function getAIMediaRecommendations() {
+export async function getAIMediaRecommendations(category: 'cine' | 'books_games' = 'cine') {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
 
-    // Get user's finished series/movies with their ratings
+    // Get user's finished items with their ratings based on category
+    const typesToFetch = category === 'cine' ? ['Movie', 'Series'] : ['Book', 'Game']
+
     const { data: history, error } = await supabase
         .from('media_backlog')
         .select('*')
         .eq('user_id', user.id)
         .eq('status', 'Finished')
-        .in('type', ['Movie', 'Series'])
+        .in('type', typesToFetch)
         .order('rating', { ascending: false })
 
     if (error) throw error
 
     const historySummary = (history || [])
-        .map(h => `${h.type === 'Movie' ? 'Película' : 'Serie'}: "${h.title}" (Calificación: ${h.rating}/10)`)
+        .map(h => {
+            const displayType = h.type === 'Movie' ? 'Película' : 
+                               h.type === 'Series' ? 'Serie' : 
+                               h.type === 'Book' ? 'Libro' : 'Juego'
+            return `${displayType}: "${h.title}" (Calificación: ${h.rating}/10)`
+        })
         .join('\n')
 
-    const systemPrompt = `Eres un experto crítico de cine y series. Analiza el historial de visualización y calificaciones del usuario y recomiéndale 4 títulos específicos (películas o series) en formato JSON.
+    const isCine = category === 'cine'
+
+    const systemPrompt = isCine
+        ? `Eres un experto crítico de cine y series. Analiza el historial de visualización y calificaciones del usuario y recomiéndale 4 títulos específicos (películas o series) en formato JSON.
 Debes devolver ÚNICAMENTE un objeto JSON estructurado exactamente con el siguiente formato, sin bloques markdown de código (como \`\`\`json):
 
 {
@@ -170,10 +184,26 @@ Debes devolver ÚNICAMENTE un objeto JSON estructurado exactamente con el siguie
 }
 
 Intenta que las recomendaciones sean variadas, lógicas en base a sus gustos y de alta calidad.`
+        : `Eres un experto literario y crítico de videojuegos. Analiza el historial de lectura y juegos finalizados del usuario con sus calificaciones y recomiéndale 4 títulos específicos (libros o videojuegos) en formato JSON.
+Debes devolver ÚNICAMENTE un objeto JSON estructurado exactamente con el siguiente formato, sin bloques markdown de código (como \`\`\`json):
+
+{
+  "recommendations": [
+    {
+      "title": "Título sugerido",
+      "type": "Book | Game",
+      "reason": "Explicación breve de 2 frases de por qué se recomienda (ej. 'Ideal si disfrutaste de X por su profundidad narrativa y mecánicas...')"
+    }
+  ]
+}
+
+Intenta que las recomendaciones sean variadas, lógicas en base a sus gustos y de alta calidad.`
 
     const userPrompt = historySummary.length > 0 
-        ? `Aquí está mi historial de series y películas terminadas con mis calificaciones:\n${historySummary}\n\nPor favor, recomiéndame 4 películas o series nuevas en base a esto.`
-        : `Aún no he calificado películas o series en este sistema. Por favor, recomiéndame 4 películas o series excelentes y populares de géneros variados (drama, ciencia ficción, thriller, comedia) para empezar a llenar mi lista.`
+        ? `Aquí está mi historial de elementos terminados con mis calificaciones:\n${historySummary}\n\nPor favor, recomiéndame 4 títulos nuevos en base a esto.`
+        : isCine
+            ? `Aún no he calificado películas o series en este sistema. Por favor, recomiéndame 4 películas o series excelentes y populares de géneros variados (drama, ciencia ficción, thriller, comedia) para empezar a llenar mi lista.`
+            : `Aún no he calificado libros o videojuegos en este sistema. Por favor, recomiéndame 4 libros o juegos excelentes y aclamados de géneros variados para empezar a llenar mi lista.`
 
     const geminiKey = process.env.GEMINI_API_KEY
     const groqKey = process.env.GROQ_API_KEY
