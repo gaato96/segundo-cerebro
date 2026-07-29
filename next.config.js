@@ -20,11 +20,7 @@ const withPWA = require('next-pwa')({
 });
 
 const nextConfig = {
-    // Silence Next.js 16 Turbopack warning from next-pwa's webpack config
     turbopack: {},
-    eslint: {
-        ignoreDuringBuilds: true,
-    },
     images: {
         remotePatterns: [
             {

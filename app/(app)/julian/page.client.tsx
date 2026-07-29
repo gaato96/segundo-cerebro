@@ -2,232 +2,276 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Baby, Plus, Stethoscope, Syringe, FileText, Clock, RotateCw, Trash2, X, Loader2 } from 'lucide-react'
-import { createJulianRecord, updateDoseTime, deleteJulianRecord } from '@/lib/actions/julian'
-import { format, addHours, isPast, formatDistanceToNowStrict } from 'date-fns'
-import { es } from 'date-fns/locale'
+import { Baby, HeartPulse, Syringe, Pill, Stethoscope, Award, Plus, Trash2, Clock, CheckCircle, Calendar, AlertCircle, X, Loader2 } from 'lucide-react'
+import { JulianRecord, createJulianRecord, updateDoseTime, deleteJulianRecord } from '@/lib/actions/julian'
+import { GrowthChart } from '@/components/julian/GrowthChart'
 
-export function JulianClient({ records }: { records: any[] }) {
-    const [isFormOpen, setIsFormOpen] = useState(false)
-    const [loading, setLoading] = useState<string | null>(null)
+interface JulianClientProps {
+    records: JulianRecord[]
+}
 
+export function JulianClient({ records: initialRecords }: JulianClientProps) {
+    const [records, setRecords] = useState<JulianRecord[]>(initialRecords)
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'growth' | 'health' | 'vaccines' | 'meds' | 'milestones'>('dashboard')
+    const [isModalOpen, setIsModalOpen] = useState(false)
+
+    // Form states
+    const [title, setTitle] = useState('')
+    const [category, setCategory] = useState<'Health' | 'Meds' | 'Vaccine' | 'Doc' | 'Note' | 'Appointment'>('Health')
+    const [content, setContent] = useState('')
+    const [weightKg, setWeightKg] = useState('')
+    const [heightCm, setHeightCm] = useState('')
+    const [doseIntervalHours, setDoseIntervalHours] = useState('')
+    const [alertDate, setAlertDate] = useState('')
+    const [milestoneType, setMilestoneType] = useState<'motor' | 'language' | 'social' | 'cognitive' | ''>('')
+    const [loading, setLoading] = useState(false)
+
+    // Latest stats
+    const latestWeightRecord = records.find(r => r.weight_kg)
+    const latestHeightRecord = records.find(r => r.height_cm)
     const activeMeds = records.filter(r => r.category === 'Meds' && r.dose_interval_hours)
-    const timeline = records.filter(r => r.category !== 'Meds' || !r.dose_interval_hours)
+    const upcomingAppointments = records.filter(r => r.category === 'Appointment' || r.category === 'Doc')
+    const milestones = records.filter(r => r.milestone_type || r.category === 'Note')
 
-    async function handleDose(id: string) {
-        setLoading(id)
-        try {
-            await updateDoseTime(id)
-        } catch (error) {
-            alert('Error registrando dosis')
-        } finally {
-            setLoading(null)
-        }
+    async function handleTakeDose(id: string) {
+        setRecords(prev => prev.map(r => r.id === id ? { ...r, last_dose_at: new Date().toISOString() } : r))
+        await updateDoseTime(id)
     }
 
     async function handleDelete(id: string) {
-        if (!confirm('¿Seguro que querés eliminar este registro?')) return
-        setLoading(id)
-        try {
-            await deleteJulianRecord(id)
-        } catch (error) {
-            alert('Error eliminando')
-        } finally {
-            setLoading(null)
-        }
+        if (!confirm('¿Eliminar este registro?')) return
+        await deleteJulianRecord(id)
+        setRecords(prev => prev.filter(r => r.id !== id))
     }
 
-    const getCategoryIcon = (category: string) => {
-        switch (category) {
-            case 'Health': return <Stethoscope className="w-5 h-5 text-blue-500" />
-            case 'Vaccine': return <Syringe className="w-5 h-5 text-purple-500" />
-            case 'Meds': return <Clock className="w-5 h-5 text-orange-500" />
-            default: return <FileText className="w-5 h-5 text-muted-foreground" />
-        }
+    async function handleSubmit(e: React.FormEvent) {
+        e.preventDefault()
+        if (!title.trim()) return
+
+        setLoading(true)
+        const formData = new FormData()
+        formData.append('title', title)
+        formData.append('category', category)
+        formData.append('content', content)
+        if (weightKg) formData.append('weight_kg', weightKg)
+        if (heightCm) formData.append('height_cm', heightCm)
+        if (doseIntervalHours) formData.append('dose_interval_hours', doseIntervalHours)
+        if (alertDate) formData.append('alert_date', alertDate)
+        if (milestoneType) formData.append('milestone_type', milestoneType)
+
+        await createJulianRecord(formData)
+        setLoading(false)
+        setIsModalOpen(false)
+        window.location.reload()
     }
 
     return (
-        <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6 animate-fade-in pb-24">
+        <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6 animate-fade-in pb-24">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-heading font-bold gradient-text flex items-center gap-2">
-                        Julián
-                        <Baby className="w-6 h-6 text-blue-400" />
-                    </h1>
-                    <p className="text-muted-foreground text-sm mt-1">
-                        Registro médico, vacunas y recordatorios de medicación.
-                    </p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-2xl bg-pink-500/10 text-pink-400 border border-pink-500/20">
+                        <Baby className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl md:text-3xl font-heading font-bold gradient-text">
+                            Panel de Julian
+                        </h1>
+                        <p className="text-muted-foreground text-sm mt-0.5">
+                            Seguimiento de salud, desarrollo, vacunas y remedios de Julian.
+                        </p>
+                    </div>
                 </div>
+
                 <button
-                    onClick={() => setIsFormOpen(true)}
-                    className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-lg shadow-blue-500/25 flex items-center gap-2"
+                    onClick={() => setIsModalOpen(true)}
+                    className="px-4 py-2.5 bg-pink-600 hover:bg-pink-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-lg shadow-pink-600/20 transition-all self-start sm:self-auto"
                 >
-                    <Plus className="w-4 h-4" />
-                    Nuevo Registro
+                    <Plus className="w-4 h-4" /> Nuevo Registro
                 </button>
             </div>
 
-            {/* Active Medications Tracker */}
-            {activeMeds.length > 0 && (
-                <div className="space-y-3">
-                    <h2 className="text-lg font-heading font-semibold px-1 flex items-center gap-2">
-                        <Clock className="w-5 h-5 text-orange-500" /> Medicación Activa
-                    </h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {activeMeds.map(med => {
-                            const nextDoseTime = addHours(new Date(med.last_dose_at), med.dose_interval_hours)
-                            const isDue = isPast(nextDoseTime)
-
-                            return (
-                                <div key={med.id} className={`glass p-5 rounded-2xl border relative overflow-hidden group ${isDue ? 'border-red-500/50 bg-red-500/5' : 'border-border/50'}`}>
-                                    <button onClick={() => handleDelete(med.id)} className="absolute top-2 right-2 p-1.5 text-muted-foreground hover:text-red-400 opacity-0 group-hover:opacity-100 rounded-md hover:bg-red-500/10 transition-all z-10">
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h3 className="font-semibold">{med.title}</h3>
-                                        <span className="text-xs bg-secondary px-2 py-1 rounded-full text-muted-foreground font-medium">
-                                            Cada 8h
-                                        </span>
-                                    </div>
-                                    <p className="text-sm text-muted-foreground mb-4">{med.content}</p>
-
-                                    <div className="flex items-center justify-between mt-auto">
-                                        <div className="text-sm">
-                                            <p className="text-muted-foreground text-xs">Próxima dosis:</p>
-                                            <p className={`font-medium ${isDue ? 'text-red-500' : 'text-foreground'}`}>
-                                                {formatDistanceToNowStrict(nextDoseTime, { locale: es, addSuffix: true })}
-                                            </p>
-                                        </div>
-                                        <button
-                                            onClick={() => handleDose(med.id)}
-                                            disabled={loading === med.id}
-                                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${isDue
-                                                ? 'bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/20'
-                                                : 'bg-secondary hover:bg-muted text-foreground'
-                                                }`}
-                                        >
-                                            {loading === med.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCw className="w-4 h-4" />}
-                                            Registrar toma
-                                        </button>
-                                    </div>
-                                </div>
-                            )
-                        })}
-                    </div>
+            {/* KPI Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="glass p-5 rounded-2xl border border-emerald-500/20">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Último Peso</p>
+                    <h3 className="text-2xl font-bold font-heading text-white">{latestWeightRecord?.weight_kg || '--'} kg</h3>
+                    <p className="text-[10px] text-emerald-400 mt-1 font-semibold">
+                        {latestWeightRecord ? new Date(latestWeightRecord.created_at || '').toLocaleDateString('es-AR') : 'Sin registros'}
+                    </p>
                 </div>
+
+                <div className="glass p-5 rounded-2xl border border-indigo-500/20">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Última Talla</p>
+                    <h3 className="text-2xl font-bold font-heading text-white">{latestHeightRecord?.height_cm || '--'} cm</h3>
+                    <p className="text-[10px] text-indigo-400 mt-1 font-semibold">
+                        {latestHeightRecord ? new Date(latestHeightRecord.created_at || '').toLocaleDateString('es-AR') : 'Sin registros'}
+                    </p>
+                </div>
+
+                <div className="glass p-5 rounded-2xl border border-pink-500/20">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Medicamentos Activos</p>
+                    <h3 className="text-2xl font-bold font-heading text-white">{activeMeds.length}</h3>
+                    <p className="text-[10px] text-pink-400 mt-1 font-semibold">Alarmas de dosis configuradas</p>
+                </div>
+
+                <div className="glass p-5 rounded-2xl border border-amber-500/20">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Citas & Turnos</p>
+                    <h3 className="text-2xl font-bold font-heading text-white">{upcomingAppointments.length}</h3>
+                    <p className="text-[10px] text-amber-400 mt-1 font-semibold">Consultas médicas</p>
+                </div>
+            </div>
+
+            {/* Navigation Tabs */}
+            <div className="glass p-2 rounded-2xl border border-border/50 flex items-center gap-2 overflow-x-auto">
+                {[
+                    { id: 'dashboard', label: 'Overview', icon: Baby },
+                    { id: 'growth', label: 'Crecimiento', icon: HeartPulse },
+                    { id: 'health', label: 'Salud & Síntomas', icon: Stethoscope },
+                    { id: 'vaccines', label: 'Vacunas', icon: Syringe },
+                    { id: 'meds', label: 'Remedios', icon: Pill },
+                    { id: 'milestones', label: 'Hitos', icon: Award },
+                ].map((tab: any) => {
+                    const Icon = tab.icon
+                    const isActive = activeTab === tab.id
+                    return (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all whitespace-nowrap ${
+                                isActive ? 'bg-pink-600 text-white shadow-md' : 'text-muted-foreground hover:text-white hover:bg-white/5'
+                            }`}
+                        >
+                            <Icon className="w-3.5 h-3.5" />
+                            {tab.label}
+                        </button>
+                    )
+                })}
+            </div>
+
+            {/* Tab Contents */}
+            {activeTab === 'growth' && (
+                <GrowthChart records={records} />
             )}
 
-            {/* Timeline */}
-            <div className="space-y-4 pt-4">
-                <h2 className="text-lg font-heading font-semibold px-1">Historial Clínico</h2>
-                <div className="glass rounded-3xl p-6 border border-border/50">
-                    {timeline.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground text-sm">
-                            No hay registros en el historial.
+            {activeTab === 'meds' && (
+                <div className="space-y-4">
+                    <h3 className="font-heading font-bold text-lg text-white">Alarma de Dosis de Remedios</h3>
+                    {activeMeds.length === 0 ? (
+                        <div className="glass p-6 text-center rounded-2xl text-xs text-muted-foreground">
+                            No hay remedios con dosis recurrente activa.
                         </div>
                     ) : (
-                        <div className="relative border-l-2 border-border/50 ml-3 space-y-8">
-                            {timeline.map((record, i) => (
-                                <div key={record.id} className="relative pl-6 group">
-                                    {/* Timeline dot */}
-                                    <div className="absolute -left-[11px] top-1 w-5 h-5 rounded-full bg-background border-2 border-border flex items-center justify-center">
-                                        <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-                                    </div>
-
-                                    <div className="bg-secondary/30 border border-border/50 rounded-2xl p-4 hover:bg-secondary/50 transition-colors">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <div className="flex items-center gap-2">
-                                                <div className="p-1.5 bg-background border border-border rounded-md shadow-sm">
-                                                    {getCategoryIcon(record.category)}
-                                                </div>
-                                                <div>
-                                                    <h3 className="font-semibold text-foreground">{record.title}</h3>
-                                                    <p className="text-xs text-muted-foreground">
-                                                        {format(new Date(record.created_at), "d 'de' MMMM, yyyy - HH:mm", { locale: es })}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <button onClick={() => handleDelete(record.id)} className="p-1.5 text-muted-foreground hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                {loading === record.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                                            </button>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {activeMeds.map((med) => (
+                                <div key={med.id} className="glass p-5 rounded-2xl border border-pink-500/30 space-y-3">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <h4 className="font-bold text-white text-base">{med.title}</h4>
+                                            <p className="text-xs text-muted-foreground mt-0.5">Cada {med.dose_interval_hours} horas</p>
                                         </div>
-                                        {record.content && (
-                                            <p className="text-sm text-muted-foreground mt-3 pl-1 leading-relaxed whitespace-pre-wrap">
-                                                {record.content}
-                                            </p>
-                                        )}
+                                        <button
+                                            onClick={() => handleTakeDose(med.id)}
+                                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1 shadow-md shadow-emerald-600/20"
+                                        >
+                                            <CheckCircle className="w-3.5 h-3.5" /> Dar Dosis
+                                        </button>
                                     </div>
+                                    <p className="text-[10px] font-mono text-muted-foreground">
+                                        Última dosis: {med.last_dose_at ? new Date(med.last_dose_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : 'Nunca'}
+                                    </p>
                                 </div>
                             ))}
                         </div>
                     )}
                 </div>
-            </div>
+            )}
 
-            {/* Create Modal */}
+            {(activeTab === 'dashboard' || activeTab === 'health' || activeTab === 'vaccines' || activeTab === 'milestones') && (
+                <div className="space-y-3">
+                    {records.length === 0 ? (
+                        <div className="glass p-8 text-center rounded-3xl border border-border/50 text-xs text-muted-foreground">
+                            No hay registros cargados todavía.
+                        </div>
+                    ) : (
+                        records.map((r) => (
+                            <div key={r.id} className="glass p-4 rounded-2xl border border-border/50 flex items-start justify-between gap-3">
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-pink-500/10 text-pink-400 border border-pink-500/20">
+                                            {r.category}
+                                        </span>
+                                        <span className="text-xs font-bold text-white">{r.title}</span>
+                                    </div>
+                                    {r.content && <p className="text-xs text-muted-foreground">{r.content}</p>}
+                                </div>
+
+                                <button onClick={() => handleDelete(r.id)} className="text-muted-foreground hover:text-red-400">
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </div>
+                        ))
+                    )}
+                </div>
+            )}
+
+            {/* Modal Create Record */}
             <AnimatePresence>
-                {isFormOpen && (
+                {isModalOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsFormOpen(false)} className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
-
-                        <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="bg-card w-full max-w-md max-h-[90dvh] flex flex-col rounded-2xl border border-border shadow-2xl relative z-10">
-                            <div className="flex items-center justify-between p-6 border-b border-border/50">
-                                <h2 className="text-xl font-bold font-heading">Nuevo Registro</h2>
-                                <button onClick={() => setIsFormOpen(false)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
+                        <div className="glass border border-border/50 w-full max-w-md rounded-3xl p-6 relative z-10 space-y-4">
+                            <div className="flex justify-between items-center border-b border-white/5 pb-3">
+                                <h3 className="font-heading font-bold text-lg text-white">Nuevo Registro de Julian</h3>
+                                <button onClick={() => setIsModalOpen(false)} className="text-muted-foreground hover:text-white"><X className="w-5 h-5" /></button>
                             </div>
 
-                            <form action={async (formData) => {
-                                setLoading('create')
-                                try {
-                                    await createJulianRecord(formData)
-                                    setIsFormOpen(false)
-                                } catch (e) {
-                                    alert('Error al guardar')
-                                } finally {
-                                    setLoading(null)
-                                }
-                            }} className="p-6 space-y-4 overflow-y-auto flex-1">
-
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Categoría</label>
-                                    <select name="category" className="w-full bg-secondary border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 appearance-none">
-                                        <option value="Note">Nota General</option>
-                                        <option value="Health">Visita Médica</option>
-                                        <option value="Meds">Medicación</option>
-                                        <option value="Vaccine">Vacuna</option>
+                            <form onSubmit={handleSubmit} className="space-y-3 text-xs">
+                                <div>
+                                    <label className="text-muted-foreground font-semibold block mb-1">Categoría</label>
+                                    <select value={category} onChange={(e: any) => setCategory(e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-xl p-2 text-white">
+                                        <option value="Health">🩺 Salud / Consulta</option>
+                                        <option value="Meds">💊 Medicamento / Remedio</option>
+                                        <option value="Vaccine">💉 Vacuna</option>
+                                        <option value="Appointment">📅 Cita Médica</option>
+                                        <option value="Note">⭐ Hito / Nota</option>
                                     </select>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Título</label>
-                                    <input required name="title" placeholder="Ej. Control 1 Año, Ibuprofeno..." className="w-full bg-secondary border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500" />
+                                <div>
+                                    <label className="text-muted-foreground font-semibold block mb-1">Título *</label>
+                                    <input required type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Ej: Control 6 meses / Ibuprofeno..." className="w-full bg-black/20 border border-white/10 rounded-xl p-2.5 text-white" />
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Detalles / Notas</label>
-                                    <textarea name="content" rows={3} placeholder="Diagnóstico, dosis, observaciones..." className="w-full bg-secondary border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 resize-none" />
+                                <div>
+                                    <label className="text-muted-foreground font-semibold block mb-1">Detalles / Notas</label>
+                                    <textarea rows={2} value={content} onChange={e => setContent(e.target.value)} placeholder="Dosis, indicaciones, temperatura..." className="w-full bg-black/20 border border-white/10 rounded-xl p-2.5 text-white resize-none" />
                                 </div>
 
-                                <div className="p-4 bg-orange-500/5 border border-orange-500/20 rounded-xl space-y-2">
-                                    <label className="text-sm font-medium text-orange-500 flex items-center gap-1.5 border-b border-orange-500/20 pb-2 mb-2">
-                                        <Clock className="w-4 h-4" /> Sólo para medicación recurrente
-                                    </label>
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-sm text-foreground">Tomar cada</span>
-                                        <input type="number" name="dose_interval_hours" placeholder="8" className="w-20 bg-background border border-border rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-orange-500 text-center" />
-                                        <span className="text-sm text-foreground">horas</span>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label className="text-muted-foreground font-semibold block mb-1">Peso (kg)</label>
+                                        <input type="number" step="0.1" value={weightKg} onChange={e => setWeightKg(e.target.value)} placeholder="Ej: 7.5" className="w-full bg-black/20 border border-white/10 rounded-xl p-2 text-white" />
+                                    </div>
+                                    <div>
+                                        <label className="text-muted-foreground font-semibold block mb-1">Talla (cm)</label>
+                                        <input type="number" step="0.5" value={heightCm} onChange={e => setHeightCm(e.target.value)} placeholder="Ej: 68" className="w-full bg-black/20 border border-white/10 rounded-xl p-2 text-white" />
                                     </div>
                                 </div>
 
-                                <div className="pt-4 mt-6 border-t border-border flex justify-end gap-3 shrink-0">
-                                    <button type="button" onClick={() => setIsFormOpen(false)} className="px-5 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-secondary">Cancelar</button>
-                                    <button disabled={loading === 'create'} type="submit" className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-md flex items-center justify-center min-w-[100px]">
-                                        {loading === 'create' ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Guardar'}
-                                    </button>
+                                {category === 'Meds' && (
+                                    <div>
+                                        <label className="text-muted-foreground font-semibold block mb-1">Intervalo de Dosis (horas)</label>
+                                        <input type="number" value={doseIntervalHours} onChange={e => setDoseIntervalHours(e.target.value)} placeholder="Ej: 8 para cada 8 hs" className="w-full bg-black/20 border border-white/10 rounded-xl p-2 text-white" />
+                                    </div>
+                                )}
+
+                                <div className="pt-2 flex justify-end gap-2">
+                                    <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 border border-white/10 rounded-xl text-muted-foreground">Cancelar</button>
+                                    <button type="submit" disabled={loading} className="px-5 py-2 bg-pink-600 hover:bg-pink-500 text-white font-semibold rounded-xl">Guardar</button>
                                 </div>
                             </form>
-                        </motion.div>
+                        </div>
                     </div>
                 )}
             </AnimatePresence>

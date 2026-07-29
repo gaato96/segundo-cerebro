@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { CheckSquare, Flame, TrendingUp, Sparkles } from 'lucide-react'
+import { CheckSquare, Flame, TrendingUp, Sparkles, Calendar } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 
 interface QuickStatsProps {
@@ -9,9 +9,10 @@ interface QuickStatsProps {
     habitsDone: number
     habitsTotal: number
     balance: number
+    eventsTodayCount?: number
 }
 
-export function QuickStats({ totalTasks, habitsDone, habitsTotal, balance }: QuickStatsProps) {
+export function QuickStats({ totalTasks, habitsDone, habitsTotal, balance, eventsTodayCount = 0 }: QuickStatsProps) {
     const cards = [
         {
             title: 'Tareas Pendientes',
@@ -39,11 +40,20 @@ export function QuickStats({ totalTasks, habitsDone, habitsTotal, balance }: Qui
             bgBase: 'bg-emerald-500/10',
             bgGlow: 'group-hover:bg-emerald-500/20',
             border: 'border-emerald-500/20'
+        },
+        {
+            title: 'Eventos de Hoy',
+            value: eventsTodayCount.toString(),
+            icon: Calendar,
+            color: 'text-purple-400',
+            bgBase: 'bg-purple-500/10',
+            bgGlow: 'group-hover:bg-purple-500/20',
+            border: 'border-purple-500/20'
         }
     ]
 
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {cards.map((card, idx) => (
                 <motion.div
                     key={card.title}
@@ -52,7 +62,6 @@ export function QuickStats({ totalTasks, habitsDone, habitsTotal, balance }: Qui
                     transition={{ delay: idx * 0.1, duration: 0.4 }}
                     className={`glass rounded-2xl p-5 border ${card.border} group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}
                 >
-                    {/* Background glow effect on hover */}
                     <div className={`absolute -inset-4 ${card.bgBase} ${card.bgGlow} blur-2xl transition-colors duration-500 opacity-50`} />
 
                     <div className="relative z-10 flex items-start justify-between">
@@ -65,7 +74,6 @@ export function QuickStats({ totalTasks, habitsDone, habitsTotal, balance }: Qui
                         </div>
                     </div>
 
-                    {/* Extra motivation for all habits done */}
                     {idx === 1 && habitsDone > 0 && habitsDone === habitsTotal && (
                         <motion.div
                             initial={{ scale: 0 }}

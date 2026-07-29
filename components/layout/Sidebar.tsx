@@ -7,7 +7,7 @@ import {
     Brain, LayoutDashboard, CheckSquare, Flame,
     DollarSign, Baby, Tv, Target, BookOpen,
     Heart, LogOut, ChevronLeft, ChevronRight,
-    Settings, Utensils, Inbox
+    Utensils, Inbox, Sun, CalendarRange, Calendar
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useState } from 'react'
@@ -15,6 +15,9 @@ import { cn } from '@/lib/utils'
 
 const navItems = [
     { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
+    { href: '/ritual', icon: Sun, label: 'Ritual Matutino' },
+    { href: '/planner', icon: CalendarRange, label: 'Planificador' },
+    { href: '/calendar', icon: Calendar, label: 'Calendario' },
     { href: '/inbox', icon: Inbox, label: 'Inbox' },
     { href: '/tasks', icon: CheckSquare, label: 'Tareas' },
     { href: '/habits', icon: Flame, label: 'Hábitos' },
@@ -95,7 +98,6 @@ export function Sidebar() {
                             {!collapsed && (
                                 <span className="text-sm font-medium relative z-10 whitespace-nowrap">{item.label}</span>
                             )}
-                            {/* Tooltip when collapsed */}
                             {collapsed && (
                                 <div className="absolute left-full ml-2 px-2 py-1 bg-popover border border-border rounded-lg text-xs text-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
                                     {item.label}
@@ -108,7 +110,6 @@ export function Sidebar() {
 
             {/* Bottom actions */}
             <div className="p-2 border-t border-sidebar-border space-y-1">
-
                 <button
                     onClick={signOut}
                     className={cn(
