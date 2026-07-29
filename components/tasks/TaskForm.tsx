@@ -7,11 +7,12 @@ import { X, Loader2, Calendar as CalendarIcon, Flag, Tag, Zap, Bell } from 'luci
 
 interface TaskFormProps {
     onClose: () => void
+    initialDate?: string
 }
 
-export function TaskForm({ onClose }: TaskFormProps) {
+export function TaskForm({ onClose, initialDate }: TaskFormProps) {
     const [loading, setLoading] = useState(false)
-    const [dueDate, setDueDate] = useState('')
+    const [dueDate, setDueDate] = useState(initialDate || '')
     const [reminderEnabled, setReminderEnabled] = useState(false)
 
     const router = useRouter()
@@ -220,4 +221,3 @@ export function TaskForm({ onClose }: TaskFormProps) {
         </div>
     )
 }
-

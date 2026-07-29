@@ -2,7 +2,8 @@
 
 import { motion } from 'framer-motion'
 import { Clock, MapPin, ExternalLink, MoreVertical, Users, Calendar, AlertCircle, Bell, Cake } from 'lucide-react'
-import { EventItem, getGoogleCalendarUrl } from '@/lib/actions/events'
+import { EventItem } from '@/lib/actions/events'
+import { getGoogleCalendarUrl } from '@/lib/utils'
 
 interface EventCardProps {
     event: EventItem

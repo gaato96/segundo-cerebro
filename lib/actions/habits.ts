@@ -30,7 +30,7 @@ export interface HabitLogItem {
 export async function getHabitsWithStats(monthYear?: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { habits: [], logs: [], monthlyStats: { streak: 0, completionRate: 0 } }
+    if (!user) return { habits: [], logs: [], monthlyStats: { completionRate: 0, activeHabitsCount: 0, totalLogsMonth: 0 } }
 
     const { data: habits, error: habitsError } = await supabase
         .from('habits')
@@ -55,13 +55,11 @@ export async function getHabitsWithStats(monthYear?: string) {
     const habitsList = habits || []
     const logsList = logs || []
 
-    // Calculate monthly stats
     const now = new Date()
     const currentMonthPrefix = monthYear || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 
     const monthLogs = logsList.filter(l => l.completed_at.startsWith(currentMonthPrefix))
 
-    // Completion rate
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
     const possibleCompletions = (habitsList.length || 1) * daysInMonth
     const completionRate = Math.min(100, Math.round((monthLogs.length / possibleCompletions) * 100))

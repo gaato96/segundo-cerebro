@@ -50,3 +50,30 @@ export function getStatusLabel(status: string) {
     }
     return labels[status] || status
 }
+
+export function getGoogleCalendarUrl(event: {
+    title: string
+    description?: string | null
+    event_date: string
+    start_time?: string | null
+    end_time?: string | null
+    location?: string | null
+}): string {
+    const baseUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
+    const text = encodeURIComponent(event.title || 'Evento')
+    const details = encodeURIComponent(event.description || '')
+    const location = encodeURIComponent(event.location || '')
+
+    let dates = ''
+    if (event.start_time) {
+        const startIso = `${event.event_date.replace(/-/g, '')}T${(event.start_time || '09:00:00').replace(/:/g, '').slice(0, 6)}`
+        const endTimeStr = event.end_time || event.start_time
+        const endIso = `${event.event_date.replace(/-/g, '')}T${(endTimeStr).replace(/:/g, '').slice(0, 6)}`
+        dates = `${startIso}/${endIso}`
+    } else {
+        const dateCompact = event.event_date.replace(/-/g, '')
+        dates = `${dateCompact}/${dateCompact}`
+    }
+
+    return `${baseUrl}&text=${text}&details=${details}&location=${location}&dates=${dates}`
+}

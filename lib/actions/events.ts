@@ -33,7 +33,6 @@ export async function getEvents(monthYear?: string): Promise<EventItem[]> {
         .order('event_date', { ascending: true })
 
     if (monthYear) {
-        // monthYear is YYYY-MM
         const [year, month] = monthYear.split('-')
         const startDate = `${year}-${month}-01`
         const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate()
@@ -197,14 +196,14 @@ export async function deleteEvent(id: string) {
 /**
  * Genera la URL para añadir directamente este evento a Google Calendar
  */
-export function getGoogleCalendarUrl(event: {
+export async function getGoogleCalendarUrl(event: {
     title: string
     description?: string | null
     event_date: string
     start_time?: string | null
     end_time?: string | null
     location?: string | null
-}): string {
+}): Promise<string> {
     const baseUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
     const text = encodeURIComponent(event.title)
     const details = encodeURIComponent(event.description || '')

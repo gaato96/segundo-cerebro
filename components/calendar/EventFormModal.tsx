@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Calendar as CalendarIcon, Clock, MapPin, Tag, Loader2, ExternalLink } from 'lucide-react'
-import { createEvent, updateEvent, deleteEvent, getGoogleCalendarUrl, EventItem } from '@/lib/actions/events'
+import { createEvent, updateEvent, deleteEvent, EventItem } from '@/lib/actions/events'
+import { getGoogleCalendarUrl } from '@/lib/utils'
 
 interface EventFormModalProps {
     isOpen: boolean
