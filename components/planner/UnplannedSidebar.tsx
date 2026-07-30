@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { CheckSquare, ArrowRight, Plus } from 'lucide-react'
+import { CheckSquare, Plus } from 'lucide-react'
 import { TaskDragCard } from './TaskDragCard'
+import { useDroppable } from '@dnd-kit/core'
 
 interface UnplannedSidebarProps {
     tasks: any[]
@@ -10,6 +11,8 @@ interface UnplannedSidebarProps {
     onAssignToDay: (taskId: string, dateStr: string) => void
     onCompleteTask: (id: string) => void
     onAddNewTask: () => void
+    dropId: string
+    isDragOver?: boolean
 }
 
 export function UnplannedSidebar({
@@ -17,12 +20,25 @@ export function UnplannedSidebar({
     weekDays,
     onAssignToDay,
     onCompleteTask,
-    onAddNewTask
+    onAddNewTask,
+    dropId,
+    isDragOver
 }: UnplannedSidebarProps) {
     const [selectedTask, setSelectedTask] = useState<string | null>(null)
+    const { setNodeRef, isOver } = useDroppable({
+        id: dropId,
+    })
+
+    const activeOver = isOver || isDragOver
 
     return (
-        <div className="glass rounded-3xl p-4 border border-border/50 flex flex-col h-full space-y-4">
+        <div
+            ref={setNodeRef}
+            className={`glass rounded-3xl p-4 border flex flex-col h-full space-y-4 transition-all ${activeOver
+                    ? 'bg-indigo-600/20 border-indigo-400 ring-2 ring-indigo-500/50 shadow-xl'
+                    : 'border-border/50'
+                }`}
+        >
             <div className="flex items-center justify-between border-b border-white/5 pb-3">
                 <div className="flex items-center gap-2">
                     <CheckSquare className="w-4 h-4 text-indigo-400" />
@@ -41,10 +57,13 @@ export function UnplannedSidebar({
                 Crear Tarea Rápidamente
             </button>
 
-            <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1 min-h-[300px]">
                 {tasks.length === 0 ? (
-                    <div className="text-center py-8 text-xs text-muted-foreground italic">
-                        ¡Genial! No tenés tareas pendientes sin planificar.
+                    <div className={`h-40 flex flex-col items-center justify-center text-center p-3 border border-dashed rounded-2xl transition-colors ${activeOver ? 'border-indigo-400 bg-indigo-500/10' : 'border-white/5'
+                        }`}>
+                        <p className="text-xs text-muted-foreground italic">
+                            {activeOver ? 'Soltá aquí para desasignar la tarea' : '¡Sin tareas pendientes sin planificar!'}
+                        </p>
                     </div>
                 ) : (
                     tasks.map((task) => {

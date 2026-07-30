@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
-import { Calendar as CalendarIcon, Clock, Plus, Users } from 'lucide-react'
+import { Clock, Plus, Users } from 'lucide-react'
 import { TaskDragCard } from './TaskDragCard'
 import { EventCard } from '@/components/calendar/EventCard'
 import { EventItem } from '@/lib/actions/events'
+import { useDroppable } from '@dnd-kit/core'
 
 interface WeekColumnProps {
     dayName: string
@@ -15,6 +15,8 @@ interface WeekColumnProps {
     onCompleteTask: (id: string) => void
     onAddTaskToDay: (dateStr: string) => void
     onUnassignTask: (taskId: string) => void
+    dropId: string
+    isDragOver?: boolean
 }
 
 export function WeekColumn({
@@ -25,8 +27,15 @@ export function WeekColumn({
     events,
     onCompleteTask,
     onAddTaskToDay,
-    onUnassignTask
+    onUnassignTask,
+    dropId,
+    isDragOver
 }: WeekColumnProps) {
+    const { setNodeRef, isOver } = useDroppable({
+        id: dropId,
+    })
+
+    const activeOver = isOver || isDragOver
     const formattedDate = dateStr.split('-').slice(1).join('/')
 
     const totalEstMinutes = tasks.reduce((sum, t) => sum + (t.estimated_minutes || 15), 0)
@@ -34,9 +43,15 @@ export function WeekColumn({
     const mins = totalEstMinutes % 60
 
     return (
-        <div className={`glass rounded-2xl p-3 border flex flex-col min-h-[450px] transition-all ${
-            isToday ? 'bg-indigo-600/10 border-indigo-500/40 shadow-lg' : 'border-border/50 bg-secondary/10'
-        }`}>
+        <div
+            ref={setNodeRef}
+            className={`glass rounded-2xl p-3 border flex flex-col min-h-[450px] transition-all ${activeOver
+                    ? 'bg-indigo-600/20 border-indigo-400 ring-2 ring-indigo-500/50 shadow-xl'
+                    : isToday
+                        ? 'bg-indigo-600/10 border-indigo-500/40 shadow-lg'
+                        : 'border-border/50 bg-secondary/10'
+                }`}
+        >
             {/* Column Header */}
             <div className="pb-3 mb-3 border-b border-white/5 flex items-center justify-between">
                 <div>
@@ -63,11 +78,11 @@ export function WeekColumn({
                 </button>
             </div>
 
-            {/* Events / Meetings Section (Informativo) */}
+            {/* Events / Meetings Section */}
             {events.length > 0 && (
                 <div className="space-y-1.5 mb-3">
                     <span className="text-[9px] font-bold uppercase text-muted-foreground tracking-widest flex items-center gap-1">
-                        <Users className="w-3 h-3 text-indigo-400" /> Reuniones & Eventos ({events.length})
+                        <Users className="w-3 h-3 text-indigo-400" /> Reuniones ({events.length})
                     </span>
                     {events.map((ev) => (
                         <EventCard key={ev.id} event={ev} compact />
@@ -78,8 +93,11 @@ export function WeekColumn({
             {/* Tasks Section */}
             <div className="flex-1 space-y-2 overflow-y-auto pr-1">
                 {tasks.length === 0 ? (
-                    <div className="h-32 flex flex-col items-center justify-center text-center p-2 border border-dashed border-white/5 rounded-xl">
-                        <p className="text-[11px] text-muted-foreground italic">Sin tareas planificadas</p>
+                    <div className={`h-32 flex flex-col items-center justify-center text-center p-2 border border-dashed rounded-xl transition-colors ${activeOver ? 'border-indigo-400 bg-indigo-500/10' : 'border-white/5'
+                        }`}>
+                        <p className="text-[11px] text-muted-foreground italic">
+                            {activeOver ? 'Soltá aquí la tarea' : 'Sin tareas'}
+                        </p>
                     </div>
                 ) : (
                     tasks.map((task) => (

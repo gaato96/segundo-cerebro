@@ -2,10 +2,12 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { DollarSign, Wallet, TrendingUp, TrendingDown, Landmark, Plus, Trash2, X, Target, PieChart } from 'lucide-react'
+import { DollarSign, Wallet, TrendingUp, TrendingDown, Landmark, Plus, Trash2, X, Target, PieChart, Sparkles } from 'lucide-react'
 import { FinancesChart } from '@/components/finances/FinancesChart'
 import { BudgetEnvelopes } from '@/components/finances/BudgetEnvelopes'
+import { BudgetProjections } from '@/components/finances/BudgetProjections'
 import { BudgetEnvelopeItem, createEnvelope, deleteEnvelope } from '@/lib/actions/budget_envelopes'
+import { BudgetProjectionItem } from '@/lib/actions/budget_projections'
 import { createTransaction, createDebt, deleteDebt, deleteTransaction } from '@/lib/actions/finances'
 import { formatCurrency } from '@/lib/utils'
 
@@ -15,6 +17,7 @@ interface FinancesClientProps {
     initialBudget: any
     initialGoals: any[]
     envelopes: BudgetEnvelopeItem[]
+    projections: BudgetProjectionItem[]
     monthYear: string
 }
 
@@ -23,12 +26,13 @@ export function FinancesClient({
     debts: initialDebts,
     initialGoals,
     envelopes: initialEnvelopes,
+    projections: initialProjections,
     monthYear
 }: FinancesClientProps) {
     const [transactions, setTransactions] = useState<any[]>(initialTransactions || [])
     const [debts, setDebts] = useState<any[]>(initialDebts || [])
     const [envelopes, setEnvelopes] = useState<BudgetEnvelopeItem[]>(initialEnvelopes || [])
-    const [activeTab, setActiveTab] = useState<'overview' | 'envelopes' | 'transactions' | 'debts'>('overview')
+    const [activeTab, setActiveTab] = useState<'overview' | 'projections' | 'envelopes' | 'transactions' | 'debts'>('overview')
 
     // Modals
     const [isTxModalOpen, setIsTxModalOpen] = useState(false)
@@ -161,6 +165,7 @@ export function FinancesClient({
             <div className="glass p-2 rounded-2xl border border-border/50 flex items-center gap-2 overflow-x-auto">
                 {[
                     { id: 'overview', label: 'Overview', icon: PieChart },
+                    { id: 'projections', label: 'Proyección Mensual', icon: Sparkles },
                     { id: 'envelopes', label: 'Sobres de Presupuesto', icon: Wallet },
                     { id: 'transactions', label: 'Transacciones', icon: DollarSign },
                     { id: 'debts', label: 'Deudas', icon: Landmark },
@@ -171,9 +176,8 @@ export function FinancesClient({
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all whitespace-nowrap ${
-                                isActive ? 'bg-indigo-600 text-white shadow-md' : 'text-muted-foreground hover:text-white hover:bg-white/5'
-                            }`}
+                            className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all whitespace-nowrap ${isActive ? 'bg-indigo-600 text-white shadow-md' : 'text-muted-foreground hover:text-white hover:bg-white/5'
+                                }`}
                         >
                             <Icon className="w-3.5 h-3.5" />
                             {tab.label}
@@ -192,6 +196,13 @@ export function FinancesClient({
                 />
             )}
 
+            {activeTab === 'projections' && (
+                <BudgetProjections
+                    projections={initialProjections}
+                    monthYear={monthYear}
+                />
+            )}
+
             {activeTab === 'envelopes' && (
                 <BudgetEnvelopes
                     envelopes={envelopes}
@@ -202,26 +213,29 @@ export function FinancesClient({
             )}
 
             {activeTab === 'transactions' && (
-                <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                        <h3 className="font-heading font-bold text-lg text-white">Lista de Transacciones ({monthYear})</h3>
-                        <button onClick={() => setIsTxModalOpen(true)} className="text-xs text-indigo-400 font-semibold">+ Nueva</button>
+                <div className="glass rounded-3xl p-5 border border-border/50 space-y-4">
+                    <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                        <h3 className="font-heading font-bold text-base text-white">Historial de Transacciones</h3>
+                        <button
+                            onClick={() => setIsTxModalOpen(true)}
+                            className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1"
+                        >
+                            <Plus className="w-3.5 h-3.5" /> Nueva
+                        </button>
                     </div>
 
-                    {transactions.length === 0 ? (
-                        <div className="glass p-8 text-center rounded-3xl text-xs text-muted-foreground">
-                            No hay transacciones registradas este mes.
-                        </div>
-                    ) : (
-                        <div className="space-y-2">
-                            {transactions.map((t) => (
-                                <div key={t.id} className="glass p-3.5 rounded-2xl border border-border/50 flex items-center justify-between">
+                    <div className="space-y-2">
+                        {transactions.length === 0 ? (
+                            <p className="text-xs text-muted-foreground italic text-center py-6">No hay transacciones registradas este mes.</p>
+                        ) : (
+                            transactions.map(t => (
+                                <div key={t.id} className="flex items-center justify-between p-3.5 rounded-2xl bg-secondary/20 border border-border/50 text-xs">
                                     <div>
-                                        <h4 className="text-sm font-bold text-white">{t.description}</h4>
-                                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{t.type}</span>
+                                        <p className="font-bold text-white">{t.description}</p>
+                                        <span className="text-[10px] text-muted-foreground">{t.type} · {t.category}</span>
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        <span className={`font-mono font-bold text-sm ${t.type === 'Income' ? 'text-emerald-400' : 'text-red-400'}`}>
+                                        <span className={`font-mono font-bold ${t.type === 'Income' ? 'text-emerald-400' : 'text-red-400'}`}>
                                             {t.type === 'Income' ? '+' : '-'}{formatCurrency(t.amount)}
                                         </span>
                                         <button onClick={() => handleDeleteTx(t.id)} className="text-muted-foreground hover:text-red-400">
@@ -229,112 +243,105 @@ export function FinancesClient({
                                         </button>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    )}
+                            ))
+                        )}
+                    </div>
                 </div>
             )}
 
             {activeTab === 'debts' && (
-                <div className="space-y-4">
-                    <h3 className="font-heading font-bold text-lg text-white">Deudas & Tarjetas</h3>
-                    {debts.length === 0 ? (
-                        <div className="glass p-6 text-center rounded-2xl text-xs text-muted-foreground">
-                            No tenés deudas registradas. ¡Felicitaciones!
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {debts.map((d) => (
-                                <div key={d.id} className="glass p-5 rounded-2xl border border-indigo-500/20 space-y-2">
-                                    <h4 className="font-bold text-white text-base">{d.creditor}</h4>
-                                    <div className="flex justify-between text-xs text-muted-foreground">
-                                        <span>Total: {formatCurrency(d.total_amount)}</span>
-                                        <span className="text-red-400 font-bold">Resta: {formatCurrency(d.remaining_amount)}</span>
+                <div className="glass rounded-3xl p-5 border border-border/50 space-y-4">
+                    <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                        <h3 className="font-heading font-bold text-base text-white">Deudas Activas</h3>
+                    </div>
+                    <div className="space-y-2">
+                        {debts.length === 0 ? (
+                            <p className="text-xs text-muted-foreground italic text-center py-6">¡Excelente! No tienes deudas registradas.</p>
+                        ) : (
+                            debts.map(d => (
+                                <div key={d.id} className="flex items-center justify-between p-3.5 rounded-2xl bg-secondary/20 border border-border/50 text-xs">
+                                    <div>
+                                        <p className="font-bold text-white">{d.creditor}</p>
+                                        <span className="text-[10px] text-muted-foreground">Vence día {d.due_day}</span>
+                                    </div>
+                                    <div className="font-mono text-right">
+                                        <p className="font-bold text-white">{formatCurrency(d.remaining_amount)}</p>
+                                        <span className="text-[10px] text-muted-foreground">Total: {formatCurrency(d.total_amount)}</span>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    )}
+                            ))
+                        )}
+                    </div>
                 </div>
             )}
-
-            {/* Modal Create Transaction */}
-            <AnimatePresence>
-                {isTxModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsTxModalOpen(false)} />
-                        <div className="glass border border-border/50 w-full max-w-md rounded-3xl p-6 relative z-10 space-y-4">
-                            <div className="flex justify-between items-center border-b border-white/5 pb-3">
-                                <h3 className="font-heading font-bold text-lg text-white">Registrar Movimiento</h3>
-                                <button onClick={() => setIsTxModalOpen(false)} className="text-muted-foreground hover:text-white"><X className="w-5 h-5" /></button>
-                            </div>
-                            <form onSubmit={handleCreateTx} className="space-y-3 text-xs">
-                                <div>
-                                    <label className="text-muted-foreground font-semibold block mb-1">Tipo</label>
-                                    <select value={txType} onChange={(e: any) => setTxType(e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-xl p-2 text-white">
-                                        <option value="Income">🟢 Ingreso</option>
-                                        <option value="Fixed_Expense">🔴 Gasto Fijo</option>
-                                        <option value="Variable">🟠 Gasto Variable</option>
-                                        <option value="Debt_Payment">🔵 Pago de Deuda</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="text-muted-foreground font-semibold block mb-1">Descripción *</label>
-                                    <input required type="text" value={txDesc} onChange={e => setTxDesc(e.target.value)} placeholder="Ej: Sueldo, Supermercado..." className="w-full bg-black/20 border border-white/10 rounded-xl p-2.5 text-white" />
-                                </div>
-                                <div>
-                                    <label className="text-muted-foreground font-semibold block mb-1">Monto (ARS) *</label>
-                                    <input required type="number" step="1" value={txAmount} onChange={e => setTxAmount(e.target.value)} placeholder="Ej: 50000" className="w-full bg-black/20 border border-white/10 rounded-xl p-2.5 text-white" />
-                                </div>
-                                <div className="pt-2 flex justify-end gap-2">
-                                    <button type="button" onClick={() => setIsTxModalOpen(false)} className="px-4 py-2 border border-white/10 rounded-xl text-muted-foreground">Cancelar</button>
-                                    <button type="submit" className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl">Guardar</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                )}
-            </AnimatePresence>
 
             {/* Modal Create Envelope */}
             <AnimatePresence>
                 {isEnvelopeModalOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsEnvelopeModalOpen(false)} />
-                        <div className="glass border border-border/50 w-full max-w-md rounded-3xl p-6 relative z-10 space-y-4">
-                            <div className="flex justify-between items-center border-b border-white/5 pb-3">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsEnvelopeModalOpen(false)}
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="glass border border-border/50 w-full max-w-md rounded-3xl overflow-hidden shadow-2xl relative z-10 p-6 space-y-4"
+                        >
+                            <div className="flex items-center justify-between border-b border-white/5 pb-3">
                                 <h3 className="font-heading font-bold text-lg text-white">Nuevo Sobre de Presupuesto</h3>
-                                <button onClick={() => setIsEnvelopeModalOpen(false)} className="text-muted-foreground hover:text-white"><X className="w-5 h-5" /></button>
+                                <button onClick={() => setIsEnvelopeModalOpen(false)} className="text-muted-foreground hover:text-white">
+                                    <X className="w-5 h-5" />
+                                </button>
                             </div>
-                            <form onSubmit={handleCreateEnvelope} className="space-y-3 text-xs">
+
+                            <form onSubmit={handleCreateEnvelope} className="space-y-4">
                                 <div>
-                                    <label className="text-muted-foreground font-semibold block mb-1">Categoría / Nombre *</label>
-                                    <input required type="text" value={envCategory} onChange={e => setEnvCategory(e.target.value)} placeholder="Ej: Alimentación, Salidas, Ahorro..." className="w-full bg-black/20 border border-white/10 rounded-xl p-2.5 text-white" />
+                                    <label className="text-xs font-semibold text-muted-foreground uppercase block mb-1">Categoría / Sobre *</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={envCategory}
+                                        onChange={(e) => setEnvCategory(e.target.value)}
+                                        placeholder="Ej: Supermercado, Salidas, Tarjeta..."
+                                        className="w-full bg-black/20 border border-white/10 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    />
                                 </div>
+
                                 <div>
-                                    <label className="text-muted-foreground font-semibold block mb-1">Monto Asignado (ARS) *</label>
-                                    <input required type="number" step="1" value={envAllocated} onChange={e => setEnvAllocated(e.target.value)} placeholder="Ej: 100000" className="w-full bg-black/20 border border-white/10 rounded-xl p-2.5 text-white" />
+                                    <label className="text-xs font-semibold text-muted-foreground uppercase block mb-1">Monto Asignado ($ ARS) *</label>
+                                    <input
+                                        type="number"
+                                        required
+                                        step="0.01"
+                                        value={envAllocated}
+                                        onChange={(e) => setEnvAllocated(e.target.value)}
+                                        placeholder="50000"
+                                        className="w-full bg-black/20 border border-white/10 rounded-xl px-3.5 py-2 text-sm text-white font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    />
                                 </div>
-                                <div>
-                                    <label className="text-muted-foreground font-semibold block mb-1">Color</label>
-                                    <div className="flex items-center gap-2">
-                                        {['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#ef4444'].map((c) => (
-                                            <button
-                                                key={c}
-                                                type="button"
-                                                onClick={() => setEnvColor(c)}
-                                                className={`w-7 h-7 rounded-full border-2 ${envColor === c ? 'scale-110 border-white' : 'border-transparent'}`}
-                                                style={{ backgroundColor: c }}
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
-                                <div className="pt-2 flex justify-end gap-2">
-                                    <button type="button" onClick={() => setIsEnvelopeModalOpen(false)} className="px-4 py-2 border border-white/10 rounded-xl text-muted-foreground">Cancelar</button>
-                                    <button type="submit" className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl">Crear Sobre</button>
+
+                                <div className="pt-2 flex items-center justify-end gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsEnvelopeModalOpen(false)}
+                                        className="px-4 py-2 border border-white/10 rounded-xl text-xs text-muted-foreground hover:text-white"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/20"
+                                    >
+                                        Crear Sobre
+                                    </button>
                                 </div>
                             </form>
-                        </div>
+                        </motion.div>
                     </div>
                 )}
             </AnimatePresence>

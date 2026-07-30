@@ -1,5 +1,6 @@
 import { getFinances } from '@/lib/actions/finances'
 import { getEnvelopes } from '@/lib/actions/budget_envelopes'
+import { getBudgetProjections } from '@/lib/actions/budget_projections'
 import { FinancesClient } from './page.client'
 
 export const dynamic = 'force-dynamic'
@@ -8,9 +9,10 @@ export default async function FinancesPage() {
     const date = new Date()
     const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
 
-    const [financesData, envelopes] = await Promise.all([
+    const [financesData, envelopes, projections] = await Promise.all([
         getFinances(monthYear),
-        getEnvelopes(monthYear)
+        getEnvelopes(monthYear),
+        getBudgetProjections(monthYear)
     ])
 
     return (
@@ -20,6 +22,7 @@ export default async function FinancesPage() {
             initialBudget={financesData.budget}
             initialGoals={financesData.goals}
             envelopes={envelopes}
+            projections={projections}
             monthYear={monthYear}
         />
     )

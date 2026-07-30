@@ -6,10 +6,8 @@ import { PlannerClient } from './page.client'
 export const dynamic = 'force-dynamic'
 
 export default async function PlannerPage() {
-    // Calculate Monday of current week
     const now = new Date()
     const dayOfWeek = now.getDay()
-    // 0 is Sunday, 1 is Monday
     const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
 
     const monday = new Date(now)
@@ -33,7 +31,7 @@ export default async function PlannerPage() {
             initialUnplanned={unplannedTasks || []}
             initialEvents={events || []}
             initialPlan={weeklyPlan}
-            mondayStr={mondayStr}
+            initialMondayStr={mondayStr}
         />
     )
 }

@@ -8,6 +8,9 @@ export interface HabitItem {
     user_id: string
     title: string
     frequency: 'daily' | 'weekly'
+    frequency_type: 'daily' | 'custom_days' | 'x_per_week' | 'x_per_day'
+    frequency_days: number[]      // ISO day of week: 1=Mon…7=Sun
+    frequency_times_per_day: number
     goal_count: number
     color_hex: string
     objective_id?: string | null
@@ -81,11 +84,16 @@ export async function createHabit(formData: FormData) {
     if (!user) return { error: 'No autorizado' }
 
     const title = formData.get('title') as string
-    const frequency = (formData.get('frequency') as 'daily' | 'weekly') || 'daily'
     const color_hex = (formData.get('color_hex') as string) || '#6366f1'
     const estimated_minutes = parseInt(formData.get('estimated_minutes') as string) || 15
     const time_of_day = (formData.get('time_of_day') as any) || 'morning'
     const icon = (formData.get('icon') as string) || 'flame'
+    const frequency_type = (formData.get('frequency_type') as string) || 'daily'
+    const frequency_days_raw = formData.get('frequency_days') as string
+    const frequency_days = frequency_days_raw
+        ? frequency_days_raw.split(',').map(Number).filter(n => !isNaN(n) && n >= 1 && n <= 7)
+        : []
+    const frequency_times_per_day = parseInt(formData.get('frequency_times_per_day') as string) || 1
 
     if (!title) return { error: 'El título es requerido' }
 
@@ -94,13 +102,16 @@ export async function createHabit(formData: FormData) {
         .insert({
             user_id: user.id,
             title,
-            frequency,
+            frequency: 'daily',
             goal_count: 1,
             color_hex,
             estimated_minutes,
             time_of_day,
             icon,
-            is_active: true
+            is_active: true,
+            frequency_type,
+            frequency_days,
+            frequency_times_per_day
         })
 
     if (error) return { error: error.message }
@@ -117,21 +128,28 @@ export async function updateHabit(id: string, formData: FormData) {
     if (!user) return { error: 'No autorizado' }
 
     const title = formData.get('title') as string
-    const frequency = (formData.get('frequency') as 'daily' | 'weekly') || 'daily'
     const color_hex = (formData.get('color_hex') as string) || '#6366f1'
     const estimated_minutes = parseInt(formData.get('estimated_minutes') as string) || 15
     const time_of_day = (formData.get('time_of_day') as any) || 'morning'
     const icon = (formData.get('icon') as string) || 'flame'
+    const frequency_type = (formData.get('frequency_type') as string) || 'daily'
+    const frequency_days_raw = formData.get('frequency_days') as string
+    const frequency_days = frequency_days_raw
+        ? frequency_days_raw.split(',').map(Number).filter(n => !isNaN(n) && n >= 1 && n <= 7)
+        : []
+    const frequency_times_per_day = parseInt(formData.get('frequency_times_per_day') as string) || 1
 
     const { error } = await supabase
         .from('habits')
         .update({
             title,
-            frequency,
             color_hex,
             estimated_minutes,
             time_of_day,
-            icon
+            icon,
+            frequency_type,
+            frequency_days,
+            frequency_times_per_day
         })
         .eq('id', id)
         .eq('user_id', user.id)

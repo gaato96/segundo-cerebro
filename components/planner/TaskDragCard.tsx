@@ -1,8 +1,9 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Check, Circle, Clock, Tag } from 'lucide-react'
+import { Check, Circle, Clock, GripVertical } from 'lucide-react'
 import { getPriorityColor, getPriorityLabel } from '@/lib/utils'
+import { useDraggable } from '@dnd-kit/core'
 
 interface TaskDragCardProps {
     task: any
@@ -12,19 +13,30 @@ interface TaskDragCardProps {
 }
 
 export function TaskDragCard({ task, onComplete, onUnassign }: TaskDragCardProps) {
+    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+        id: task.id,
+        data: { task }
+    })
+
+    const style = transform ? {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+        opacity: isDragging ? 0.4 : 1,
+    } : undefined
+
     return (
-        <motion.div
-            layout
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            whileHover={{ scale: 1.01 }}
-            className="group flex flex-col gap-2 p-3 rounded-xl bg-secondary/40 border border-border/50 hover:bg-secondary/70 transition-all text-xs"
+        <div
+            ref={setNodeRef}
+            style={style}
+            className={`group flex flex-col gap-2 p-3 rounded-xl bg-secondary/40 border transition-all text-xs select-none ${isDragging ? 'border-indigo-500 bg-indigo-500/10 shadow-lg' : 'border-border/50 hover:bg-secondary/70'
+                }`}
         >
             <div className="flex items-start justify-between gap-2">
                 <div className="flex items-start gap-2 min-w-0">
                     <button
-                        onClick={() => onComplete(task.id)}
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            onComplete(task.id)
+                        }}
                         className="mt-0.5 shrink-0 text-muted-foreground hover:text-green-500 transition-colors"
                     >
                         <Circle className="w-4 h-4 group-hover:hidden" />
@@ -33,6 +45,15 @@ export function TaskDragCard({ task, onComplete, onUnassign }: TaskDragCardProps
                     <span className="font-semibold text-white/90 leading-tight">
                         {task.title}
                     </span>
+                </div>
+
+                <div
+                    {...attributes}
+                    {...listeners}
+                    className="cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-white p-0.5 rounded shrink-0"
+                    title="Arrastrar tarea"
+                >
+                    <GripVertical className="w-3.5 h-3.5" />
                 </div>
             </div>
 
@@ -52,6 +73,6 @@ export function TaskDragCard({ task, onComplete, onUnassign }: TaskDragCardProps
                     </span>
                 )}
             </div>
-        </motion.div>
+        </div>
     )
 }

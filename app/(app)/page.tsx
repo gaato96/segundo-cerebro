@@ -6,8 +6,7 @@ import { QuickStats } from '@/components/dashboard/QuickStats'
 import { TodayEventsWidget } from '@/components/dashboard/TodayEventsWidget'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { DailyWinWidget } from '@/components/dashboard/DailyWinWidget'
-import { getDailyWin } from '@/lib/actions/daily_wins'
+// DailyWinWidget removed per user request
 import { StickyNotesWidget } from '@/components/dashboard/StickyNotesWidget'
 import { getStickyNotes } from '@/lib/actions/sticky_notes'
 import { IdealRoutineWidget } from '@/components/dashboard/IdealRoutineWidget'
@@ -57,7 +56,6 @@ export default async function DashboardPage() {
     const expenses = finances.filter((f: { type: string }) => f.type !== 'Income').reduce((sum: number, f: { amount: number }) => sum + f.amount, 0)
 
     const todayFormatted = format(now, "EEEE d 'de' MMMM", { locale: es })
-    const todayWin = await getDailyWin(todayStr)
     const stickyNotes = await getStickyNotes()
 
     return (
@@ -86,7 +84,7 @@ export default async function DashboardPage() {
                 </Link>
             </div>
 
-            <DailyWinWidget initialWin={todayWin?.win || null} dateStr={todayStr} />
+
 
             <IdealRoutineWidget routine={profile?.ideal_routine_json || null} />
 

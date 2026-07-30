@@ -77,3 +77,17 @@ export function getGoogleCalendarUrl(event: {
 
     return `${baseUrl}&text=${text}&details=${details}&location=${location}&dates=${dates}`
 }
+
+/** Returns true if a habit should appear today based on its frequency settings */
+export function isHabitScheduledForDate(habit: any, dateStr: string): boolean {
+    const ft = habit.frequency_type || 'daily'
+    if (ft === 'daily') return true
+    if (ft === 'x_per_day') return true
+    if (ft === 'custom_days') {
+        const d = new Date(dateStr + 'T00:00:00')
+        let isoDay = d.getDay()
+        if (isoDay === 0) isoDay = 7
+        return (habit.frequency_days || []).includes(isoDay)
+    }
+    return true
+}
