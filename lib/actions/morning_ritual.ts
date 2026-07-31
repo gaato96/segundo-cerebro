@@ -9,6 +9,7 @@ export interface MorningRitualLog {
     date: string
     daily_objective?: string | null
     affirmation?: string | null
+    mit_task_ids?: string[]
     completed_at?: string
 }
 
@@ -53,7 +54,7 @@ export async function getRitualLog(dateStr: string): Promise<MorningRitualLog | 
     return data || null
 }
 
-export async function saveRitualLog(dateStr: string, dailyObjective: string, affirmation?: string) {
+export async function saveRitualLog(dateStr: string, dailyObjective: string, affirmation?: string, mitTaskIds: string[] = []) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: 'No autorizado' }
@@ -65,7 +66,32 @@ export async function saveRitualLog(dateStr: string, dailyObjective: string, aff
             date: dateStr,
             daily_objective: dailyObjective,
             affirmation: affirmation || null,
+            mit_task_ids: mitTaskIds,
             completed_at: new Date().toISOString()
+        }, { onConflict: 'user_id,date' })
+        .select()
+        .single()
+
+    if (error) return { error: error.message }
+
+    revalidatePath('/ritual')
+    revalidatePath('/')
+    return { success: true, log: data }
+}
+
+export async function saveRitualDraft(dateStr: string, dailyObjective: string, affirmation?: string, mitTaskIds: string[] = []) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'No autorizado' }
+
+    const { data, error } = await supabase
+        .from('morning_ritual_logs')
+        .upsert({
+            user_id: user.id,
+            date: dateStr,
+            daily_objective: dailyObjective,
+            affirmation: affirmation || null,
+            mit_task_ids: mitTaskIds
         }, { onConflict: 'user_id,date' })
         .select()
         .single()

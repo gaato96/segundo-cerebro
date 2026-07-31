@@ -61,13 +61,6 @@ export function IdealRoutineWidget({ routine: initialRoutine }: { routine: Routi
         return () => clearInterval(interval)
     }, [routine])
 
-    // Open widget automatically if there is an active block
-    useEffect(() => {
-        if (activeBlockIndex >= 0 && !isOpen) {
-            setIsOpen(true)
-        }
-    }, [activeBlockIndex])
-
     const openEditModal = () => {
         setEditItems(routine.length > 0 ? [...routine] : [{ time: '08:00 - 09:00', activity: '', category: 'Personal' }])
         setIsEditOpen(true)
