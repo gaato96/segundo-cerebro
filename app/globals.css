@@ -31,6 +31,8 @@
     --sidebar-accent: 222 47% 12%;
     --sidebar-accent-foreground: 213 31% 91%;
     --sidebar-border: 222 33% 12%;
+    /* Bottom bar height */
+    --bottombar-height: 68px;
   }
 }
 
@@ -42,11 +44,14 @@
 
   html {
     @apply scroll-smooth;
+    /* Prevent horizontal overflow on mobile */
+    overflow-x: hidden;
   }
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
     touch-action: manipulation;
+    overflow-x: hidden;
     background-image:
       radial-gradient(ellipse at 20% 50%, hsl(239 84% 67% / 0.05) 0%, transparent 50%),
       radial-gradient(ellipse at 80% 20%, hsl(262 83% 58% / 0.05) 0%, transparent 50%);
@@ -111,7 +116,7 @@
     box-shadow: 0 0 20px hsl(239 84% 67% / 0.3);
   }
 
-  /* Bottom bar safe area */
+  /* Bottom bar safe area — reserves space equal to BottomBar */
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom, 1rem);
   }
@@ -127,6 +132,28 @@
     scrollbar-width: none;
     /* Firefox */
   }
+
+  /* Mobile-safe modal that avoids BottomBar area */
+  .modal-safe-mobile {
+    max-height: calc(100dvh - var(--bottombar-height));
+  }
+}
+
+/* Keyframe animations used via Tailwind animate- classes */
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+.animate-slide-down {
+  animation: slide-down 0.25s ease-out both;
+}
+.animate-slide-up {
+  animation: slide-up 0.25s ease-out both;
 }
 
 /* PWA standalone mode padding */

@@ -48,7 +48,7 @@ export function QuickCaptureButton() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setIsOpen(true)}
-                className="fixed bottom-24 md:bottom-8 right-6 z-40 bg-indigo-600 text-white p-4 rounded-full shadow-[0_0_20px_rgba(99,102,241,0.4)] hover:bg-indigo-500 transition-colors flexitems-center justify-center"
+                className="fixed bottom-[88px] md:bottom-8 right-5 z-40 bg-indigo-600 text-white p-3.5 rounded-full shadow-[0_0_20px_rgba(99,102,241,0.4)] hover:bg-indigo-500 transition-colors flex items-center justify-center"
             >
                 <Brain className="w-6 h-6" />
             </motion.button>

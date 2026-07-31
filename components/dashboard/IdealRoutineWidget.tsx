@@ -126,45 +126,45 @@ export function IdealRoutineWidget({ routine: initialRoutine }: { routine: Routi
     }
 
     return (
-        <div className="glass p-5 rounded-3xl border border-border/50 shadow-sm relative overflow-hidden transition-all hover:bg-secondary/10">
-            <div className="w-full flex items-center justify-between">
+        <div className="glass p-4 md:p-5 rounded-3xl border border-border/50 shadow-sm relative overflow-hidden transition-all hover:bg-secondary/10">
+            <div className="w-full flex items-center justify-between gap-2">
                 <button
                     onClick={() => setIsOpen(!isOpen)}
-                    className="flex-1 flex items-center gap-3 text-left outline-none"
+                    className="flex-1 min-w-0 flex items-center gap-2 md:gap-3 text-left outline-none"
                 >
-                    <div className={`p-2 rounded-xl ${activeBlockIndex >= 0 ? 'bg-indigo-500/20 text-indigo-300' : 'bg-indigo-500/10 text-indigo-400'}`}>
-                        <Clock className="w-5 h-5" />
+                    <div className={`shrink-0 p-2 rounded-xl ${activeBlockIndex >= 0 ? 'bg-indigo-500/20 text-indigo-300' : 'bg-indigo-500/10 text-indigo-400'}`}>
+                        <Clock className="w-4 h-4 md:w-5 md:h-5" />
                     </div>
-                    <div>
-                        <h3 className="font-heading font-bold text-base text-white flex items-center gap-2">
-                            Mi Rutina Ideal
+                    <div className="min-w-0">
+                        <h3 className="font-heading font-bold text-sm md:text-base text-white flex items-center gap-2 flex-wrap">
+                            <span className="whitespace-nowrap">Mi Rutina Ideal</span>
                             {activeBlockIndex >= 0 && (
-                                <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 animate-pulse">
-                                    <Play className="w-2.5 h-2.5 fill-indigo-400" /> EN CURSO
+                                <span className="flex items-center gap-1 text-[9px] md:text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 animate-pulse whitespace-nowrap">
+                                    <Play className="w-2 h-2 fill-indigo-400" /> EN CURSO
                                 </span>
                             )}
                         </h3>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground truncate">
                             {activeBlockIndex >= 0
-                                ? `Bloque actual: ${routine[activeBlockIndex]?.activity}`
+                                ? `Ahora: ${routine[activeBlockIndex]?.activity}`
                                 : 'Estructura diaria personalizada'}
                         </p>
                     </div>
                 </button>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 shrink-0">
                     <button
                         onClick={openEditModal}
                         className="p-2 rounded-xl bg-white/5 border border-white/10 text-muted-foreground hover:text-white hover:bg-white/10 transition-all text-xs flex items-center gap-1.5 font-medium"
                     >
                         <Edit2 className="w-3.5 h-3.5" />
-                        <span>Editar</span>
+                        <span className="hidden sm:inline">Editar</span>
                     </button>
                     {hasRoutine && (
                         <button
                             onClick={() => setIsOpen(!isOpen)}
                             className="p-2 text-muted-foreground hover:text-white transition-colors"
                         >
-                            {isOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                            {isOpen ? <ChevronUp className="w-4 h-4 md:w-5 md:h-5" /> : <ChevronDown className="w-4 h-4 md:w-5 md:h-5" />}
                         </button>
                     )}
                 </div>

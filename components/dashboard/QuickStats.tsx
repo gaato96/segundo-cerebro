@@ -53,24 +53,24 @@ export function QuickStats({ totalTasks, habitsDone, habitsTotal, balance, event
     ]
 
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
             {cards.map((card, idx) => (
                 <motion.div
                     key={card.title}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.1, duration: 0.4 }}
-                    className={`glass rounded-2xl p-5 border ${card.border} group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}
+                    className={`glass rounded-2xl p-3 md:p-5 border ${card.border} group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}
                 >
                     <div className={`absolute -inset-4 ${card.bgBase} ${card.bgGlow} blur-2xl transition-colors duration-500 opacity-50`} />
 
                     <div className="relative z-10 flex items-start justify-between">
                         <div>
-                            <p className="text-sm font-medium text-muted-foreground mb-1">{card.title}</p>
-                            <h3 className="text-2xl font-heading font-bold">{card.value}</h3>
+                            <p className="text-xs font-medium text-muted-foreground mb-1 leading-tight">{card.title}</p>
+                            <h3 className="text-lg md:text-2xl font-heading font-bold truncate">{card.value}</h3>
                         </div>
-                        <div className={`p-3 rounded-xl bg-secondary/50 border ${card.border} backdrop-blur-sm`}>
-                            <card.icon className={`w-5 h-5 ${card.color}`} />
+                        <div className={`p-2 md:p-3 rounded-xl bg-secondary/50 border ${card.border} backdrop-blur-sm shrink-0`}>
+                            <card.icon className={`w-4 h-4 md:w-5 md:h-5 ${card.color}`} />
                         </div>
                     </div>
 

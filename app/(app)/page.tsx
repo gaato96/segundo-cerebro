@@ -61,9 +61,9 @@ export default async function DashboardPage() {
     return (
         <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6 animate-fade-in pb-24">
             {/* Header & Morning Ritual Launcher */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-heading font-bold gradient-text capitalize">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                    <h1 className="text-xl md:text-3xl font-heading font-bold gradient-text capitalize leading-tight">
                         {todayFormatted}
                     </h1>
                     <p className="text-muted-foreground text-sm mt-0.5">
@@ -73,14 +73,14 @@ export default async function DashboardPage() {
 
                 <Link
                     href="/ritual"
-                    className={`px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 border shadow-lg transition-all ${
+                    className={`shrink-0 self-start px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 border shadow-lg transition-all whitespace-nowrap ${
                         ritualLog
                             ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
                             : 'bg-amber-500/10 text-amber-300 border-amber-500/30 hover:bg-amber-500/20 animate-pulse'
                     }`}
                 >
-                    <Sun className="w-4 h-4 text-amber-400" />
-                    {ritualLog ? 'Ritual Matutino Completado ✓' : 'Iniciar Ritual Matutino →'}
+                    <Sun className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>{ritualLog ? '✓ Ritual Completado' : 'Iniciar Ritual →'}</span>
                 </Link>
             </div>
 
