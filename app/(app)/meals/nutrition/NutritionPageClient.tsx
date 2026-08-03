@@ -42,9 +42,9 @@ export function NutritionPageClient({
             const newPlan = await generateMonthlyPlan(currentMonth)
             setPlan(newPlan)
             setActiveTab('plan')
-        } catch (err) {
+        } catch (err: any) {
             console.error(err)
-            alert('Error al generar el plan. Reintentá en unos momentos.')
+            alert(`Error al generar el plan: ${err?.message || 'Reintentá en unos momentos.'}`)
         } finally {
             setGenerating(false)
         }

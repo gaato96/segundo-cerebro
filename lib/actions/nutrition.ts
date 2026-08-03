@@ -4,11 +4,36 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
-function getGeminiModel() {
+function getGeminiModel(isJson: boolean = false) {
     const apiKey = process.env.GEMINI_API_KEY
-    if (!apiKey) throw new Error('GEMINI_API_KEY no está configurada.')
+    if (!apiKey) throw new Error('GEMINI_API_KEY no está configurada en .env.local')
     const genAI = new GoogleGenerativeAI(apiKey)
-    return genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+    return genAI.getGenerativeModel({
+        model: 'gemini-2.0-flash',
+        ...(isJson ? { generationConfig: { responseMimeType: 'application/json' } } : {})
+    })
+}
+
+function parseAIResponseJSON(text: string) {
+    let str = text.trim()
+    if (str.startsWith('```json')) {
+        str = str.replace(/^```json/, '').replace(/```$/, '').trim()
+    } else if (str.startsWith('```')) {
+        str = str.replace(/^```/, '').replace(/```$/, '').trim()
+    }
+
+    // Try extracting JSON object substring
+    const match = str.match(/\{[\s\S]*\}/)
+    if (match) {
+        str = match[0]
+    }
+
+    try {
+        return JSON.parse(str)
+    } catch (e) {
+        console.error('Failed to parse JSON from AI response:', text)
+        throw new Error('La respuesta de la IA no tuvo un formato JSON válido. Reintentá nuevamente.')
+    }
 }
 
 const SYSTEM_PROMPT_NUTRITIONIST = `
@@ -86,23 +111,18 @@ export async function saveNutritionProfile(formData: {
     }
 
     // Macro calculation
-    // Protein: 2g/kg for muscle gain, 1.8g/kg for weight loss, 1.6g/kg for maintain
     const proteinFactor = formData.goal === 'gain_muscle' ? 2.0 : (formData.goal === 'lose_weight' ? 1.8 : 1.6)
     const targetProtein = Math.round(formData.weight_kg * proteinFactor)
     const proteinCalories = targetProtein * 4
 
-    // Fat: ~25% of calories
     const fatCalories = targetCalories * 0.25
     const targetFat = Math.round(fatCalories / 9)
 
-    // Carbs: Remaining calories
     const carbCalories = Math.max(0, targetCalories - proteinCalories - fatCalories)
     const targetCarbs = Math.round(carbCalories / 4)
 
-    // Water intake: ~35ml per kg
     const waterLiters = Number(((formData.weight_kg * 35) / 1000).toFixed(1))
 
-    // Recommended supplements
     const supplements: string[] = []
     if (formData.goal === 'gain_muscle') {
         supplements.push('Creatina Monohidrato (5g/día)', 'Proteína Whey (opcional si falta en dieta)')
@@ -174,7 +194,7 @@ export async function generateMonthlyPlan(month: string) {
     const profile = await getNutritionProfile()
     if (!profile) throw new Error('Tenés que completar tu perfil nutricional primero.')
 
-    const model = getGeminiModel()
+    const model = getGeminiModel(true) // Enforce JSON response mime type
 
     const prompt = `
 Generá una dieta semanal modelo de 7 días (que se repetirá a lo largo del mes ${month}) adaptada a Tucumán, Argentina.
@@ -214,42 +234,39 @@ Respondé EXCLUSIVAMENTE con un JSON válido estructurado exactamente así:
 }
 `
 
-    const result = await model.generateContent(prompt)
-    const responseText = result.response.text().trim()
+    try {
+        const result = await model.generateContent(prompt)
+        const responseText = result.response.text().trim()
+        const parsed = parseAIResponseJSON(responseText)
 
-    let jsonStr = responseText
-    if (jsonStr.startsWith('```json')) {
-        jsonStr = jsonStr.replace(/^```json/, '').replace(/```$/, '').trim()
-    } else if (jsonStr.startsWith('```')) {
-        jsonStr = jsonStr.replace(/^```/, '').replace(/```$/, '').trim()
+        const payload = {
+            user_id: user.id,
+            month,
+            target_calories: profile.target_calories,
+            target_protein_g: profile.target_protein_g,
+            target_carbs_g: profile.target_carbs_g,
+            target_fat_g: profile.target_fat_g,
+            plan_data: parsed.days ? { days: parsed.days } : parsed,
+            exercise_plan: parsed.exercise_plan ? { routines: parsed.exercise_plan } : {},
+            supplements: profile.supplements_recommended || [],
+            water_liters: profile.water_liters || 2.0,
+            status: 'active',
+            updated_at: new Date().toISOString()
+        }
+
+        const { data, error } = await supabase
+            .from('nutrition_plans')
+            .upsert(payload, { onConflict: 'user_id, month' })
+            .select()
+            .single()
+
+        if (error) throw error
+        revalidatePath('/meals/nutrition')
+        return data
+    } catch (err: any) {
+        console.error('Error generating monthly plan:', err)
+        throw new Error(err.message || 'Error al comunicarse con Gemini AI')
     }
-
-    const parsed = JSON.parse(jsonStr)
-
-    const payload = {
-        user_id: user.id,
-        month,
-        target_calories: profile.target_calories,
-        target_protein_g: profile.target_protein_g,
-        target_carbs_g: profile.target_carbs_g,
-        target_fat_g: profile.target_fat_g,
-        plan_data: parsed.days ? { days: parsed.days } : parsed,
-        exercise_plan: parsed.exercise_plan ? { routines: parsed.exercise_plan } : {},
-        supplements: profile.supplements_recommended || [],
-        water_liters: profile.water_liters || 2.0,
-        status: 'active',
-        updated_at: new Date().toISOString()
-    }
-
-    const { data, error } = await supabase
-        .from('nutrition_plans')
-        .upsert(payload, { onConflict: 'user_id, month' })
-        .select()
-        .single()
-
-    if (error) throw error
-    revalidatePath('/meals/nutrition')
-    return data
 }
 
 export async function swapMeal(planId: string, dayNumber: number, mealType: string, reason?: string) {
@@ -269,7 +286,7 @@ export async function swapMeal(planId: string, dayNumber: number, mealType: stri
     const currentMeal = plan.plan_data?.days?.find((d: any) => d.day_number === dayNumber)?.meals?.[mealType]
     const targetCals = currentMeal?.calories || 400
 
-    const model = getGeminiModel()
+    const model = getGeminiModel(true)
     const prompt = `
 Generá UNA comida de reemplazo para la comida "${mealType}" de un paciente en Tucumán.
 Comida anterior: "${currentMeal?.name || mealType}".
@@ -289,28 +306,29 @@ Respondé SOLO con JSON válido con este formato exacto:
 }
 `
 
-    const result = await model.generateContent(prompt)
-    let jsonStr = result.response.text().trim()
-    if (jsonStr.startsWith('```json')) jsonStr = jsonStr.replace(/^```json/, '').replace(/```$/, '').trim()
-    if (jsonStr.startsWith('```')) jsonStr = jsonStr.replace(/^```/, '').replace(/```$/, '').trim()
+    try {
+        const result = await model.generateContent(prompt)
+        const responseText = result.response.text().trim()
+        const newMeal = parseAIResponseJSON(responseText)
 
-    const newMeal = JSON.parse(jsonStr)
+        const updatedPlanData = { ...plan.plan_data }
+        const dayObj = updatedPlanData.days?.find((d: any) => d.day_number === dayNumber)
+        if (dayObj && dayObj.meals) {
+            dayObj.meals[mealType] = newMeal
+        }
 
-    // Update plan JSON
-    const updatedPlanData = { ...plan.plan_data }
-    const dayObj = updatedPlanData.days?.find((d: any) => d.day_number === dayNumber)
-    if (dayObj && dayObj.meals) {
-        dayObj.meals[mealType] = newMeal
+        const { error } = await supabase
+            .from('nutrition_plans')
+            .update({ plan_data: updatedPlanData, updated_at: new Date().toISOString() })
+            .eq('id', planId)
+
+        if (error) throw error
+        revalidatePath('/meals/nutrition')
+        return newMeal
+    } catch (err: any) {
+        console.error('Error swapping meal:', err)
+        throw new Error(err.message || 'Error al cambiar la comida')
     }
-
-    const { error } = await supabase
-        .from('nutrition_plans')
-        .update({ plan_data: updatedPlanData, updated_at: new Date().toISOString() })
-        .eq('id', planId)
-
-    if (error) throw error
-    revalidatePath('/meals/nutrition')
-    return newMeal
 }
 
 // ============================================================
@@ -351,7 +369,6 @@ export async function addProgressEntry(data: {
 
     if (error) throw error
 
-    // Update current weight in profile too
     await supabase
         .from('nutrition_profiles')
         .update({ weight_kg: data.weight_kg })
@@ -400,16 +417,14 @@ export async function chatWithNutritionist(userMessage: string) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
 
-    // 1. Save user message to DB
     await supabase
         .from('nutrition_conversations')
         .insert({ user_id: user.id, role: 'user', content: userMessage })
 
-    // 2. Fetch profile & recent history
     const profile = await getNutritionProfile()
     const history = await getChatHistory()
 
-    const model = getGeminiModel()
+    const model = getGeminiModel(false)
 
     let promptContext = `${SYSTEM_PROMPT_NUTRITIONIST}\n\n`
     if (profile) {
@@ -426,7 +441,6 @@ export async function chatWithNutritionist(userMessage: string) {
     const result = await model.generateContent(promptContext)
     const replyText = result.response.text().trim()
 
-    // 3. Save assistant reply to DB
     await supabase
         .from('nutrition_conversations')
         .insert({ user_id: user.id, role: 'assistant', content: replyText })
