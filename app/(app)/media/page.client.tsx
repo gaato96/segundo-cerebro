@@ -11,6 +11,8 @@ import { TMDBConfigCard } from '@/components/media/TMDBConfigCard'
 import { MediaRouletteModal } from '@/components/media/MediaRouletteModal'
 import { RatingModal } from '@/components/media/RatingModal'
 import { TMDBDetailsModal } from '@/components/media/TMDBDetailsModal'
+import { FootballHub } from '@/components/media/FootballHub'
+import { GameLibrary } from '@/components/media/GameLibrary'
 
 interface MediaItem {
     id: string
@@ -27,12 +29,12 @@ interface MediaItem {
 
 export function MediaClient({ initialItems }: { initialItems: MediaItem[] }) {
     const [items, setItems] = useState<MediaItem[]>(initialItems)
-    const [activeTab, setActiveTab] = useState<'Movies' | 'Series' | 'Recommendations' | 'Others'>('Movies')
+    const [activeTab, setActiveTab] = useState<'Movies' | 'Series' | 'Games' | 'Recommendations' | 'Books'>('Movies')
+    const [gamesSubTab, setGamesSubTab] = useState<'Football' | 'Library'>('Football')
     const [subFilter, setSubFilter] = useState<'Backlog' | 'Active' | 'Finished'>('Active')
     
-    // Sub-filters for Books/Games
-    const [othersTypeFilter, setOthersTypeFilter] = useState<'All' | 'Book' | 'Game'>('All')
-    const [othersStatusFilter, setOthersStatusFilter] = useState<'Backlog' | 'Active' | 'Finished'>('Active')
+    // Sub-filters for Books
+    const [booksStatusFilter, setBooksStatusFilter] = useState<'Backlog' | 'Active' | 'Finished'>('Active')
 
     // TMDB Search States
     const [searchQuery, setSearchQuery] = useState('')
@@ -521,10 +523,9 @@ export function MediaClient({ initialItems }: { initialItems: MediaItem[] }) {
             if (item.type !== 'Series') return false
             return item.status === subFilter
         }
-        if (activeTab === 'Others') {
-            if (item.type !== 'Book' && item.type !== 'Game') return false
-            if (othersTypeFilter !== 'All' && item.type !== othersTypeFilter) return false
-            return item.status === othersStatusFilter
+        if (activeTab === 'Books') {
+            if (item.type !== 'Book') return false
+            return item.status === booksStatusFilter
         }
         return false
     })
@@ -672,8 +673,9 @@ export function MediaClient({ initialItems }: { initialItems: MediaItem[] }) {
                 {[
                     { id: 'Movies', label: 'Películas', icon: Clapperboard },
                     { id: 'Series', label: 'Series', icon: Tv },
+                    { id: 'Games', label: 'Juegos 🎮', icon: Gamepad },
                     { id: 'Recommendations', label: 'Recomendaciones IA', icon: Sparkles },
-                    { id: 'Others', label: 'Otros (Libros/Juegos)', icon: Library }
+                    { id: 'Books', label: 'Libros 📖', icon: Book }
                 ].map(tab => (
                     <button
                         key={tab.id}
@@ -784,7 +786,7 @@ export function MediaClient({ initialItems }: { initialItems: MediaItem[] }) {
             )}
 
             {/* SubFilters for Movies / Series */}
-            {activeTab !== 'Recommendations' && activeTab !== 'Others' && (
+            {(activeTab === 'Movies' || activeTab === 'Series') && (
                 <div className="flex gap-1 overflow-x-auto pb-1">
                     {[
                         { id: 'Backlog', label: 'Pendientes' },
@@ -806,50 +808,66 @@ export function MediaClient({ initialItems }: { initialItems: MediaItem[] }) {
                 </div>
             )}
 
-            {/* SubFilters for Others (Books & Games) */}
-            {activeTab === 'Others' && (
-                <div className="space-y-3">
-                    {/* Types */}
-                    <div className="flex gap-1.5 overflow-x-auto pb-0.5">
-                        {[
-                            { id: 'All', label: 'Todos' },
-                            { id: 'Book', label: 'Libros 📖' },
-                            { id: 'Game', label: 'Juegos 🎮' }
-                        ].map(typeF => (
-                            <button
-                                key={typeF.id}
-                                onClick={() => setOthersTypeFilter(typeF.id as any)}
-                                className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-                                    othersTypeFilter === typeF.id
-                                        ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                                        : 'text-muted-foreground hover:text-foreground hover:bg-secondary/40'
-                                }`}
-                            >
-                                {typeF.label}
-                            </button>
-                        ))}
+            {/* SubFilters for Books */}
+            {activeTab === 'Books' && (
+                <div className="flex gap-1 overflow-x-auto pb-1">
+                    {[
+                        { id: 'Backlog', label: 'Pendientes 📖' },
+                        { id: 'Active', label: 'Leyendo 📖' },
+                        { id: 'Finished', label: 'Leídos 🏆' }
+                    ].map(sub => (
+                        <button
+                            key={sub.id}
+                            onClick={() => setBooksStatusFilter(sub.id as any)}
+                            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+                                booksStatusFilter === sub.id
+                                    ? 'bg-pink-600/10 text-pink-400 border border-pink-500/20'
+                                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/40'
+                            }`}
+                        >
+                            {sub.label}
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {/* Games Section Sub-tabs */}
+            {activeTab === 'Games' && (
+                <div className="space-y-6">
+                    <div className="flex gap-2 border-b border-border/50 pb-3">
+                        <button
+                            onClick={() => setGamesSubTab('Football')}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                                gamesSubTab === 'Football'
+                                    ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/30'
+                                    : 'text-muted-foreground hover:bg-secondary/40'
+                            }`}
+                        >
+                            ⚽ Retos FM24 & EA FC 26
+                        </button>
+                        <button
+                            onClick={() => setGamesSubTab('Library')}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                                gamesSubTab === 'Library'
+                                    ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
+                                    : 'text-muted-foreground hover:bg-secondary/40'
+                            }`}
+                        >
+                            🎮 Mi Biblioteca (Ruleta & Tracking)
+                        </button>
                     </div>
 
-                    {/* Status */}
-                    <div className="flex gap-1.5 overflow-x-auto pb-1">
-                        {[
-                            { id: 'Backlog', label: 'Pendientes' },
-                            { id: 'Active', label: 'Leyendo / Jugando' },
-                            { id: 'Finished', label: 'Terminados' }
-                        ].map(statusF => (
-                            <button
-                                key={statusF.id}
-                                onClick={() => setOthersStatusFilter(statusF.id as any)}
-                                className={`px-4 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                                    othersStatusFilter === statusF.id
-                                        ? 'bg-pink-600/10 text-pink-400 border border-pink-500/20'
-                                        : 'text-muted-foreground hover:text-foreground hover:bg-secondary/40'
-                                }`}
-                            >
-                                {statusF.label}
-                            </button>
-                        ))}
-                    </div>
+                    {gamesSubTab === 'Football' ? (
+                        <FootballHub />
+                    ) : (
+                        <GameLibrary
+                            items={items}
+                            onRefresh={async () => {
+                                const updated = await fetchUpdatedItems()
+                                setItems(updated)
+                            }}
+                        />
+                    )}
                 </div>
             )}
 
@@ -936,7 +954,7 @@ export function MediaClient({ initialItems }: { initialItems: MediaItem[] }) {
                         </div>
                     )}
                 </div>
-            ) : (
+            ) : activeTab === 'Games' ? null : (
                 /* Regular Backlog Items Grid */
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {filteredItems.length === 0 ? (
