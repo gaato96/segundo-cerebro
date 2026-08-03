@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Check, Circle, Trash2, Calendar as CalendarIcon, MoreVertical, GripVertical, X, Bell, CalendarPlus } from 'lucide-react'
+import { Check, Circle, Trash2, Calendar as CalendarIcon, GripVertical, Bell, Repeat } from 'lucide-react'
 import { updateTaskStatus, deleteTask } from '@/lib/actions/tasks'
 import { getPriorityColor, getPriorityLabel, formatDate } from '@/lib/utils'
 import confetti from 'canvas-confetti'
+import { TaskEditModal } from './TaskEditModal'
 
 interface TaskListProps {
     pendingTasks: any[]
@@ -15,45 +16,6 @@ interface TaskListProps {
 export function TaskList({ pendingTasks, completedTasks }: TaskListProps) {
     const [loading, setLoading] = useState<string | null>(null)
     const [selectedTask, setSelectedTask] = useState<any | null>(null)
-
-    function getGoogleCalendarUrl(task: any) {
-        const baseUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
-        const title = encodeURIComponent(task.title || '')
-        const details = encodeURIComponent(task.description ? `${task.description}\n\n---\nGenerado desde Segundo Cerebro` : 'Generado desde Segundo Cerebro')
-        
-        let dates = ''
-        if (task.due_date) {
-            // task.due_date is "YYYY-MM-DD"
-            const [y, m, d] = task.due_date.split('-')
-            
-            if (task.reminder_time) {
-                // task.reminder_time is "HH:MM" or "HH:MM:SS"
-                const [hours, minutes] = task.reminder_time.split(':')
-                const startStr = `${y}${m}${d}T${hours}${minutes}00`
-                
-                // Add 30 minutes for the end time
-                const endDate = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), parseInt(hours), parseInt(minutes) + 30)
-                const endY = endDate.getFullYear()
-                const endM = String(endDate.getMonth() + 1).padStart(2, '0')
-                const endD = String(endDate.getDate()).padStart(2, '0')
-                const endH = String(endDate.getHours()).padStart(2, '0')
-                const endMin = String(endDate.getMinutes()).padStart(2, '0')
-                
-                const endStr = `${endY}${endM}${endD}T${endH}${endMin}00`
-                
-                dates = `&dates=${startStr}/${endStr}&ctz=America/Argentina/Buenos_Aires`
-            } else {
-                // All day event
-                const nextDay = new Date(parseInt(y), parseInt(m) - 1, parseInt(d) + 1)
-                const ny = nextDay.getFullYear()
-                const nm = String(nextDay.getMonth() + 1).padStart(2, '0')
-                const nd = String(nextDay.getDate()).padStart(2, '0')
-                dates = `&dates=${y}${m}${d}/${ny}${nm}${nd}`
-            }
-        }
-        
-        return `${baseUrl}&text=${title}${dates}&details=${details}`
-    }
 
     async function handleToggleStatus(taskId: string, currentStatus: string, priority: number) {
         if (loading) return
@@ -67,9 +29,6 @@ export function TaskList({ pendingTasks, completedTasks }: TaskListProps) {
 
         try {
             await updateTaskStatus(taskId, newStatus)
-            if (selectedTask?.id === taskId) {
-                setSelectedTask((prev: any) => ({ ...prev, status: newStatus }))
-            }
         } catch (error) {
             console.error('Failed to update status', error)
         } finally {
@@ -82,9 +41,6 @@ export function TaskList({ pendingTasks, completedTasks }: TaskListProps) {
         setLoading(taskId)
         try {
             await deleteTask(taskId)
-            if (selectedTask?.id === taskId) {
-                setSelectedTask(null)
-            }
         } catch (error) {
             console.error('Failed to delete task', error)
         } finally {
@@ -114,7 +70,6 @@ export function TaskList({ pendingTasks, completedTasks }: TaskListProps) {
                 : 'glass hover:bg-secondary/50 border-border/50 shadow-sm'
                 }`}
             onClick={(e) => {
-                // Prevent opening modal if clicking specific buttons inside the task row
                 const target = e.target as HTMLElement
                 if (!target.closest('button')) {
                     setSelectedTask(task)
@@ -135,7 +90,7 @@ export function TaskList({ pendingTasks, completedTasks }: TaskListProps) {
                     <div className="w-5 h-5 border-2 border-muted border-t-green-500 rounded-full animate-spin" />
                 ) : isCompleted ? (
                     <div className="w-5 h-5 bg-green-500 text-background rounded-full flex items-center justify-center">
-                        <Check className="w-3 h-3" />
+                        <Check className="w-3 h-3 stroke-[3]" />
                     </div>
                 ) : (
                     <div className="relative">
@@ -146,9 +101,16 @@ export function TaskList({ pendingTasks, completedTasks }: TaskListProps) {
             </button>
 
             <div className="flex-1 min-w-0">
-                <p className={`text-base font-medium transition-colors ${isCompleted ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-                    {task.title}
-                </p>
+                <div className="flex items-center gap-2">
+                    {task.recurring_parent_id && (
+                        <span className="p-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20" title="Tarea recurrente">
+                            <Repeat className="w-3 h-3" />
+                        </span>
+                    )}
+                    <p className={`text-base font-medium transition-colors ${isCompleted ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                        {task.title}
+                    </p>
+                </div>
 
                 {task.description && !isCompleted && (
                     <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
@@ -237,93 +199,12 @@ export function TaskList({ pendingTasks, completedTasks }: TaskListProps) {
                 </div>
             )}
 
-            {/* Task Details Modal */}
-            <AnimatePresence>
-                {selectedTask && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedTask(null)} className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
-                        <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="bg-card w-full max-w-lg max-h-[90dvh] flex flex-col rounded-2xl border border-border shadow-2xl relative z-10 overflow-hidden">
-                            <div className="flex items-start justify-between p-6 border-b border-border/50 bg-secondary/10">
-                                <div className="flex gap-3">
-                                    <button
-                                        onClick={() => handleToggleStatus(selectedTask.id, selectedTask.status, selectedTask.priority)}
-                                        disabled={loading === selectedTask.id}
-                                        className={`mt-0.5 shrink-0 transition-colors ${selectedTask.status === 'Done' ? 'text-green-500' : 'text-muted-foreground hover:text-green-500'}`}
-                                    >
-                                        {loading === selectedTask.id ? (
-                                            <div className="w-5 h-5 border-2 border-muted border-t-green-500 rounded-full animate-spin" />
-                                        ) : selectedTask.status === 'Done' ? (
-                                            <div className="w-5 h-5 bg-green-500 text-background rounded-full flex items-center justify-center">
-                                                <Check className="w-3 h-3" />
-                                            </div>
-                                        ) : (
-                                            <Circle className="w-5 h-5" />
-                                        )}
-                                    </button>
-                                    <div>
-                                        <h2 className={`text-xl font-bold font-heading ${selectedTask.status === 'Done' ? 'line-through text-muted-foreground' : ''}`}>{selectedTask.title}</h2>
-                                        <div className="flex gap-2 items-center mt-2">
-                                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getPriorityColor(selectedTask.priority)}`}>
-                                                {getPriorityLabel(selectedTask.priority)}
-                                            </span>
-                                            <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-muted text-muted-foreground border border-border flex items-center gap-1">
-                                                <div className={`w-1.5 h-1.5 rounded-full ${selectedTask.category === 'Work' ? 'bg-orange-500' : 'bg-blue-500'}`} />
-                                                {selectedTask.category}
-                                            </span>
-                                            {selectedTask.energy_level && (
-                                                <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-secondary text-muted-foreground border border-border flex items-center gap-1">
-                                                    {selectedTask.energy_level === 'Deep Work' ? '⚡' : selectedTask.energy_level === 'Low Energy' ? '🔋' : '📱'} {selectedTask.energy_level}
-                                                </span>
-                                            )}
-                                            {selectedTask.due_date && (
-                                                <span className="text-[10px] flex items-center gap-1 text-muted-foreground">
-                                                    <CalendarIcon className="w-3 h-3" />
-                                                    {formatDate(selectedTask.due_date)}
-                                                </span>
-                                            )}
-                                            {selectedTask.reminder_time && (
-                                                <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center gap-1">
-                                                    <Bell className="w-3 h-3" />
-                                                    {selectedTask.reminder_time.substring(0, 5)}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                                <button onClick={() => setSelectedTask(null)} className="text-muted-foreground hover:text-foreground shrink-0"><X className="w-5 h-5" /></button>
-                            </div>
-
-                            <div className="p-6 overflow-y-auto flex-1 whitespace-pre-wrap text-sm text-foreground/90 leading-relaxed">
-                                {selectedTask.description ? selectedTask.description : <span className="text-muted-foreground italic">No hay descripción para esta tarea.</span>}
-                            </div>
-
-                            <div className="p-4 border-t border-border/50 bg-secondary/10 flex justify-between items-center flex-wrap gap-3">
-                                {selectedTask.due_date ? (
-                                    <a
-                                        href={getGoogleCalendarUrl(selectedTask)}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-2 px-4 py-2 bg-[#4285F4] hover:bg-[#3367D6] text-white rounded-xl text-sm font-medium transition-colors"
-                                    >
-                                        <CalendarPlus className="w-4 h-4" />
-                                        Añadir a Google Calendar
-                                    </a>
-                                ) : (
-                                    <div />
-                                )}
-
-                                <button
-                                    onClick={() => handleDelete(selectedTask.id)}
-                                    className="flex items-center gap-2 px-4 py-2 text-red-500 hover:bg-red-500/10 rounded-xl text-sm font-medium transition-colors"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                    Eliminar Tarea
-                                </button>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+            {/* Task Edit Modal */}
+            <TaskEditModal
+                task={selectedTask}
+                isOpen={!!selectedTask}
+                onClose={() => setSelectedTask(null)}
+            />
         </div>
     )
 }

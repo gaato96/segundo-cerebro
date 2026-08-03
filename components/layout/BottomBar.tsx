@@ -6,7 +6,7 @@ import { motion } from 'framer-motion'
 import {
     LayoutDashboard, CheckSquare, Flame, DollarSign,
     Baby, Tv, Target, BookOpen, Heart, Utensils,
-    Inbox, Sun, CalendarRange, Calendar
+    Inbox, Sun, CalendarRange, Calendar, Sparkles
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -18,13 +18,14 @@ const bottomNavItems = [
     { href: '/inbox', icon: Inbox, label: 'Inbox' },
     { href: '/tasks', icon: CheckSquare, label: 'Tareas' },
     { href: '/habits', icon: Flame, label: 'Hábitos' },
+    { href: '/meals/nutrition', icon: Sparkles, label: 'Nutrición' },
+    { href: '/meals', icon: Utensils, label: 'Comidas' },
     { href: '/finances', icon: DollarSign, label: 'Finanzas' },
     { href: '/julian', icon: Baby, label: 'Julián' },
     { href: '/okrs', icon: Target, label: 'OKRs' },
     { href: '/journal', icon: BookOpen, label: 'Journal' },
     { href: '/media', icon: Tv, label: 'Media' },
     { href: '/wishlist', icon: Heart, label: 'Deseos' },
-    { href: '/meals', icon: Utensils, label: 'Comidas' },
 ]
 
 export function BottomBar() {

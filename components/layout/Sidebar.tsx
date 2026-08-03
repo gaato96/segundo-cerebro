@@ -7,7 +7,8 @@ import {
     Brain, LayoutDashboard, CheckSquare, Flame,
     DollarSign, Baby, Tv, Target, BookOpen,
     Heart, LogOut, ChevronLeft, ChevronRight,
-    Utensils, Inbox, Sun, CalendarRange, Calendar
+    Utensils, Inbox, Sun, CalendarRange, Calendar,
+    Sparkles
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useState } from 'react'
@@ -21,13 +22,14 @@ const navItems = [
     { href: '/inbox', icon: Inbox, label: 'Inbox' },
     { href: '/tasks', icon: CheckSquare, label: 'Tareas' },
     { href: '/habits', icon: Flame, label: 'Hábitos' },
+    { href: '/meals/nutrition', icon: Sparkles, label: 'Nutricionista IA' },
+    { href: '/meals', icon: Utensils, label: 'Comidas' },
     { href: '/finances', icon: DollarSign, label: 'Finanzas' },
     { href: '/julian', icon: Baby, label: 'Julian' },
     { href: '/media', icon: Tv, label: 'Entretenimiento' },
     { href: '/okrs', icon: Target, label: 'Objetivos' },
     { href: '/journal', icon: BookOpen, label: 'Journal' },
     { href: '/wishlist', icon: Heart, label: 'Wishlist' },
-    { href: '/meals', icon: Utensils, label: 'Comidas' },
 ]
 
 export function Sidebar() {
