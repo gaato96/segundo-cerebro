@@ -8,7 +8,11 @@ function getGeminiModel() {
     const apiKey = process.env.GEMINI_API_KEY
     if (!apiKey) throw new Error('GEMINI_API_KEY no está configurada en .env.local')
     const genAI = new GoogleGenerativeAI(apiKey)
-    return genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+    // gemini-1.5-flash is a stable (GA) model → requires API version v1, not v1beta (SDK default)
+    return genAI.getGenerativeModel(
+        { model: 'gemini-1.5-flash' },
+        { apiVersion: 'v1' }
+    )
 }
 
 function parseAIResponseJSON(text: string) {
