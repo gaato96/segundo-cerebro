@@ -275,6 +275,105 @@ export function FinancesClient({
                 </div>
             )}
 
+            {/* Modal: Registrar Movimiento */}
+            <AnimatePresence>
+                {isTxModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsTxModalOpen(false)}
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                            className="glass border border-border/50 w-full max-w-md rounded-3xl overflow-hidden shadow-2xl relative z-10 p-6 space-y-5"
+                        >
+                            <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                                <h3 className="font-heading font-bold text-lg text-white flex items-center gap-2">
+                                    <DollarSign className="w-5 h-5 text-indigo-400" />
+                                    Registrar Movimiento
+                                </h3>
+                                <button onClick={() => setIsTxModalOpen(false)} className="text-muted-foreground hover:text-white">
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleCreateTx} className="space-y-4">
+                                {/* Type selector */}
+                                <div>
+                                    <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">Tipo de Movimiento *</label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {[
+                                            { value: 'Income', label: '💰 Ingreso', color: 'emerald' },
+                                            { value: 'Fixed_Expense', label: '🔒 Gasto Fijo', color: 'red' },
+                                            { value: 'Variable', label: '🛒 Gasto Variable', color: 'orange' },
+                                            { value: 'Debt_Payment', label: '💳 Pago Deuda', color: 'purple' },
+                                        ].map(opt => (
+                                            <button
+                                                key={opt.value}
+                                                type="button"
+                                                onClick={() => setTxType(opt.value as any)}
+                                                className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-all ${txType === opt.value
+                                                    ? 'bg-indigo-600/30 border-indigo-400 text-white'
+                                                    : 'bg-black/20 border-white/10 text-muted-foreground hover:bg-white/5'}`}
+                                            >
+                                                {opt.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-xs font-semibold text-muted-foreground uppercase block mb-1">Descripción *</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={txDesc}
+                                        onChange={(e) => setTxDesc(e.target.value)}
+                                        placeholder="Ej: Sueldo, Supermercado, Netflix..."
+                                        className="w-full bg-black/20 border border-white/10 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="text-xs font-semibold text-muted-foreground uppercase block mb-1">Monto ($ ARS) *</label>
+                                    <input
+                                        type="number"
+                                        required
+                                        step="0.01"
+                                        min="0"
+                                        value={txAmount}
+                                        onChange={(e) => setTxAmount(e.target.value)}
+                                        placeholder="50000"
+                                        className="w-full bg-black/20 border border-white/10 rounded-xl px-3.5 py-2 text-sm text-white font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    />
+                                </div>
+
+                                <div className="pt-2 flex items-center justify-end gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsTxModalOpen(false)}
+                                        className="px-4 py-2 border border-white/10 rounded-xl text-xs text-muted-foreground hover:text-white"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/20"
+                                    >
+                                        Guardar Movimiento
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
             {/* Modal Create Envelope */}
             <AnimatePresence>
                 {isEnvelopeModalOpen && (

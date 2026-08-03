@@ -10,6 +10,7 @@ export interface FootballObjective {
     text: string
     category: 'trophy' | 'transfer' | 'academy' | 'derby' | 'league' | 'special'
     status: 'pending' | 'completed' | 'failed'
+    season: number // Which season this objective belongs to (1, 2, 3...)
 }
 
 export interface FootballChallenge {
@@ -202,17 +203,23 @@ Devuelve ÚNICAMENTE un objeto JSON válido con esta estructura exacta, sin text
   "objectives": [
     {
       "id": "obj-1",
-      "text": "Texto claro del objetivo (ej: 'Lograr el ascenso a Primera División en un máximo de 2 temporadas')",
+      "text": "Texto claro del objetivo (ej: 'Lograr el ascenso a Primera División')",
       "category": "league" | "trophy" | "transfer" | "academy" | "derby" | "special",
+      "season": 1,
       "status": "pending"
     }
   ]
 }
 
-Reglas para los objetivos:
-- Genera entre 8 y 12 objetivos variados y desafiantes organizados conceptualmente por temporadas o metas de gestión.
-- Incluye objetivos de: Liga/Posición, Trofeos/Copas, Fichajes/Políticas de fichaje (ej: sin gastar más de 20M, comprar solo sudamericanos, etc.), Cantera/Juventud (ej: debutar 3 canteranos por año), Clásicos/Rivalidades y Objetivos Especiales (ej: romper récord de puntos, ganar al campeón).
-- Adapta las metas al nivel real del equipo: si es de 2da división, incluye el ascenso; si es un gigante caído, devolverlo a Europa; si es un club de elite, lograr el triplete o récord invicto.
+REGLAS CRÍTICAS PARA LOS OBJETIVOS:
+- Genera entre 10 y 14 objetivos variados y desafiantes.
+- CADA objetivo DEBE tener el campo "season" con un número de temporada (1, 2, 3, 4, etc).
+- Los objetivos se deben ordenar lógicamente: los de Temporada 1 son los más inmediatos y accesibles. Las temporadas siguientes son más exigentes.
+- En Temporada 1 incluye: objetivos de adaptación, fichajes iniciales, posición en liga, primer clásico.
+- En Temporada 2-3 incluye: trofeos regionales/nacionales, canteras más desarrolladas, récords de posición.
+- En Temporada 4+ incluye: Champions/Libertadores, récords históricos, triplete, hitos especiales.
+- Incluye objetivos variados: Liga/Posición, Trofeos/Copas, Fichajes, Cantera/Juventud, Clásicos/Rivalidades y Especiales.
+- Adapta las metas al nivel real del equipo: si es de 2da división los primeros objetivos son el ascenso; si es un gigante caído, devolverlo a Europa; si es un club de elite, lograr el triplete.
 `
 
     const userPrompt = `Genera un reto realista y divertido para ${params.game} con el equipo "${params.teamName}" ${params.league ? `de la liga ${params.league}` : ''} ${params.country ? `(${params.country})` : ''}.`
@@ -262,16 +269,120 @@ Reglas para los objetivos:
         const data = JSON.parse(cleaned)
         // Ensure status field in every objective
         if (Array.isArray(data.objectives)) {
-            data.objectives = data.objectives.map((obj: any, idx: number) => ({
-                id: obj.id || `obj-${idx + 1}`,
-                text: obj.text || '',
-                category: obj.category || 'special',
-                status: 'pending'
-            }))
+            data.objectives = data.objectives
+                .sort((a: any, b: any) => (a.season || 1) - (b.season || 1))
+                .map((obj: any, idx: number) => ({
+                    id: obj.id || `obj-${idx + 1}`,
+                    text: obj.text || '',
+                    category: obj.category || 'special',
+                    season: obj.season || 1,
+                    status: 'pending'
+                }))
         }
         return data
     } catch (e) {
         console.error('Failed to parse AI challenge output:', resultText)
         throw new Error('Error al interpretar el reto generado por la IA.')
     }
+}
+
+// Regenerate a single objective using AI
+export async function regenerateSingleObjective(params: {
+    challengeId: string
+    objectiveId: string
+    teamName: string
+    game: 'FM24' | 'EAFC26'
+    league?: string | null
+    category: string
+    season: number
+    currentText: string
+}) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    const groqKey = process.env.GROQ_API_KEY
+    const geminiKey = process.env.GEMINI_API_KEY
+
+    const prompt = `Eres un creador de retos de modo carrera para ${params.game}.
+Genera UN ÚNICO objetivo alternativo para el equipo "${params.teamName}" ${params.league ? `(${params.league})` : ''}.
+
+El objetivo debe:
+- Pertenecer a la Temporada ${params.season} del reto
+- Ser de la categoría: "${params.category}"
+- Ser DIFERENTE al objetivo actual: "${params.currentText}"
+- Ser realista, entretenido y desafiante para la temporada indicada
+
+Devuelve SOLO JSON válido con esta estructura:
+{"text": "Texto del nuevo objetivo"}`
+
+    let resultText = ''
+
+    if (groqKey) {
+        try {
+            const groq = new Groq({ apiKey: groqKey })
+            const res = await groq.chat.completions.create({
+                messages: [{ role: 'user', content: prompt }],
+                model: 'llama-3.3-70b-versatile',
+                response_format: { type: 'json_object' }
+            })
+            resultText = res.choices[0]?.message?.content || ''
+        } catch (e) {
+            console.error('Groq error regenerating objective:', e)
+        }
+    }
+
+    if (!resultText && geminiKey) {
+        try {
+            const genAI = new GoogleGenerativeAI(geminiKey)
+            const model = genAI.getGenerativeModel({
+                model: 'gemini-1.5-flash',
+                generationConfig: { responseMimeType: 'application/json' }
+            })
+            const res = await model.generateContent(prompt)
+            resultText = res.response.text()
+        } catch (e) {
+            console.error('Gemini error regenerating objective:', e)
+        }
+    }
+
+    if (!resultText) throw new Error('No se pudo regenerar el objetivo (sin API key disponible).')
+
+    let newText = ''
+    try {
+        let cleaned = resultText.trim().replace(/^```json\s*/, '').replace(/```$/, '').trim()
+        const parsed = JSON.parse(cleaned)
+        newText = parsed.text || ''
+    } catch {
+        throw new Error('Error al interpretar la respuesta de la IA.')
+    }
+
+    if (!newText) throw new Error('La IA no generó un texto válido.')
+
+    // Fetch current objectives and update only the target one
+    const { data: current, error: fetchErr } = await supabase
+        .from('football_challenges')
+        .select('objectives')
+        .eq('id', params.challengeId)
+        .eq('user_id', user.id)
+        .single()
+
+    if (fetchErr || !current) throw new Error('Reto no encontrado')
+
+    const updatedObjs = (current.objectives || []).map((obj: FootballObjective) => {
+        if (obj.id === params.objectiveId) {
+            return { ...obj, text: newText, status: 'pending' }
+        }
+        return obj
+    })
+
+    const { error } = await supabase
+        .from('football_challenges')
+        .update({ objectives: updatedObjs })
+        .eq('id', params.challengeId)
+        .eq('user_id', user.id)
+
+    if (error) throw error
+    revalidatePath('/media')
+    return updatedObjs as FootballObjective[]
 }

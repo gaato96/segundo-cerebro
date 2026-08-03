@@ -42,7 +42,7 @@ export function TaskDragCard({ task, onComplete, onUnassign }: TaskDragCardProps
                         <Circle className="w-4 h-4 group-hover:hidden" />
                         <Check className="w-4 h-4 hidden group-hover:block" />
                     </button>
-                    <span className="font-semibold text-white/90 leading-tight">
+                    <span className="font-semibold text-white/90 leading-tight break-words min-w-0 line-clamp-3">
                         {task.title}
                     </span>
                 </div>
