@@ -43,9 +43,10 @@ export function NutritionProfileForm({ initialProfile, onSuccess }: NutritionPro
                 province: 'Tucumán'
             })
             onSuccess?.()
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error al guardar perfil:', error)
-            alert('Error al guardar el perfil nutricional')
+            const msg = error?.message || JSON.stringify(error) || 'Error desconocido'
+            alert(`Error al guardar el perfil nutricional:\n\n${msg}`)
         } finally {
             setLoading(false)
         }
