@@ -194,7 +194,7 @@ export async function generateMonthlyPlan(month: string) {
     const model = getGeminiModel()
 
     const prompt = `
-Generá una dieta semanal modelo de 7 días (que se repetirá a lo largo del mes ${month}) adaptada a Tucumán, Argentina.
+Generá un plan de alimentación semanal modelo de 7 días (Lunes a Domingo) para el mes ${month}, adaptado a Tucumán, Argentina.
 
 DATOS DEL PACIENTE:
 - Peso: ${profile.weight_kg} kg, Altura: ${profile.height_cm} cm, Edad: ${profile.age} años, Sexo: ${profile.sex}
@@ -205,39 +205,78 @@ DATOS DEL PACIENTE:
 - Restricciones: ${profile.dietary_restrictions?.join(', ') || 'Ninguna'}
 - Ubicación: Tucumán, Argentina
 
-INSTRUCCIONES:
-1. Proponer 7 días (Día 1 a Día 7) con 4 comidas diarias: "desayuno", "almuerzo", "merienda", "cena".
-2. Usar platos de comida argentina accesibles en Tucumán (ej: tostadas integrales con queso y huevo, milanesas al horno con puré de calabaza, suprema de pollo con ensalada, omelette de verdura, bife a la plancha con arroz integral, empanada tucumana magra de pollo, etc.).
-3. NUNCA incluir ingredientes que no le gusten al usuario.
-4. Generar también una rutina semanal de ejercicios en casa de MÁXIMO 15 MINUTOS (ej: sentadillas, flexiones de brazo contra pared o piso, plancha abdominal, estocadas) organizada por días.
+INSTRUCCIONES CLAVE DE VARIEDAD Y RUTINA:
+1. Para CADA DÍA (Día 1 a 7) y para CADA COMIDA ("desayuno", "almuerzo", "merienda", "cena"), proporcioná 3 OPCIONES ALTERNATIVAS DISTINTAS (opciones 0, 1, 2) con comidas argentinas tucumanas realistas para que el usuario pueda elegir o variar.
+2. Cada opción debe tener:
+   - "name": Nombre descriptivo de la comida.
+   - "calories", "protein", "carbs", "fat": Valores numéricos aproximados por porción.
+   - "ingredients": Lista de ingredientes CON CANTIDADES EXACTAS (ej: ["200g pechuga de pollo", "1 huevo", "pan rallado", "300g calabaza"]).
+   - "instructions": Instrucciones sencillas paso a paso para prepararla en casa.
+   - "is_cheat_meal": boolean (true solo si es comida libre/permitido).
+3. INCLUIR DÍAS DE PERMITIDO / CHEAT MEAL:
+   - Para el fin de semana (ej: Cena del Sábado o Almuerzo del Domingo), incluir como opción 1 o 2 un "Permitido / Cheat Meal" recomendado por el nutricionista (ej: "2 empanadas tucumanas tradicionales" o "Pizza casera magra"), marcando "is_cheat_meal": true.
+   - Incluir una recomendación en "cheat_meal_recommendation" (ej: "Se recomienda 1 comida libre el fin de semana para mantener la adherencia").
+4. RUTINA DE EJERCICIO OPTIMIZADA:
+   - Generar rutina para MÁXIMO 3 a 4 DÍAS por semana (ej: Lunes, Miércoles, Viernes). NUNCA 7 días seguidos (los otros días son de descanso).
+   - Sesiones cortas de 12 a 15 minutos en casa sin equipamiento.
 
 Respondé EXCLUSIVAMENTE con un JSON válido estructurado exactamente así:
 {
+  "cheat_meal_recommendation": "Recomendación del nutricionista sobre comidas libres semanalmente",
   "days": [
     {
       "day_number": 1,
       "day_name": "Lunes",
       "meals": {
-        "desayuno": { "name": "...", "calories": 350, "protein": 20, "carbs": 40, "fat": 10, "ingredients": ["..."], "instructions": "..." },
-        "almuerzo": { "name": "...", "calories": 550, "protein": 40, "carbs": 50, "fat": 15, "ingredients": ["..."], "instructions": "..." },
-        "merienda": { "name": "...", "calories": 250, "protein": 15, "carbs": 30, "fat": 8, "ingredients": ["..."], "instructions": "..." },
-        "cena": { "name": "...", "calories": 500, "protein": 35, "carbs": 45, "fat": 14, "ingredients": ["..."], "instructions": "..." }
+        "desayuno": {
+          "selected_option": 0,
+          "options": [
+            { "name": "...", "calories": 350, "protein": 20, "carbs": 40, "fat": 10, "ingredients": ["2 rodajas pan integral", "1/2 palta"], "instructions": "Tostar..." },
+            { "name": "...", "calories": 360, "protein": 22, "carbs": 38, "fat": 9, "ingredients": ["..."], "instructions": "..." },
+            { "name": "...", "calories": 340, "protein": 19, "carbs": 42, "fat": 8, "ingredients": ["..."], "instructions": "..." }
+          ]
+        },
+        "almuerzo": {
+          "selected_option": 0,
+          "options": [
+            { "name": "...", "calories": 550, "protein": 40, "carbs": 50, "fat": 15, "ingredients": ["..."], "instructions": "..." },
+            { "name": "...", "calories": 560, "protein": 42, "carbs": 48, "fat": 14, "ingredients": ["..."], "instructions": "..." },
+            { "name": "...", "calories": 540, "protein": 38, "carbs": 52, "fat": 16, "ingredients": ["..."], "instructions": "..." }
+          ]
+        },
+        "merienda": {
+          "selected_option": 0,
+          "options": [
+            { "name": "...", "calories": 250, "protein": 15, "carbs": 30, "fat": 8, "ingredients": ["..."], "instructions": "..." },
+            { "name": "...", "calories": 260, "protein": 16, "carbs": 28, "fat": 9, "ingredients": ["..."], "instructions": "..." },
+            { "name": "...", "calories": 240, "protein": 14, "carbs": 32, "fat": 7, "ingredients": ["..."], "instructions": "..." }
+          ]
+        },
+        "cena": {
+          "selected_option": 0,
+          "options": [
+            { "name": "...", "calories": 500, "protein": 35, "carbs": 45, "fat": 14, "ingredients": ["..."], "instructions": "..." },
+            { "name": "...", "calories": 510, "protein": 37, "carbs": 43, "fat": 13, "ingredients": ["..."], "instructions": "..." },
+            { "name": "...", "calories": 490, "protein": 33, "carbs": 47, "fat": 15, "ingredients": ["..."], "instructions": "..." }
+          ]
+        }
       }
     }
   ],
   "exercise_plan": [
-    { "day": "Lunes", "title": "Rutina Piernas & Core (12 min)", "exercises": ["12 Sentadillas sin peso (3 series)", "30 seg Plancha frontal (3 series)"] }
+    { "day": "Lunes", "title": "Rutina Piernas & Core (12 min)", "exercises": ["12 Sentadillas sin peso (3 series)", "30 seg Plancha frontal (3 series)"] },
+    { "day": "Miércoles", "title": "Rutina HIIT & Cardio (15 min)", "exercises": ["40 seg Jumping Jacks (4 rondas)", "12 Estocadas por pierna (3 series)"] },
+    { "day": "Viernes", "title": "Rutina Tonificación & Fuerza (14 min)", "exercises": ["15 Puentes de cadera (3 series)", "12 Sentadillas sumo (3 series)"] }
   ]
 }
 `
 
     try {
-        console.log('[nutrition] Calling Gemini for plan generation...')
+        console.log('[nutrition] Calling Gemini for multi-option plan generation...')
         const result = await model.generateContent(prompt)
         const responseText = result.response.text().trim()
         console.log('[nutrition] Gemini response received, length:', responseText.length)
         const parsed = parseAIResponseJSON(responseText)
-        console.log('[nutrition] JSON parsed successfully, days count:', parsed.days?.length)
 
         const payload = {
             user_id: user.id,
@@ -246,7 +285,10 @@ Respondé EXCLUSIVAMENTE con un JSON válido estructurado exactamente así:
             target_protein_g: profile.target_protein_g,
             target_carbs_g: profile.target_carbs_g,
             target_fat_g: profile.target_fat_g,
-            plan_data: parsed.days ? { days: parsed.days } : parsed,
+            plan_data: {
+                cheat_meal_recommendation: parsed.cheat_meal_recommendation || '1 comida libre sugerida por semana.',
+                days: parsed.days || []
+            },
             exercise_plan: parsed.exercise_plan ? { routines: parsed.exercise_plan } : {},
             supplements: profile.supplements_recommended || [],
             water_liters: profile.water_liters || 2.0,
@@ -254,7 +296,7 @@ Respondé EXCLUSIVAMENTE con un JSON válido estructurado exactamente así:
             updated_at: new Date().toISOString()
         }
 
-        console.log('[nutrition] Upserting plan to Supabase...')
+        console.log('[nutrition] Upserting multi-option plan to Supabase...')
         const { data, error } = await supabase
             .from('nutrition_plans')
             .upsert(payload, { onConflict: 'user_id, month' })
@@ -272,6 +314,103 @@ Respondé EXCLUSIVAMENTE con un JSON válido estructurado exactamente así:
         console.error('[nutrition] Error generating monthly plan:', err?.message || err)
         throw new Error(err.message || 'Error al comunicarse con Gemini AI')
     }
+}
+
+export async function updateSelectedMealOption(planId: string, dayNumber: number, mealType: string, optionIndex: number) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    const { data: plan } = await supabase
+        .from('nutrition_plans')
+        .select('*')
+        .eq('id', planId)
+        .single()
+
+    if (!plan) throw new Error('Plan no encontrado')
+
+    const updatedPlanData = { ...plan.plan_data }
+    const dayObj = updatedPlanData.days?.find((d: any) => d.day_number === dayNumber)
+    if (dayObj && dayObj.meals && dayObj.meals[mealType]) {
+        dayObj.meals[mealType].selected_option = optionIndex
+    }
+
+    const { error } = await supabase
+        .from('nutrition_plans')
+        .update({ plan_data: updatedPlanData, updated_at: new Date().toISOString() })
+        .eq('id', planId)
+
+    if (error) throw error
+    revalidatePath('/meals/nutrition')
+}
+
+export async function copyMeal(planId: string, dayNumber: number, sourceMealType: string, targetMealType: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    const { data: plan } = await supabase
+        .from('nutrition_plans')
+        .select('*')
+        .eq('id', planId)
+        .single()
+
+    if (!plan) throw new Error('Plan no encontrado')
+
+    const updatedPlanData = { ...plan.plan_data }
+    const dayObj = updatedPlanData.days?.find((d: any) => d.day_number === dayNumber)
+    if (dayObj && dayObj.meals) {
+        const sourceMeal = dayObj.meals[sourceMealType]
+        if (sourceMeal) {
+            dayObj.meals[targetMealType] = JSON.parse(JSON.stringify(sourceMeal))
+        }
+    }
+
+    const { error } = await supabase
+        .from('nutrition_plans')
+        .update({ plan_data: updatedPlanData, updated_at: new Date().toISOString() })
+        .eq('id', planId)
+
+    if (error) throw error
+    revalidatePath('/meals/nutrition')
+}
+
+export async function saveNutritionMealAsRecipe(meal: {
+    name: string
+    ingredients: string[]
+    instructions: string
+    protein?: number
+    carbs?: number
+}) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    const ingredientsFormatted = (meal.ingredients || []).map(ing => ({
+        name: ing,
+        quantity: '1',
+        unit: 'porción'
+    }))
+
+    const { data, error } = await supabase
+        .from('recipes')
+        .insert({
+            user_id: user.id,
+            name: meal.name,
+            description: `Receta de Nutricionista IA (${meal.protein ? meal.protein + 'g prot' : 'nutritiva'}).`,
+            complexity: 'Fácil',
+            protein_type: meal.protein ? `${meal.protein}g proteina` : 'Balanceada',
+            carb_type: meal.carbs ? `${meal.carbs}g carbs` : 'Moderado',
+            steps: meal.instructions || 'Preparación según plan nutricional.',
+            tags: ['Nutricionista IA', 'Plan Saludable'],
+            ingredients: ingredientsFormatted
+        })
+        .select()
+        .single()
+
+    if (error) throw error
+    revalidatePath('/meals')
+    return data
 }
 
 export async function swapMeal(planId: string, dayNumber: number, mealType: string, reason?: string) {
