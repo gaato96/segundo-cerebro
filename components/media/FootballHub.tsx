@@ -142,6 +142,7 @@ export function FootballHub() {
                 id: `obj-manual-${idx}`,
                 text,
                 category: 'special' as const,
+                season: 1,
                 status: 'pending' as const
             }))
 
