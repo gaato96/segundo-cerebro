@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS nutrition_profiles (
     goal TEXT CHECK (goal IN ('lose_weight','maintain','gain_muscle')),
     dietary_restrictions TEXT[] DEFAULT '{}',
     disliked_ingredients TEXT[] DEFAULT '{}',
+    custom_notes TEXT DEFAULT '',
     monthly_food_budget NUMERIC(12,2),
     province TEXT DEFAULT 'Tucumán',
     city TEXT DEFAULT 'San Miguel de Tucumán',
@@ -58,6 +59,7 @@ CREATE TABLE IF NOT EXISTS nutrition_profiles (
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 
+ALTER TABLE nutrition_profiles ADD COLUMN IF NOT EXISTS custom_notes TEXT DEFAULT '';
 ALTER TABLE nutrition_profiles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "nutrition_profiles_own" ON nutrition_profiles FOR ALL USING (auth.uid() = user_id);
 

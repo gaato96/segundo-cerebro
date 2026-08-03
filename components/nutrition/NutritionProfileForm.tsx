@@ -18,6 +18,7 @@ export function NutritionProfileForm({ initialProfile, onSuccess }: NutritionPro
     const [activityLevel, setActivityLevel] = useState(initialProfile?.activity_level || 'moderate')
     const [goal, setGoal] = useState(initialProfile?.goal || 'lose_weight')
     const [dislikedText, setDislikedText] = useState((initialProfile?.disliked_ingredients || []).join(', '))
+    const [customNotes, setCustomNotes] = useState(initialProfile?.custom_notes || '')
     const [loading, setLoading] = useState(false)
 
     async function handleSubmit(e: React.FormEvent) {
@@ -38,6 +39,7 @@ export function NutritionProfileForm({ initialProfile, onSuccess }: NutritionPro
                 activity_level: activityLevel as any,
                 goal: goal as any,
                 disliked_ingredients: dislikedArray,
+                custom_notes: customNotes,
                 province: 'Tucumán'
             })
             onSuccess?.()
@@ -160,6 +162,21 @@ export function NutritionProfileForm({ initialProfile, onSuccess }: NutritionPro
                     value={dislikedText}
                     onChange={(e) => setDislikedText(e.target.value)}
                     placeholder="Ej. mondongo, pescado, berenjenas, pasas de uva..."
+                    className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                />
+            </div>
+
+            {/* Custom Lifestyle & Schedule Notes */}
+            <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground flex items-center justify-between">
+                    <span>Contexto Personal, Horarios y Restricciones Específicas</span>
+                    <span className="text-[10px] text-emerald-400 font-semibold">✨ La IA lo respetará al 100%</span>
+                </label>
+                <textarea
+                    rows={3}
+                    value={customNotes}
+                    onChange={(e) => setCustomNotes(e.target.value)}
+                    placeholder="Ej: Me levanto a las 5:00 AM, tengo un hijo de 2 años y poco tiempo. No puedo comer más de 2 huevos al día por presupuesto. Prefiero comidas rápidas y económicas..."
                     className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                 />
             </div>

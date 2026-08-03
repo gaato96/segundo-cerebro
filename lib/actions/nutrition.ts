@@ -74,6 +74,7 @@ export async function saveNutritionProfile(formData: {
     goal: 'lose_weight' | 'maintain' | 'gain_muscle'
     dietary_restrictions?: string[]
     disliked_ingredients?: string[]
+    custom_notes?: string
     monthly_food_budget?: number
     province?: string
     city?: string
@@ -138,6 +139,7 @@ export async function saveNutritionProfile(formData: {
         goal: formData.goal,
         dietary_restrictions: formData.dietary_restrictions || [],
         disliked_ingredients: formData.disliked_ingredients || [],
+        custom_notes: formData.custom_notes || '',
         monthly_food_budget: formData.monthly_food_budget || null,
         province: formData.province || 'Tucumán',
         city: formData.city || 'San Miguel de Tucumán',
@@ -203,20 +205,22 @@ DATOS DEL PACIENTE:
 - Macros diarios meta: Proteínas ${profile.target_protein_g}g, Carbohidratos ${profile.target_carbs_g}g, Grasas ${profile.target_fat_g}g
 - Ingredientes que NO le gustan: ${profile.disliked_ingredients?.join(', ') || 'Ninguno'}
 - Restricciones: ${profile.dietary_restrictions?.join(', ') || 'Ninguna'}
+- CONTEXTO PERSONAL, HORARIOS Y RESTRICCIONES DE VIDA (CRÍTICO RESPETAR 100%): ${profile.custom_notes || 'Ninguna especificada'}
 - Ubicación: Tucumán, Argentina
 
 INSTRUCCIONES CLAVE DE VARIEDAD Y RUTINA:
-1. Para CADA DÍA (Día 1 a 7) y para CADA COMIDA ("desayuno", "almuerzo", "merienda", "cena"), proporcioná 3 OPCIONES ALTERNATIVAS DISTINTAS (opciones 0, 1, 2) con comidas argentinas tucumanas realistas para que el usuario pueda elegir o variar.
-2. Cada opción debe tener:
+1. SEGUIR RIGUROSAMENTE LAS NOTAS PERSONALIZADAS Y DE VIDA DEL PACIENTE (ej: si se levanta 5 AM, si tiene hijos pequeños, o si indica límites de presupuesto o alimentos como no más de N huevos por día, ADAPTAR la dieta y recetas a esas restricciones realistas).
+2. Para CADA DÍA (Día 1 a 7) y para CADA COMIDA ("desayuno", "almuerzo", "merienda", "cena"), proporcioná 3 OPCIONES ALTERNATIVAS DISTINTAS (opciones 0, 1, 2) con comidas argentinas tucumanas realistas para que el usuario pueda elegir o variar.
+3. Cada opción debe tener:
    - "name": Nombre descriptivo de la comida.
    - "calories", "protein", "carbs", "fat": Valores numéricos aproximados por porción.
    - "ingredients": Lista de ingredientes CON CANTIDADES EXACTAS (ej: ["200g pechuga de pollo", "1 huevo", "pan rallado", "300g calabaza"]).
    - "instructions": Instrucciones sencillas paso a paso para prepararla en casa.
    - "is_cheat_meal": boolean (true solo si es comida libre/permitido).
-3. INCLUIR DÍAS DE PERMITIDO / CHEAT MEAL:
+4. INCLUIR DÍAS DE PERMITIDO / CHEAT MEAL:
    - Para el fin de semana (ej: Cena del Sábado o Almuerzo del Domingo), incluir como opción 1 o 2 un "Permitido / Cheat Meal" recomendado por el nutricionista (ej: "2 empanadas tucumanas tradicionales" o "Pizza casera magra"), marcando "is_cheat_meal": true.
    - Incluir una recomendación en "cheat_meal_recommendation" (ej: "Se recomienda 1 comida libre el fin de semana para mantener la adherencia").
-4. RUTINA DE EJERCICIO OPTIMIZADA:
+5. RUTINA DE EJERCICIO OPTIMIZADA:
    - Generar rutina para MÁXIMO 3 a 4 DÍAS por semana (ej: Lunes, Miércoles, Viernes). NUNCA 7 días seguidos (los otros días son de descanso).
    - Sesiones cortas de 12 a 15 minutos en casa sin equipamiento.
 
@@ -572,7 +576,7 @@ export async function chatWithNutritionist(userMessage: string) {
 
     let promptContext = `${SYSTEM_PROMPT_NUTRITIONIST}\n\n`
     if (profile) {
-        promptContext += `DATOS DEL PACIENTE ACTUAL:\n- Peso: ${profile.weight_kg}kg, Altura: ${profile.height_cm}cm, Objetivo: ${profile.goal}, Calorías objetivo: ${profile.target_calories}kcal, Proteínas: ${profile.target_protein_g}g, Agua: ${profile.water_liters}L/día.\n- Restricciones/Disgustos: ${profile.disliked_ingredients?.join(', ') || 'Ninguno'}\n\n`
+        promptContext += `DATOS DEL PACIENTE ACTUAL:\n- Peso: ${profile.weight_kg}kg, Altura: ${profile.height_cm}cm, Objetivo: ${profile.goal}, Calorías objetivo: ${profile.target_calories}kcal, Proteínas: ${profile.target_protein_g}g, Agua: ${profile.water_liters}L/día.\n- Restricciones/Disgustos: ${profile.disliked_ingredients?.join(', ') || 'Ninguno'}\n- CONTEXTO PERSONAL Y HORARIOS: ${profile.custom_notes || 'Ninguna especificada'}\n\n`
     }
 
     promptContext += `HISTORIAL RECIENTE DE CHARLA:\n`
