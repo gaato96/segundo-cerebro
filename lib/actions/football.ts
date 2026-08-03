@@ -148,6 +148,22 @@ export async function toggleObjectiveStatus(challengeId: string, objectiveId: st
     return updatedObjs as FootballObjective[]
 }
 
+export async function updateChallengeObjectives(challengeId: string, objectives: FootballObjective[]) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    const { error } = await supabase
+        .from('football_challenges')
+        .update({ objectives })
+        .eq('id', challengeId)
+        .eq('user_id', user.id)
+
+    if (error) throw error
+    revalidatePath('/media')
+    return objectives
+}
+
 export async function deleteFootballChallenge(id: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
