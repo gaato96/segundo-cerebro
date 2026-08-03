@@ -6,14 +6,14 @@ import { QuickStats } from '@/components/dashboard/QuickStats'
 import { TodayEventsWidget } from '@/components/dashboard/TodayEventsWidget'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-// DailyWinWidget removed per user request
 import { StickyNotesWidget } from '@/components/dashboard/StickyNotesWidget'
 import { getStickyNotes } from '@/lib/actions/sticky_notes'
 import { IdealRoutineWidget } from '@/components/dashboard/IdealRoutineWidget'
 import { getEventsForDate } from '@/lib/actions/events'
 import { getRitualLog } from '@/lib/actions/morning_ritual'
 import Link from 'next/link'
-import { Sun, Sparkles, CheckCircle2 } from 'lucide-react'
+import { Sun } from 'lucide-react'
+import { QuickTransactionModal } from '@/components/dashboard/QuickTransactionModal'
 
 export default async function DashboardPage() {
     const supabase = await createClient()
@@ -33,6 +33,10 @@ export default async function DashboardPage() {
     const todayStr = `${yr}-${mo}-${da}`
     const monthYear = `${yr}-${mo}`
 
+    // Calculate today's ISO day of week (1 = Mon ... 7 = Sun)
+    const dayOfWeek = now.getDay()
+    const todayIsoDay = dayOfWeek === 0 ? 7 : dayOfWeek
+
     // Fetch profile, tasks, habits, events, ritual log in parallel
     const [profileRes, todayTasksRes, habitsRes, todayLogsRes, financesRes, todayEvents, ritualLog] = await Promise.all([
         supabase.from('profiles').select('ideal_routine_json').eq('id', user.id).single(),
@@ -46,9 +50,17 @@ export default async function DashboardPage() {
 
     const profile = profileRes.data
     const todayTasks = todayTasksRes.data || []
-    const habits = habitsRes.data || []
+    const rawHabits = habitsRes.data || []
     const todayLogs = todayLogsRes.data || []
     const finances = financesRes.data || []
+
+    // Filter habits strictly for today based on frequency_type & frequency_days
+    const habits = rawHabits.filter((h: any) => {
+        if (h.frequency_type === 'custom_days' && Array.isArray(h.frequency_days) && h.frequency_days.length > 0) {
+            return h.frequency_days.includes(todayIsoDay)
+        }
+        return true // 'daily' or default
+    })
 
     const completedHabitIds = new Set((todayLogs || []).map((l: { habit_id: string }) => l.habit_id))
 
@@ -60,7 +72,7 @@ export default async function DashboardPage() {
 
     return (
         <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6 animate-fade-in pb-24">
-            {/* Header & Morning Ritual Launcher */}
+            {/* Header & Quick Action Launchers */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
                     <h1 className="text-xl md:text-3xl font-heading font-bold gradient-text capitalize leading-tight">
@@ -71,20 +83,22 @@ export default async function DashboardPage() {
                     </p>
                 </div>
 
-                <Link
-                    href="/ritual"
-                    className={`shrink-0 self-start px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 border shadow-lg transition-all whitespace-nowrap ${
-                        ritualLog
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
-                            : 'bg-amber-500/10 text-amber-300 border-amber-500/30 hover:bg-amber-500/20 animate-pulse'
-                    }`}
-                >
-                    <Sun className="w-4 h-4 text-amber-400 shrink-0" />
-                    <span>{ritualLog ? '✓ Ritual Completado' : 'Iniciar Ritual →'}</span>
-                </Link>
+                <div className="flex flex-wrap items-center gap-2 shrink-0 self-start">
+                    <QuickTransactionModal />
+
+                    <Link
+                        href="/ritual"
+                        className={`px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 border shadow-lg transition-all whitespace-nowrap ${
+                            ritualLog
+                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+                                : 'bg-amber-500/10 text-amber-300 border-amber-500/30 hover:bg-amber-500/20 animate-pulse'
+                        }`}
+                    >
+                        <Sun className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span>{ritualLog ? '✓ Ritual Completado' : 'Iniciar Ritual →'}</span>
+                    </Link>
+                </div>
             </div>
-
-
 
             <IdealRoutineWidget routine={profile?.ideal_routine_json || null} />
 

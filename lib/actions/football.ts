@@ -269,21 +269,125 @@ REGLAS CRÍTICAS PARA LOS OBJETIVOS:
         const data = JSON.parse(cleaned)
         // Ensure status field in every objective
         if (Array.isArray(data.objectives)) {
-            data.objectives = data.objectives
-                .sort((a: any, b: any) => (a.season || 1) - (b.season || 1))
-                .map((obj: any, idx: number) => ({
+            data.objectives = data.objectives.map((obj: any, idx: number) => {
+                let seasonNum = Number(obj.season) || 1
+                const textLower = (obj.text || '').toLowerCase()
+
+                // Smart auto-distribution if AI returned all 1s or missing seasons
+                if (!obj.season || (data.objectives.every((o: any) => !o.season || o.season === 1))) {
+                    if (textLower.includes('triplete') || textLower.includes('champions') || textLower.includes('libertadores')) {
+                        seasonNum = Math.min(4, Math.floor(idx / 3) + 2)
+                    } else if (textLower.includes('2 ligas') || textLower.includes('2 copas') || textLower.includes('doblete')) {
+                        seasonNum = Math.min(3, Math.floor(idx / 3) + 2)
+                    } else {
+                        seasonNum = Math.floor(idx / 3) + 1
+                    }
+                }
+
+                return {
                     id: obj.id || `obj-${idx + 1}`,
                     text: obj.text || '',
                     category: obj.category || 'special',
-                    season: obj.season || 1,
+                    season: seasonNum,
                     status: 'pending'
-                }))
+                }
+            }).sort((a: any, b: any) => a.season - b.season)
         }
         return data
     } catch (e) {
         console.error('Failed to parse AI challenge output:', resultText)
         throw new Error('Error al interpretar el reto generado por la IA.')
     }
+}
+
+// Preset: Reto Sir Alex Ferguson (FMSite)
+export async function createFergusonChallenge(params: {
+    game: 'FM24' | 'EAFC26'
+    teamName: string
+    league?: string
+}) {
+    const fergusonObjectives: FootballObjective[] = [
+        {
+            id: 'ferguson-obj-1',
+            text: 'Salvar al equipo del descenso (asumiendo a mitad de temporada sin fichajes de pretemporada)',
+            category: 'league',
+            season: 1,
+            status: 'pending'
+        },
+        {
+            id: 'ferguson-obj-2',
+            text: 'Lograr terminar en la mitad superior de la tabla (Top 10) y estabilizar la plantilla',
+            category: 'league',
+            season: 2,
+            status: 'pending'
+        },
+        {
+            id: 'ferguson-obj-3',
+            text: 'Promover e integrar como titulares en el primer equipo a 3 futbolistas de la cantera juvenil',
+            category: 'academy',
+            season: 3,
+            status: 'pending'
+        },
+        {
+            id: 'ferguson-obj-4',
+            text: 'Clasificar por primera vez a una competición continental / europea (Europa League o Champions)',
+            category: 'league',
+            season: 4,
+            status: 'pending'
+        },
+        {
+            id: 'ferguson-obj-5',
+            text: 'Ganar el primer título nacional oficial (Copa del Rey / FA Cup / Copa Argentina)',
+            category: 'trophy',
+            season: 5,
+            status: 'pending'
+        },
+        {
+            id: 'ferguson-obj-6',
+            text: 'Ganar el primer título de Liga de Primera División con el club',
+            category: 'trophy',
+            season: 7,
+            status: 'pending'
+        },
+        {
+            id: 'ferguson-obj-7',
+            text: 'Conquistar la UEFA Champions League / Copa Libertadores de América',
+            category: 'trophy',
+            season: 9,
+            status: 'pending'
+        },
+        {
+            id: 'ferguson-obj-8',
+            text: 'Lograr el primer Doblete nacional (Liga + Copa principal en una misma temporada)',
+            category: 'special',
+            season: 12,
+            status: 'pending'
+        },
+        {
+            id: 'ferguson-obj-9',
+            text: 'Conseguir el histórico Triplete (Liga + Copa Nacional + Champions League)',
+            category: 'special',
+            season: 15,
+            status: 'pending'
+        },
+        {
+            id: 'ferguson-obj-10',
+            text: 'Superar todos los récords de títulos del club y alcanzar 13 campeonatos de Liga (26 Temporadas)',
+            category: 'special',
+            season: 26,
+            status: 'pending'
+        }
+    ]
+
+    return await createFootballChallenge({
+        game: params.game,
+        team_name: params.teamName,
+        league: params.league || 'Primera División',
+        challenge_title: 'Reto Sir Alex Ferguson (FMSite)',
+        challenge_type: 'Dynasty',
+        description: 'Emulá la legendaria llegada de Sir Alex Ferguson en noviembre de 1986: tomás un club en el puesto 19 o peleando el descenso a mitad de año y construís una dinastía histórica de 26 temporadas.',
+        objectives: fergusonObjectives
+    })
 }
 
 // Regenerate a single objective using AI

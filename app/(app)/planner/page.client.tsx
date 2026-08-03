@@ -279,27 +279,28 @@ export function PlannerClient({
                 </div>
 
                 {/* Main Planner Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 min-w-0">
                     {/* 7 Columns for Days */}
-                    <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-7 gap-3">
+                    <div className="lg:col-span-3 flex sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:flex overflow-x-auto gap-3 pb-3 custom-scrollbar min-w-0">
                         {weekDays.map((day) => {
                             const dayTasks = tasks.filter(t => t.planned_date === day.dateStr && t.status !== 'Done')
                             const dayEvents = events.filter(ev => ev.event_date === day.dateStr)
 
                             return (
-                                <WeekColumn
-                                    key={day.dateStr}
-                                    dayName={day.name}
-                                    dateStr={day.dateStr}
-                                    isToday={day.dateStr === todayStr}
-                                    tasks={dayTasks}
-                                    events={dayEvents}
-                                    onCompleteTask={handleCompleteTask}
-                                    onAddTaskToDay={openAddTaskModal}
-                                    onUnassignTask={handleUnassign}
-                                    dropId={`${DAY_PREFIX}${day.dateStr}`}
-                                    isDragOver={overId === `${DAY_PREFIX}${day.dateStr}`}
-                                />
+                                <div key={day.dateStr} className="min-w-[210px] xl:w-[210px] shrink-0">
+                                    <WeekColumn
+                                        dayName={day.name}
+                                        dateStr={day.dateStr}
+                                        isToday={day.dateStr === todayStr}
+                                        tasks={dayTasks}
+                                        events={dayEvents}
+                                        onCompleteTask={handleCompleteTask}
+                                        onAddTaskToDay={openAddTaskModal}
+                                        onUnassignTask={handleUnassign}
+                                        dropId={`${DAY_PREFIX}${day.dateStr}`}
+                                        isDragOver={overId === `${DAY_PREFIX}${day.dateStr}`}
+                                    />
+                                </div>
                             )
                         })}
                     </div>

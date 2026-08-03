@@ -6,7 +6,7 @@ import {
     Trophy, Sparkles, Dices, Plus, Search, Filter, Loader2, Gamepad2,
     Shield, Flag, PlusCircle, X, Check, RefreshCw
 } from 'lucide-react'
-import { FootballChallenge, getFootballChallenges, createFootballChallenge, generateAIFootballChallenge } from '@/lib/actions/football'
+import { FootballChallenge, getFootballChallenges, createFootballChallenge, generateAIFootballChallenge, createFergusonChallenge } from '@/lib/actions/football'
 import { ChallengeCard } from '@/components/media/ChallengeCard'
 import { TeamRouletteModal } from '@/components/media/TeamRouletteModal'
 import { FootballTeam, LEAGUES, getAllTeams, saveCustomTeam } from '@/lib/footballTeams'
@@ -21,6 +21,7 @@ export function FootballHub() {
     const [isRouletteOpen, setIsRouletteOpen] = useState(false)
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
     const [isCustomTeamModalOpen, setIsCustomTeamModalOpen] = useState(false)
+    const [creatingFerguson, setCreatingFerguson] = useState(false)
 
     // Generator States
     const [selectedGame, setSelectedGame] = useState<'FM24' | 'EAFC26'>('FM24')
@@ -169,6 +170,26 @@ export function FootballHub() {
         }
     }
 
+    async function handleCreateFerguson() {
+        const teamName = prompt('¿Con qué equipo querés realizar el Reto Sir Alex Ferguson?', 'Manchester United')
+        if (!teamName || !teamName.trim()) return
+
+        setCreatingFerguson(true)
+        try {
+            await createFergusonChallenge({
+                game: selectedGame,
+                teamName: teamName.trim(),
+                league: 'Primera División'
+            })
+            await loadData()
+            alert(`¡Reto Sir Alex Ferguson creado con éxito para ${teamName.trim()}!`)
+        } catch (e: any) {
+            alert('Error creando el Reto Sir Alex Ferguson')
+        } finally {
+            setCreatingFerguson(false)
+        }
+    }
+
     return (
         <div className="space-y-6">
             {/* Football Banner & Controls */}
@@ -181,7 +202,7 @@ export function FootballHub() {
                         Retos de Fútbol & Selección de Clubes
                     </h2>
                     <p className="text-xs text-muted-foreground max-w-xl leading-relaxed">
-                        Sortea equipos de +13 ligas (incluyendo 2ª división de España, Inglaterra e Italia), genera retos de modo carrera con objetivos realistas impulsados por IA, o crea tus propios desafíos.
+                        Sortea equipos de +13 ligas (incluyendo 2ª división de España, Inglaterra e Italia), genera retos de modo carrera con objetivos realistas impulsados por IA, o elegí plantillas de la comunidad (FMSite).
                     </p>
                 </div>
 
@@ -193,6 +214,17 @@ export function FootballHub() {
                         <Dices className="w-4 h-4 animate-spin" style={{ animationDuration: '4s' }} />
                         Ruleta de Equipos
                     </button>
+
+                    <button
+                        onClick={handleCreateFerguson}
+                        disabled={creatingFerguson}
+                        className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2"
+                        title="Plantilla oficial FMSite: Reto Sir Alex Ferguson"
+                    >
+                        <Trophy className="w-4 h-4 text-amber-400" />
+                        {creatingFerguson ? 'Creando...' : 'Reto Sir Alex Ferguson'}
+                    </button>
+
                     <button
                         onClick={() => setIsCreateModalOpen(true)}
                         className="bg-secondary hover:bg-secondary/80 text-foreground px-4 py-2.5 rounded-2xl text-xs font-bold transition-all border border-border/60 flex items-center justify-center gap-2"
@@ -200,6 +232,7 @@ export function FootballHub() {
                         <Sparkles className="w-4 h-4 text-emerald-400" />
                         Nuevo Reto IA / Manual
                     </button>
+
                     <button
                         onClick={() => setIsCustomTeamModalOpen(true)}
                         className="bg-white/5 hover:bg-white/10 text-white px-3 py-2.5 rounded-2xl text-xs font-semibold border border-white/10 transition-all flex items-center justify-center gap-1.5"

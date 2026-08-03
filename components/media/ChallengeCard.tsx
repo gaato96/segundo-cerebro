@@ -34,6 +34,23 @@ const SEASON_TEXT = [
     'text-purple-400', 'text-pink-400', 'text-teal-400',
 ]
 
+// Helper to ensure objectives are distributed across seasons if AI or manual input set all to 1
+function ensureDistributedSeasons(objs: FootballObjective[]): FootballObjective[] {
+    const allOnOneSeason = objs.length > 3 && objs.every(o => !o.season || o.season === 1)
+    if (!allOnOneSeason) return objs
+
+    return objs.map((obj, idx) => {
+        let seasonNum = Math.floor(idx / 3) + 1
+        const textLower = (obj.text || '').toLowerCase()
+        if (textLower.includes('triplete') || textLower.includes('champions') || textLower.includes('libertadores') || textLower.includes('26 temporadas')) {
+            seasonNum = Math.max(seasonNum, 4)
+        } else if (textLower.includes('2 ligas') || textLower.includes('2 copas') || textLower.includes('doblete')) {
+            seasonNum = Math.max(seasonNum, 3)
+        }
+        return { ...obj, season: seasonNum }
+    })
+}
+
 export function ChallengeCard({
     challenge,
     onUpdate
@@ -42,7 +59,9 @@ export function ChallengeCard({
     onUpdate: () => void
 }) {
     const [isExpanded, setIsExpanded] = useState(true)
-    const [objectives, setObjectives] = useState<FootballObjective[]>(challenge.objectives || [])
+    const [objectives, setObjectives] = useState<FootballObjective[]>(
+        ensureDistributedSeasons(challenge.objectives || [])
+    )
     const [seasons, setSeasons] = useState(challenge.seasons_played || 0)
     const [status, setStatus] = useState(challenge.status)
     const [isDeleting, setIsDeleting] = useState(false)
@@ -69,8 +88,8 @@ export function ChallengeCard({
     const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
 
     // Group objectives by season
-    const maxSeason = Math.max(1, ...objectives.map(o => o.season || 1))
-    const seasonNumbers = Array.from({ length: maxSeason }, (_, i) => i + 1)
+    const uniqueSeasons = Array.from(new Set(objectives.map(o => o.season || 1))).sort((a, b) => a - b)
+    const seasonNumbers = uniqueSeasons.length > 0 ? uniqueSeasons : [1]
     const objectivesBySeason = (seasonNum: number) =>
         objectives.filter(o => (o.season || 1) === seasonNum)
 
@@ -82,7 +101,7 @@ export function ChallengeCard({
 
         try {
             const updated = await toggleObjectiveStatus(challenge.id, objId, nextStatus)
-            setObjectives(updated)
+            setObjectives(ensureDistributedSeasons(updated))
             onUpdate()
         } catch (e) {
             console.error('Error updating objective:', e)
@@ -123,6 +142,23 @@ export function ChallengeCard({
         }
     }
 
+    async function handleChangeObjectiveSeason(objId: string, newSeason: number) {
+        const updatedList = objectives.map(obj =>
+            obj.id === objId ? { ...obj, season: newSeason } : obj
+        ).sort((a, b) => (a.season || 1) - (b.season || 1))
+
+        setIsSavingObjs(true)
+        try {
+            await updateChallengeObjectives(challenge.id, updatedList)
+            setObjectives(updatedList)
+            onUpdate()
+        } catch (e) {
+            alert('Error al cambiar temporada')
+        } finally {
+            setIsSavingObjs(false)
+        }
+    }
+
     async function handleSaveEditedObjective(objId: string) {
         if (!editingText.trim()) return
         setIsSavingObjs(true)
@@ -130,7 +166,7 @@ export function ChallengeCard({
             obj.id === objId
                 ? { ...obj, text: editingText.trim(), category: editingCategory, season: editingSeason }
                 : obj
-        )
+        ).sort((a, b) => (a.season || 1) - (b.season || 1))
         try {
             await updateChallengeObjectives(challenge.id, updatedList)
             setObjectives(updatedList)
@@ -197,7 +233,7 @@ export function ChallengeCard({
                 season: obj.season || 1,
                 currentText: obj.text
             })
-            setObjectives(updated)
+            setObjectives(ensureDistributedSeasons(updated))
             onUpdate()
         } catch (e: any) {
             alert(`Error al regenerar objetivo: ${e?.message || 'Error desconocido'}`)
@@ -298,12 +334,14 @@ export function ChallengeCard({
                     </div>
 
                     <div className="flex items-center gap-2 bg-secondary/40 px-3 py-1 rounded-2xl border border-border/50">
-                        <span className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">Temporadas jugadas:</span>
+                        <span className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">Temporada actual:</span>
                         <div className="flex items-center gap-1">
                             <button onClick={() => handleSeasonChange(-1)} className="text-muted-foreground hover:text-white transition-colors">
                                 <MinusCircle className="w-4 h-4" />
                             </button>
-                            <span className="font-mono font-bold text-sm text-white px-2 min-w-[20px] text-center">{seasons}</span>
+                            <span className="font-mono font-bold text-sm text-white px-2 min-w-[20px] text-center">
+                                Temp. {seasons}
+                            </span>
                             <button onClick={() => handleSeasonChange(1)} className="text-muted-foreground hover:text-white transition-colors">
                                 <PlusCircle className="w-4 h-4" />
                             </button>
@@ -331,7 +369,7 @@ export function ChallengeCard({
                         <div className="flex items-center justify-between">
                             <h5 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                                 <Target className="w-3.5 h-3.5 text-emerald-400" />
-                                Objetivos por Temporada
+                                Objetivos Ordenados por Temporada
                             </h5>
                             <button
                                 onClick={() => setIsAddingObj(!isAddingObj)}
@@ -368,7 +406,7 @@ export function ChallengeCard({
                                         <CalendarDays className="w-3.5 h-3.5 text-indigo-400" />
                                         <span className="text-xs text-muted-foreground">Temporada:</span>
                                         <input
-                                            type="number" min={1} max={20} value={newObjSeason}
+                                            type="number" min={1} max={30} value={newObjSeason}
                                             onChange={(e) => setNewObjSeason(Number(e.target.value))}
                                             className="w-14 bg-secondary border border-border rounded-lg px-2 py-1 text-xs text-white text-center outline-none"
                                         />
@@ -393,20 +431,20 @@ export function ChallengeCard({
                             const completedInSeason = seasonObjs.filter(o => o.status === 'completed').length
 
                             return (
-                                <div key={seasonNum} className={`rounded-2xl border p-3 space-y-2 ${SEASON_COLORS[colorIdx]}`}>
+                                <div key={seasonNum} className={`rounded-2xl border p-4 space-y-3 ${SEASON_COLORS[colorIdx]}`}>
                                     {/* Season header */}
-                                    <div className="flex items-center justify-between pb-2 border-b border-white/5">
-                                        <div className={`flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider ${SEASON_TEXT[colorIdx]}`}>
-                                            <CalendarDays className="w-3.5 h-3.5" />
-                                            Temporada {seasonNum}
+                                    <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                                        <div className={`flex items-center gap-2 text-xs font-bold uppercase tracking-wider ${SEASON_TEXT[colorIdx]}`}>
+                                            <CalendarDays className="w-4 h-4" />
+                                            🗓️ Temporada {seasonNum}
                                         </div>
-                                        <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-black/30 ${SEASON_TEXT[colorIdx]}`}>
-                                            {completedInSeason}/{seasonObjs.length}
+                                        <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-black/40 ${SEASON_TEXT[colorIdx]}`}>
+                                            {completedInSeason} / {seasonObjs.length} Completados
                                         </span>
                                     </div>
 
                                     {/* Objectives in this season */}
-                                    <div className="space-y-2">
+                                    <div className="space-y-2.5">
                                         {seasonObjs.map((obj) => {
                                             const catInfo = CATEGORY_LABELS[obj.category] || CATEGORY_LABELS.special
                                             const CatIcon = catInfo.icon
@@ -421,7 +459,7 @@ export function ChallengeCard({
                                                             ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200'
                                                             : obj.status === 'failed'
                                                             ? 'bg-red-500/10 border-red-500/30 text-red-300 opacity-80'
-                                                            : 'bg-black/20 hover:bg-black/30 border-white/5 text-white'
+                                                            : 'bg-black/30 hover:bg-black/40 border-white/5 text-white'
                                                     }`}
                                                 >
                                                     {/* Status toggle button */}
@@ -455,12 +493,14 @@ export function ChallengeCard({
                                                                         <option value="league">🛡 Liga</option>
                                                                         <option value="special">✨ Especial</option>
                                                                     </select>
+
                                                                     <div className="flex items-center gap-1">
-                                                                        <CalendarDays className="w-3 h-3 text-indigo-400" />
-                                                                        <input type="number" min={1} max={20} value={editingSeason}
+                                                                        <span className="text-[11px] text-muted-foreground">Temporada:</span>
+                                                                        <input type="number" min={1} max={30} value={editingSeason}
                                                                             onChange={(e) => setEditingSeason(Number(e.target.value))}
                                                                             className="w-12 bg-black/60 border border-white/10 rounded-lg px-2 py-0.5 text-[11px] text-white text-center" />
                                                                     </div>
+
                                                                     <div className="flex gap-1 ml-auto">
                                                                         <button type="button" onClick={() => setEditingObjId(null)} className="text-[11px] text-muted-foreground hover:text-white px-2 py-1">Cancelar</button>
                                                                         <button onClick={() => handleSaveEditedObjective(obj.id)} disabled={isSavingObjs}
@@ -475,12 +515,25 @@ export function ChallengeCard({
                                                                 <p className={`text-xs font-medium leading-relaxed ${obj.status === 'failed' ? 'line-through' : ''}`}>
                                                                     {obj.text}
                                                                 </p>
-                                                                <div className="flex items-center justify-between gap-2">
-                                                                    <div className="flex items-center gap-2">
+                                                                <div className="flex items-center justify-between gap-2 flex-wrap">
+                                                                    <div className="flex items-center gap-2 flex-wrap">
                                                                         <span className={`inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-md border font-semibold ${catInfo.color}`}>
                                                                             <CatIcon className="w-3 h-3" />
                                                                             {catInfo.label}
                                                                         </span>
+
+                                                                        {/* Season Selector Badge */}
+                                                                        <select
+                                                                            value={obj.season || 1}
+                                                                            onChange={(e) => handleChangeObjectiveSeason(obj.id, Number(e.target.value))}
+                                                                            className="text-[9px] bg-black/40 text-muted-foreground border border-white/10 rounded px-1.5 py-0.5 font-mono cursor-pointer hover:text-white outline-none"
+                                                                            title="Cambiar temporada asignada"
+                                                                        >
+                                                                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 26].map(s => (
+                                                                                <option key={s} value={s}>Temp. {s}</option>
+                                                                            ))}
+                                                                        </select>
+
                                                                         <span className="text-[10px] text-muted-foreground font-mono">
                                                                             {obj.status === 'completed' ? '✓ Cumplido' : obj.status === 'failed' ? '✗ Perdido' : '⏳ Pendiente'}
                                                                         </span>
