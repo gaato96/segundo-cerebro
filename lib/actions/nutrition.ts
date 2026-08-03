@@ -592,3 +592,97 @@ export async function chatWithNutritionist(userMessage: string) {
     revalidatePath('/meals/nutrition')
     return replyText
 }
+
+export async function approveAndSyncNutritionMeal(
+    planId: string,
+    dayNumber: number,
+    mealType: string,
+    approved: boolean
+) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    const { data: plan } = await supabase
+        .from('nutrition_plans')
+        .select('*')
+        .eq('id', planId)
+        .single()
+
+    if (!plan) throw new Error('Plan no encontrado')
+
+    const updatedPlanData = { ...plan.plan_data }
+    const dayObj = updatedPlanData.days?.find((d: any) => d.day_number === dayNumber)
+    if (!dayObj || !dayObj.meals || !dayObj.meals[mealType]) {
+        throw new Error('Comida no encontrada')
+    }
+
+    const mealContainer = dayObj.meals[mealType]
+    mealContainer.approved = approved
+
+    let activeOption = mealContainer
+    if (mealContainer.options && Array.isArray(mealContainer.options)) {
+        const idx = mealContainer.selected_option || 0
+        activeOption = mealContainer.options[idx] || mealContainer.options[0]
+    }
+
+    const { error: updateError } = await supabase
+        .from('nutrition_plans')
+        .update({ plan_data: updatedPlanData, updated_at: new Date().toISOString() })
+        .eq('id', planId)
+
+    if (updateError) throw updateError
+
+    // Sync to weekly_menus if approved
+    if (approved && activeOption) {
+        const now = new Date()
+        const dayOfWeek = now.getDay()
+        const diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
+        const monday = new Date(now)
+        monday.setDate(now.getDate() + diffToMon)
+        const startDateStr = monday.toISOString().split('T')[0]
+
+        const DAY_NAMES_ENG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+        const dayEng = DAY_NAMES_ENG[(dayNumber - 1) % 7]
+
+        const MEAL_TYPE_MAP: Record<string, string> = {
+            desayuno: 'breakfast',
+            almuerzo: 'lunch',
+            merienda: 'snack',
+            cena: 'dinner'
+        }
+        const engMealType = MEAL_TYPE_MAP[mealType] || mealType
+
+        const { data: existingMenu } = await supabase
+            .from('weekly_menus')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('start_date', startDateStr)
+            .maybeSingle()
+
+        const menuData = existingMenu?.menu_data || { menu: {} }
+        if (!menuData.menu) menuData.menu = {}
+        if (!menuData.menu[dayEng]) menuData.menu[dayEng] = {}
+
+        menuData.menu[dayEng][engMealType] = {
+            name: activeOption.name,
+            ingredients: activeOption.ingredients || [],
+            instructions: activeOption.instructions || '',
+            calories: activeOption.calories,
+            source: 'Nutricionista IA'
+        }
+
+        await supabase
+            .from('weekly_menus')
+            .upsert({
+                user_id: user.id,
+                start_date: startDateStr,
+                menu_data: menuData,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'user_id, start_date' })
+    }
+
+    revalidatePath('/meals/nutrition')
+    revalidatePath('/meals')
+    return { success: true, approved }
+}

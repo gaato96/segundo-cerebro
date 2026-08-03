@@ -1,12 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-    Utensils, RefreshCw, Check, Flame, Sparkles, Coffee, Sun, Moon, Cookie,
-    Loader2, BookOpen, ShoppingBag, Copy, X, BookmarkCheck, PartyPopper
+    Utensils, RefreshCw, Check, Flame, Coffee, Sun, Moon, Cookie,
+    Loader2, BookOpen, ShoppingBag, Copy, X, BookmarkCheck, PartyPopper, CheckCircle2
 } from 'lucide-react'
-import { swapMeal, updateSelectedMealOption, copyMeal, saveNutritionMealAsRecipe } from '@/lib/actions/nutrition'
+import {
+    swapMeal, updateSelectedMealOption, copyMeal, saveNutritionMealAsRecipe,
+    approveAndSyncNutritionMeal
+} from '@/lib/actions/nutrition'
 
 interface MonthlyPlanViewProps {
     plan: any
@@ -27,11 +30,20 @@ const MEAL_COLORS: Record<string, string> = {
     cena: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20'
 }
 
-export function MonthlyPlanView({ plan, onPlanUpdated }: MonthlyPlanViewProps) {
+export function MonthlyPlanView({ plan }: MonthlyPlanViewProps) {
     const [selectedDayIndex, setSelectedDayIndex] = useState(0)
+    const [planData, setPlanData] = useState<any>(plan?.plan_data)
     const [swappingMeal, setSwappingMeal] = useState<string | null>(null)
     const [copyingMeal, setCopyingMeal] = useState<string | null>(null)
-    const [approvedMeals, setApprovedMeals] = useState<Record<string, boolean>>({})
+    const [syncingMeal, setSyncingMeal] = useState<string | null>(null)
+    const [toastMessage, setToastMessage] = useState<string | null>(null)
+
+    // Sync state if plan prop changes
+    useEffect(() => {
+        if (plan?.plan_data) {
+            setPlanData(plan.plan_data)
+        }
+    }, [plan])
 
     // Modal state for recipe view
     const [activeRecipe, setActiveRecipe] = useState<{
@@ -49,7 +61,7 @@ export function MonthlyPlanView({ plan, onPlanUpdated }: MonthlyPlanViewProps) {
     // Modal state for Shopping List of current day
     const [showShoppingList, setShowShoppingList] = useState(false)
 
-    if (!plan || !plan.plan_data || !plan.plan_data.days) {
+    if (!planData || !planData.days) {
         return (
             <div className="glass rounded-2xl p-12 text-center border border-dashed border-border flex flex-col items-center">
                 <Utensils className="w-12 h-12 text-emerald-400 mb-4 opacity-80" />
@@ -61,9 +73,14 @@ export function MonthlyPlanView({ plan, onPlanUpdated }: MonthlyPlanViewProps) {
         )
     }
 
-    const days = plan.plan_data.days
+    const days = planData.days
     const currentDay = days[selectedDayIndex] || days[0]
-    const cheatRecommendation = plan.plan_data.cheat_meal_recommendation
+    const cheatRecommendation = planData.cheat_meal_recommendation
+
+    function showToast(msg: string) {
+        setToastMessage(msg)
+        setTimeout(() => setToastMessage(null), 4000)
+    }
 
     // Extract active meal option
     function getActiveOption(mealContainer: any) {
@@ -76,9 +93,17 @@ export function MonthlyPlanView({ plan, onPlanUpdated }: MonthlyPlanViewProps) {
     }
 
     async function handleOptionSelect(mealType: string, optIndex: number) {
+        // Optimistic UI update
+        const updatedDays = [...planData.days]
+        const dayObj = updatedDays[selectedDayIndex]
+        if (dayObj && dayObj.meals && dayObj.meals[mealType]) {
+            dayObj.meals[mealType].selected_option = optIndex
+        }
+        setPlanData({ ...planData, days: updatedDays })
+
+        // Background server call
         try {
             await updateSelectedMealOption(plan.id, currentDay.day_number || (selectedDayIndex + 1), mealType, optIndex)
-            onPlanUpdated?.()
         } catch (err) {
             console.error(err)
         }
@@ -87,9 +112,18 @@ export function MonthlyPlanView({ plan, onPlanUpdated }: MonthlyPlanViewProps) {
     async function handleCopyMeal(sourceMealType: string, targetMealType: string) {
         const key = `${selectedDayIndex}-${sourceMealType}-${targetMealType}`
         setCopyingMeal(key)
+
+        // Optimistic UI update
+        const updatedDays = [...planData.days]
+        const dayObj = updatedDays[selectedDayIndex]
+        if (dayObj && dayObj.meals && dayObj.meals[sourceMealType]) {
+            dayObj.meals[targetMealType] = JSON.parse(JSON.stringify(dayObj.meals[sourceMealType]))
+        }
+        setPlanData({ ...planData, days: updatedDays })
+
         try {
             await copyMeal(plan.id, currentDay.day_number || (selectedDayIndex + 1), sourceMealType, targetMealType)
-            onPlanUpdated?.()
+            showToast(`Copiado ${sourceMealType} a ${targetMealType} correctamente.`)
         } catch (err) {
             console.error(err)
             alert('Error al copiar la comida')
@@ -102,13 +136,57 @@ export function MonthlyPlanView({ plan, onPlanUpdated }: MonthlyPlanViewProps) {
         const key = `${selectedDayIndex}-${mealType}`
         setSwappingMeal(key)
         try {
-            await swapMeal(plan.id, currentDay.day_number || (selectedDayIndex + 1), mealType, 'Deseo otra opción')
-            onPlanUpdated?.()
+            const newMeal = await swapMeal(plan.id, currentDay.day_number || (selectedDayIndex + 1), mealType, 'Deseo otra opción')
+            if (newMeal) {
+                const updatedDays = [...planData.days]
+                const dayObj = updatedDays[selectedDayIndex]
+                if (dayObj && dayObj.meals) {
+                    dayObj.meals[mealType] = newMeal
+                }
+                setPlanData({ ...planData, days: updatedDays })
+                showToast(`Comida ${mealType} renovada por la IA.`)
+            }
         } catch (err) {
             console.error(err)
             alert('Error al cambiar la comida')
         } finally {
             setSwappingMeal(null)
+        }
+    }
+
+    async function handleToggleApprove(mealType: string) {
+        const key = `${selectedDayIndex}-${mealType}`
+        const mealContainer = currentDay.meals?.[mealType]
+        const currentApproved = !!mealContainer?.approved
+        const nextApproved = !currentApproved
+
+        setSyncingMeal(key)
+
+        // Optimistic UI update
+        const updatedDays = [...planData.days]
+        const dayObj = updatedDays[selectedDayIndex]
+        if (dayObj && dayObj.meals && dayObj.meals[mealType]) {
+            dayObj.meals[mealType].approved = nextApproved
+        }
+        setPlanData({ ...planData, days: updatedDays })
+
+        try {
+            await approveAndSyncNutritionMeal(
+                plan.id,
+                currentDay.day_number || (selectedDayIndex + 1),
+                mealType,
+                nextApproved
+            )
+            if (nextApproved) {
+                showToast(`✅ Comida aprobada y sincronizada con tu Planificador de Comidas semanal!`)
+            } else {
+                showToast(`Comida marcada como no aprobada.`)
+            }
+        } catch (err) {
+            console.error(err)
+            alert('Error al aprobar y sincronizar la comida')
+        } finally {
+            setSyncingMeal(null)
         }
     }
 
@@ -125,17 +203,13 @@ export function MonthlyPlanView({ plan, onPlanUpdated }: MonthlyPlanViewProps) {
             })
             setRecipeSaved(true)
             setTimeout(() => setRecipeSaved(false), 3000)
+            showToast(`Receta "${activeRecipe.name}" guardada en tu recetario.`)
         } catch (err) {
             console.error(err)
             alert('Error al guardar en el recetario')
         } finally {
             setSavingRecipe(false)
         }
-    }
-
-    function toggleApprove(mealType: string) {
-        const key = `${selectedDayIndex}-${mealType}`
-        setApprovedMeals(prev => ({ ...prev, [key]: !prev[key] }))
     }
 
     // Collect all ingredients for current day's selected options
@@ -154,7 +228,27 @@ export function MonthlyPlanView({ plan, onPlanUpdated }: MonthlyPlanViewProps) {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 relative">
+            {/* Toast feedback Banner */}
+            <AnimatePresence>
+                {toastMessage && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="bg-emerald-600 text-white text-xs font-semibold px-4 py-3 rounded-xl flex items-center justify-between shadow-lg"
+                    >
+                        <div className="flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-200 shrink-0" />
+                            <span>{toastMessage}</span>
+                        </div>
+                        <button onClick={() => setToastMessage(null)} className="text-white/80 hover:text-white">
+                            <X className="w-4 h-4" />
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* Cheat Meal & AI Recommendation Banner */}
             {cheatRecommendation && (
                 <div className="glass p-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 flex items-center justify-between gap-3">
@@ -207,8 +301,9 @@ export function MonthlyPlanView({ plan, onPlanUpdated }: MonthlyPlanViewProps) {
                     const Icon = MEAL_ICONS[mealType] || Utensils
                     const colorClass = MEAL_COLORS[mealType] || 'text-emerald-400 bg-emerald-500/10'
                     const key = `${selectedDayIndex}-${mealType}`
-                    const isApproved = approvedMeals[key]
+                    const isApproved = !!mealContainer.approved
                     const isSwapping = swappingMeal === key
+                    const isSyncing = syncingMeal === key
                     const hasMultipleOptions = mealContainer.options && Array.isArray(mealContainer.options) && mealContainer.options.length > 1
                     const selectedOptIndex = mealContainer.selected_option || 0
 
@@ -221,7 +316,7 @@ export function MonthlyPlanView({ plan, onPlanUpdated }: MonthlyPlanViewProps) {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             className={`glass p-5 rounded-2xl border transition-all space-y-4 ${
-                                isApproved ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-border/50'
+                                isApproved ? 'border-emerald-500/50 bg-emerald-500/5 ring-1 ring-emerald-500/30' : 'border-border/50'
                             }`}
                         >
                             {/* Header */}
@@ -234,6 +329,11 @@ export function MonthlyPlanView({ plan, onPlanUpdated }: MonthlyPlanViewProps) {
                                     {activeMeal.is_cheat_meal && (
                                         <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] font-bold">
                                             🎉 Permitido
+                                        </span>
+                                    )}
+                                    {isApproved && (
+                                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold flex items-center gap-1">
+                                            <Check className="w-3 h-3" /> Aprobada & Sincronizada
                                         </span>
                                     )}
                                 </div>
@@ -325,14 +425,19 @@ export function MonthlyPlanView({ plan, onPlanUpdated }: MonthlyPlanViewProps) {
                                 </button>
 
                                 <button
-                                    onClick={() => toggleApprove(mealType)}
+                                    onClick={() => handleToggleApprove(mealType)}
+                                    disabled={isSyncing}
                                     className={`py-2 px-3 rounded-xl text-xs font-medium transition-all flex items-center justify-center gap-1.5 ${
                                         isApproved
                                             ? 'bg-emerald-600 text-white shadow-md'
                                             : 'bg-secondary hover:bg-emerald-500/10 hover:text-emerald-400 text-muted-foreground border border-border/50'
                                     }`}
                                 >
-                                    <Check className="w-3.5 h-3.5" />
+                                    {isSyncing ? (
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    ) : (
+                                        <Check className="w-3.5 h-3.5" />
+                                    )}
                                     {isApproved ? 'Aprobada' : 'Aprobar'}
                                 </button>
                             </div>

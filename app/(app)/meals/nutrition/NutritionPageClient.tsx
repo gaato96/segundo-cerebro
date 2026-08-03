@@ -140,9 +140,6 @@ export function NutritionPageClient({
             {activeTab === 'plan' && (
                 <MonthlyPlanView
                     plan={plan}
-                    onPlanUpdated={() => {
-                        window.location.reload()
-                    }}
                 />
             )}
 
