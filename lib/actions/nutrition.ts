@@ -8,10 +8,13 @@ function getGeminiModel(isJson: boolean = false) {
     const apiKey = process.env.GEMINI_API_KEY
     if (!apiKey) throw new Error('GEMINI_API_KEY no está configurada en .env.local')
     const genAI = new GoogleGenerativeAI(apiKey)
-    return genAI.getGenerativeModel({
-        model: 'gemini-2.0-flash',
-        ...(isJson ? { generationConfig: { responseMimeType: 'application/json' } } : {})
-    })
+    if (isJson) {
+        return genAI.getGenerativeModel(
+            { model: 'gemini-2.0-flash' },
+            { apiVersion: 'v1beta' }
+        )
+    }
+    return genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
 }
 
 function parseAIResponseJSON(text: string) {
@@ -235,9 +238,12 @@ Respondé EXCLUSIVAMENTE con un JSON válido estructurado exactamente así:
 `
 
     try {
+        console.log('[nutrition] Calling Gemini for plan generation...')
         const result = await model.generateContent(prompt)
         const responseText = result.response.text().trim()
+        console.log('[nutrition] Gemini response received, length:', responseText.length)
         const parsed = parseAIResponseJSON(responseText)
+        console.log('[nutrition] JSON parsed successfully, days count:', parsed.days?.length)
 
         const payload = {
             user_id: user.id,
@@ -254,17 +260,22 @@ Respondé EXCLUSIVAMENTE con un JSON válido estructurado exactamente así:
             updated_at: new Date().toISOString()
         }
 
+        console.log('[nutrition] Upserting plan to Supabase...')
         const { data, error } = await supabase
             .from('nutrition_plans')
             .upsert(payload, { onConflict: 'user_id, month' })
             .select()
             .single()
 
-        if (error) throw error
+        if (error) {
+            console.error('[nutrition] Supabase upsert error:', error)
+            throw new Error(`Supabase: ${error.message}`)
+        }
+        console.log('[nutrition] Plan saved successfully:', data?.id)
         revalidatePath('/meals/nutrition')
         return data
     } catch (err: any) {
-        console.error('Error generating monthly plan:', err)
+        console.error('[nutrition] Error generating monthly plan:', err?.message || err)
         throw new Error(err.message || 'Error al comunicarse con Gemini AI')
     }
 }
