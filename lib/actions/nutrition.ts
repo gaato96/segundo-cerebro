@@ -4,17 +4,11 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
-function getGeminiModel(isJson: boolean = false) {
+function getGeminiModel() {
     const apiKey = process.env.GEMINI_API_KEY
     if (!apiKey) throw new Error('GEMINI_API_KEY no está configurada en .env.local')
     const genAI = new GoogleGenerativeAI(apiKey)
-    if (isJson) {
-        return genAI.getGenerativeModel(
-            { model: 'gemini-2.0-flash' },
-            { apiVersion: 'v1beta' }
-        )
-    }
-    return genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+    return genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
 }
 
 function parseAIResponseJSON(text: string) {
@@ -197,7 +191,7 @@ export async function generateMonthlyPlan(month: string) {
     const profile = await getNutritionProfile()
     if (!profile) throw new Error('Tenés que completar tu perfil nutricional primero.')
 
-    const model = getGeminiModel(true) // Enforce JSON response mime type
+    const model = getGeminiModel()
 
     const prompt = `
 Generá una dieta semanal modelo de 7 días (que se repetirá a lo largo del mes ${month}) adaptada a Tucumán, Argentina.
@@ -297,7 +291,7 @@ export async function swapMeal(planId: string, dayNumber: number, mealType: stri
     const currentMeal = plan.plan_data?.days?.find((d: any) => d.day_number === dayNumber)?.meals?.[mealType]
     const targetCals = currentMeal?.calories || 400
 
-    const model = getGeminiModel(true)
+    const model = getGeminiModel()
     const prompt = `
 Generá UNA comida de reemplazo para la comida "${mealType}" de un paciente en Tucumán.
 Comida anterior: "${currentMeal?.name || mealType}".
@@ -435,7 +429,7 @@ export async function chatWithNutritionist(userMessage: string) {
     const profile = await getNutritionProfile()
     const history = await getChatHistory()
 
-    const model = getGeminiModel(false)
+    const model = getGeminiModel()
 
     let promptContext = `${SYSTEM_PROMPT_NUTRITIONIST}\n\n`
     if (profile) {
