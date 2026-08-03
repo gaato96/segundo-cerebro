@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Brain, Loader2, Lock, Eye, EyeOff, CheckCircle } from 'lucide-react'
+import { Brain, Loader2, Lock, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 export default function ResetPasswordPage() {
@@ -10,10 +10,41 @@ export default function ResetPasswordPage() {
     const [confirm, setConfirm] = useState('')
     const [showPassword, setShowPassword] = useState(false)
     const [loading, setLoading] = useState(false)
+    const [sessionReady, setSessionReady] = useState(false)
     const [done, setDone] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const supabase = createClient()
     const router = useRouter()
+
+    // On mount: pick up recovery tokens from sessionStorage (set by login page)
+    // and establish the Supabase session so updateUser() works
+    useEffect(() => {
+        async function setupSession() {
+            const accessToken = sessionStorage.getItem('recovery_access_token')
+            const refreshToken = sessionStorage.getItem('recovery_refresh_token')
+
+            if (!accessToken || !refreshToken) {
+                setError('El link de recuperación no es válido o ya expiró. Solicitá uno nuevo desde el login.')
+                return
+            }
+
+            const { error } = await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken
+            })
+
+            if (error) {
+                setError(`Error al verificar el link: ${error.message}`)
+            } else {
+                // Clean up tokens from storage
+                sessionStorage.removeItem('recovery_access_token')
+                sessionStorage.removeItem('recovery_refresh_token')
+                setSessionReady(true)
+            }
+        }
+
+        setupSession()
+    }, [])
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
@@ -33,7 +64,7 @@ export default function ResetPasswordPage() {
             const { error } = await supabase.auth.updateUser({ password })
             if (error) throw error
             setDone(true)
-            setTimeout(() => router.push('/'), 2500)
+            setTimeout(() => router.replace('/'), 2500)
         } catch (err: any) {
             setError(err.message || 'Error al actualizar la contraseña')
         } finally {
@@ -66,9 +97,31 @@ export default function ResetPasswordPage() {
                                 <CheckCircle className="w-8 h-8 text-green-500" />
                             </div>
                             <h3 className="text-lg font-bold text-foreground">¡Contraseña actualizada!</h3>
-                            <p className="text-sm text-muted-foreground">Te redirigimos al inicio en unos segundos...</p>
+                            <p className="text-sm text-muted-foreground">Redirigiendo al inicio...</p>
+                        </div>
+                    ) : error && !sessionReady ? (
+                        // Show error if session couldn't be established
+                        <div className="text-center space-y-4 py-4">
+                            <div className="w-14 h-14 bg-red-500/10 rounded-full flex items-center justify-center mx-auto">
+                                <AlertCircle className="w-8 h-8 text-red-400" />
+                            </div>
+                            <h3 className="text-base font-bold text-foreground">Link inválido o expirado</h3>
+                            <p className="text-sm text-muted-foreground">{error}</p>
+                            <button
+                                onClick={() => router.push('/login')}
+                                className="mt-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-xl transition-all"
+                            >
+                                Volver al login
+                            </button>
+                        </div>
+                    ) : !sessionReady ? (
+                        // Loading while setting up session
+                        <div className="text-center py-8 text-muted-foreground text-sm flex flex-col items-center gap-3">
+                            <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
+                            Verificando link de recuperación...
                         </div>
                     ) : (
+                        // Show form once session is ready
                         <form onSubmit={handleSubmit} className="space-y-5">
                             <div className="space-y-1.5">
                                 <label className="text-sm font-medium text-foreground">Nueva contraseña</label>

@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Brain, Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
     const [email, setEmail] = useState('')
@@ -13,6 +14,25 @@ export default function LoginPage() {
     const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
 
     const supabase = createClient()
+    const router = useRouter()
+
+    // Detect Supabase hash-based auth flows (legacy implicit flow)
+    // e.g. #access_token=...&type=recovery
+    useEffect(() => {
+        const hash = window.location.hash
+        if (!hash) return
+        const params = new URLSearchParams(hash.replace('#', ''))
+        const type = params.get('type')
+        const accessToken = params.get('access_token')
+        const refreshToken = params.get('refresh_token')
+
+        if (type === 'recovery' && accessToken && refreshToken) {
+            // Pass tokens via sessionStorage so reset page can pick them up
+            sessionStorage.setItem('recovery_access_token', accessToken)
+            sessionStorage.setItem('recovery_refresh_token', refreshToken)
+            router.replace('/auth/reset-password')
+        }
+    }, [])
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
@@ -32,6 +52,26 @@ export default function LoginPage() {
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Ocurrió un error'
             setMessage({ type: 'error', text: msg })
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    async function handleForgotPassword() {
+        if (!email) {
+            setMessage({ type: 'error', text: 'Ingresá tu email primero en el campo de arriba.' })
+            return
+        }
+        setLoading(true)
+        setMessage(null)
+        try {
+            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: `${window.location.origin}/login`
+            })
+            if (error) throw error
+            setMessage({ type: 'success', text: '✅ Email enviado. Revisá tu bandeja de entrada y hacé click en el link.' })
+        } catch (err: any) {
+            setMessage({ type: 'error', text: err.message || 'Error al enviar email' })
         } finally {
             setLoading(false)
         }
@@ -129,6 +169,17 @@ export default function LoginPage() {
                             {mode === 'login' ? 'Entrar' : 'Crear cuenta'}
                         </button>
                     </form>
+
+                    {mode === 'login' && (
+                        <button
+                            type="button"
+                            onClick={handleForgotPassword}
+                            disabled={loading}
+                            className="w-full mt-3 text-xs text-muted-foreground hover:text-indigo-400 transition-colors py-1"
+                        >
+                            ¿Olvidaste tu contraseña?
+                        </button>
+                    )}
                 </div>
 
                 <p className="text-center text-xs text-muted-foreground mt-6">
