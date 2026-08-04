@@ -2,7 +2,7 @@ import { getTasks } from '@/lib/actions/tasks'
 import { getEventsByDateRange } from '@/lib/actions/events'
 import { getWeeklyPlan, getUnplannedTasks } from '@/lib/actions/weekly_plans'
 import { PlannerClient } from './page.client'
-import { getLocalDateStr, getLocalDayOfWeek } from '@/lib/utils'
+import { getLocalDateStr, getLocalDayOfWeek, addDaysToDateStr } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,12 +12,8 @@ export default async function PlannerPage() {
     const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
 
     const dateStr = getLocalDateStr(now)
-    const [y, m, d] = dateStr.split('-').map(Number)
-    const monday = new Date(y, m - 1, d + diffToMonday)
-    const mondayStr = getLocalDateStr(monday)
-
-    const sunday = new Date(y, m - 1, d + diffToMonday + 6)
-    const sundayStr = getLocalDateStr(sunday)
+    const mondayStr = addDaysToDateStr(dateStr, diffToMonday)
+    const sundayStr = addDaysToDateStr(dateStr, diffToMonday + 6)
 
     const [allTasks, unplannedTasks, events, weeklyPlan] = await Promise.all([
         getTasks(),

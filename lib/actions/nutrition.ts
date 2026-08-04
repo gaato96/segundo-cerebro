@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { getLocalDateStr, getLocalDayOfWeek } from '@/lib/utils'
+import { getLocalDateStr, getLocalDayOfWeek, addDaysToDateStr } from '@/lib/utils'
 
 function getGeminiModel() {
     const apiKey = process.env.GEMINI_API_KEY
@@ -644,9 +644,7 @@ export async function approveAndSyncNutritionMeal(
         const dayOfWeek = getLocalDayOfWeek(now)
         const diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
         const todayStr = getLocalDateStr(now)
-        const [_y, _m, _d] = todayStr.split('-').map(Number)
-        const monday = new Date(_y, _m - 1, _d + diffToMon)
-        const startDateStr = getLocalDateStr(monday)
+        const startDateStr = addDaysToDateStr(todayStr, diffToMon)
 
         const DAY_NAMES_ENG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
         const dayEng = DAY_NAMES_ENG[(dayNumber - 1) % 7]

@@ -1,6 +1,6 @@
 import { getRecipes, getWeeklyMenu } from '@/lib/actions/meals'
 import MealsPageClient from './MealsPageClient'
-import { getLocalDateStr, getLocalDayOfWeek } from '@/lib/utils'
+import { getLocalDateStr, getLocalDayOfWeek, addDaysToDateStr } from '@/lib/utils'
 
 export default async function MealsPage() {
     const recipes = await getRecipes()
@@ -10,9 +10,7 @@ export default async function MealsPage() {
     const dow = getLocalDayOfWeek(now)          // 0 = Sun … 6 = Sat
     const diffToMonday = dow === 0 ? -6 : 1 - dow
     const todayStr = getLocalDateStr(now)
-    const [y, m, d] = todayStr.split('-').map(Number)
-    const monday = new Date(y, m - 1, d + diffToMonday)
-    const startDate = getLocalDateStr(monday)
+    const startDate = addDaysToDateStr(todayStr, diffToMonday)
 
     const weeklyMenu = await getWeeklyMenu(startDate)
 

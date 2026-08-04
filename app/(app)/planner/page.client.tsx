@@ -22,7 +22,7 @@ import { TaskDragCard } from '@/components/planner/TaskDragCard'
 import { EventItem } from '@/lib/actions/events'
 import { TaskForm } from '@/components/tasks/TaskForm'
 import { getEventsByDateRange } from '@/lib/actions/events'
-import { getLocalDateStr, getLocalDayOfWeek } from '@/lib/utils'
+import { getLocalDateStr, getLocalDayOfWeek, addDaysToDateStr } from '@/lib/utils'
 
 const BACKLOG_DROP_ID = 'backlog'
 const DAY_PREFIX = 'day:'
@@ -40,18 +40,14 @@ function getMondayStr(offsetWeeks: number): string {
     const dayOfWeek = getLocalDayOfWeek(now)
     const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
     const dateStr = getLocalDateStr(now)
-    const [y, m, d] = dateStr.split('-').map(Number)
-    const monday = new Date(y, m - 1, d + diffToMonday + offsetWeeks * 7)
-    return getLocalDateStr(monday)
+    return addDaysToDateStr(dateStr, diffToMonday + offsetWeeks * 7)
 }
 
 function getWeekDays(mondayStr: string) {
-    const [y, m, d] = mondayStr.split('-').map(Number)
-    return ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].map((name, i) => {
-        const dayDate = new Date(y, m - 1, d + i)
-        const dateStr = getLocalDateStr(dayDate)
-        return { name, dateStr }
-    })
+    return ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].map((name, i) => ({
+        name,
+        dateStr: addDaysToDateStr(mondayStr, i)
+    }))
 }
 
 export function PlannerClient({

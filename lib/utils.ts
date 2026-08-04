@@ -44,12 +44,30 @@ export function getLocalMonthYearStr(date: Date = new Date(), timeZone: string =
     return getLocalDateStr(date, timeZone).slice(0, 7)
 }
 
-/** Returns day of week (0 = Sunday, 1 = Monday, ..., 6 = Saturday) in the target timezone */
+/** Returns day of week (0 = Sun, 1 = Mon, ..., 6 = Sat) in the target timezone.
+ *  Uses Intl directly to avoid creating intermediate Date objects at midnight UTC. */
 export function getLocalDayOfWeek(date: Date = new Date(), timeZone: string = 'America/Argentina/Buenos_Aires'): number {
-    const dateStr = getLocalDateStr(date, timeZone)
-    const [year, month, day] = dateStr.split('-').map(Number)
-    const d = new Date(year, month - 1, day)
-    return d.getDay()
+    const formatter = new Intl.DateTimeFormat('en-US', { timeZone, weekday: 'short' })
+    const weekday = formatter.format(date)
+    const map: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }
+    return map[weekday] ?? 0
+}
+
+/**
+ * Adds `days` to a YYYY-MM-DD string WITHOUT going through UTC.
+ * Safe for use on servers running in UTC: arithmetic stays in local
+ * date space so there is no timezone-offset rollover.
+ */
+export function addDaysToDateStr(dateStr: string, days: number): string {
+    const [y, m, d] = dateStr.split('-').map(Number)
+    // new Date(y, m-1, d+days) creates midnight in the RUNTIME's local time.
+    // Reading back with getFullYear/Month/Date stays in the same local time.
+    // These always agree, so there is NO timezone shift.
+    const dt = new Date(y, m - 1, d + days)
+    const yr = dt.getFullYear()
+    const mo = String(dt.getMonth() + 1).padStart(2, '0')
+    const da = String(dt.getDate()).padStart(2, '0')
+    return `${yr}-${mo}-${da}`
 }
 
 /** Formats a date in Spanish using local date interpretation */
