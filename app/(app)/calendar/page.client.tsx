@@ -6,6 +6,7 @@ import { EventItem, getEvents } from '@/lib/actions/events'
 import { MonthCalendar } from '@/components/calendar/MonthCalendar'
 import { EventCard } from '@/components/calendar/EventCard'
 import { EventFormModal } from '@/components/calendar/EventFormModal'
+import { getLocalDateStr } from '@/lib/utils'
 
 interface CalendarClientProps {
     initialEvents: EventItem[]
@@ -16,7 +17,7 @@ export function CalendarClient({ initialEvents, initialMonthYear }: CalendarClie
     const [events, setEvents] = useState<EventItem[]>(initialEvents)
     const [viewMode, setViewMode] = useState<'month' | 'list'>('month')
     const [currentDate, setCurrentDate] = useState(new Date())
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
+    const [selectedDate, setSelectedDate] = useState(getLocalDateStr())
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [eventToEdit, setEventToEdit] = useState<EventItem | null>(null)
 

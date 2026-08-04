@@ -22,6 +22,7 @@ import { TaskDragCard } from '@/components/planner/TaskDragCard'
 import { EventItem } from '@/lib/actions/events'
 import { TaskForm } from '@/components/tasks/TaskForm'
 import { getEventsByDateRange } from '@/lib/actions/events'
+import { getLocalDateStr, getLocalDayOfWeek } from '@/lib/utils'
 
 const BACKLOG_DROP_ID = 'backlog'
 const DAY_PREFIX = 'day:'
@@ -36,19 +37,19 @@ interface PlannerClientProps {
 
 function getMondayStr(offsetWeeks: number): string {
     const now = new Date()
-    const dayOfWeek = now.getDay()
+    const dayOfWeek = getLocalDayOfWeek(now)
     const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
-    const monday = new Date(now)
-    monday.setDate(now.getDate() + diffToMonday + offsetWeeks * 7)
-    return monday.toISOString().split('T')[0]
+    const dateStr = getLocalDateStr(now)
+    const [y, m, d] = dateStr.split('-').map(Number)
+    const monday = new Date(y, m - 1, d + diffToMonday + offsetWeeks * 7)
+    return getLocalDateStr(monday)
 }
 
 function getWeekDays(mondayStr: string) {
-    const monDate = new Date(mondayStr + 'T00:00:00')
+    const [y, m, d] = mondayStr.split('-').map(Number)
     return ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].map((name, i) => {
-        const d = new Date(monDate)
-        d.setDate(monDate.getDate() + i)
-        const dateStr = d.toISOString().split('T')[0]
+        const dayDate = new Date(y, m - 1, d + i)
+        const dateStr = getLocalDateStr(dayDate)
         return { name, dateStr }
     })
 }
@@ -77,7 +78,7 @@ export function PlannerClient({
     const [overId, setOverId] = useState<UniqueIdentifier | null>(null)
 
     const weekDays = getWeekDays(mondayStr)
-    const todayStr = new Date().toISOString().split('T')[0]
+    const todayStr = getLocalDateStr()
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 8 } })

@@ -7,7 +7,7 @@ import {
     TrendingUp, Calendar, Trash2, Edit2, X, Loader2, RefreshCw
 } from 'lucide-react'
 import { HabitItem, HabitLogItem, createHabit, updateHabit, deleteHabit } from '@/lib/actions/habits'
-import { isHabitScheduledForDate } from '@/lib/utils'
+import { isHabitScheduledForDate, getLocalDateStr } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import confetti from 'canvas-confetti'
 
@@ -58,7 +58,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
     const [loading, setLoading] = useState(false)
 
     const supabase = createClient()
-    const todayStr = new Date().toISOString().split('T')[0]
+    const todayStr = getLocalDateStr()
 
     // Completed today helper
     const completedTodayIds = new Set(

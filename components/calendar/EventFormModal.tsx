@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Calendar as CalendarIcon, Clock, MapPin, Tag, Loader2, ExternalLink } from 'lucide-react'
 import { createEvent, updateEvent, deleteEvent, EventItem } from '@/lib/actions/events'
-import { getGoogleCalendarUrl } from '@/lib/utils'
+import { getGoogleCalendarUrl, getLocalDateStr } from '@/lib/utils'
 
 interface EventFormModalProps {
     isOpen: boolean
@@ -16,7 +16,7 @@ interface EventFormModalProps {
 export function EventFormModal({ isOpen, onClose, eventToEdit, defaultDate }: EventFormModalProps) {
     const [title, setTitle] = useState('')
     const [description, setDescription] = useState('')
-    const [eventDate, setEventDate] = useState(defaultDate || new Date().toISOString().split('T')[0])
+    const [eventDate, setEventDate] = useState(defaultDate || getLocalDateStr())
     const [startTime, setStartTime] = useState('09:00')
     const [endTime, setEndTime] = useState('10:00')
     const [eventType, setEventType] = useState<'meeting' | 'event' | 'appointment' | 'reminder' | 'birthday'>('event')
@@ -39,7 +39,7 @@ export function EventFormModal({ isOpen, onClose, eventToEdit, defaultDate }: Ev
         } else {
             setTitle('')
             setDescription('')
-            setEventDate(defaultDate || new Date().toISOString().split('T')[0])
+            setEventDate(defaultDate || getLocalDateStr())
             setStartTime('09:00')
             setEndTime('10:00')
             setEventType('event')

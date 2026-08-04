@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { EventItem } from '@/lib/actions/events'
 import { EventCard } from './EventCard'
+import { getLocalDateStr } from '@/lib/utils'
 
 interface MonthCalendarProps {
     events: EventItem[]
@@ -22,7 +23,7 @@ export function MonthCalendar({
     onAddEvent,
     onEditEvent
 }: MonthCalendarProps) {
-    const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0])
+    const [selectedDate, setSelectedDate] = useState<string>(getLocalDateStr())
 
     const year = currentDate.getFullYear()
     const month = currentDate.getMonth()
@@ -44,7 +45,7 @@ export function MonthCalendar({
     // Days from previous month
     const daysInPrevMonth = new Date(year, month, 0).getDate()
 
-    const todayStr = new Date().toISOString().split('T')[0]
+    const todayStr = getLocalDateStr()
 
     // Create array of 35 or 42 grid cells
     const gridCells = []

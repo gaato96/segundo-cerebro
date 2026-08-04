@@ -1,5 +1,7 @@
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs))
@@ -18,7 +20,44 @@ export function formatDate(date: string | Date) {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
+        timeZone: 'America/Argentina/Buenos_Aires',
     }).format(new Date(date))
+}
+
+/** Returns YYYY-MM-DD in the target timezone (defaults to America/Argentina/Buenos_Aires) */
+export function getLocalDateStr(date: Date = new Date(), timeZone: string = 'America/Argentina/Buenos_Aires'): string {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+    })
+    const parts = formatter.formatToParts(date)
+    const yr = parts.find(p => p.type === 'year')?.value
+    const mo = parts.find(p => p.type === 'month')?.value
+    const da = parts.find(p => p.type === 'day')?.value
+    return `${yr}-${mo}-${da}`
+}
+
+/** Returns YYYY-MM in the target timezone */
+export function getLocalMonthYearStr(date: Date = new Date(), timeZone: string = 'America/Argentina/Buenos_Aires'): string {
+    return getLocalDateStr(date, timeZone).slice(0, 7)
+}
+
+/** Returns day of week (0 = Sunday, 1 = Monday, ..., 6 = Saturday) in the target timezone */
+export function getLocalDayOfWeek(date: Date = new Date(), timeZone: string = 'America/Argentina/Buenos_Aires'): number {
+    const dateStr = getLocalDateStr(date, timeZone)
+    const [year, month, day] = dateStr.split('-').map(Number)
+    const d = new Date(year, month - 1, day)
+    return d.getDay()
+}
+
+/** Formats a date in Spanish using local date interpretation */
+export function formatLocalDate(date: Date = new Date(), formatStr: string = "EEEE d 'de' MMMM", timeZone: string = 'America/Argentina/Buenos_Aires'): string {
+    const dateStr = getLocalDateStr(date, timeZone)
+    const [year, month, day] = dateStr.split('-').map(Number)
+    const d = new Date(year, month - 1, day)
+    return format(d, formatStr, { locale: es })
 }
 
 export function getPriorityLabel(priority: number) {
@@ -84,7 +123,8 @@ export function isHabitScheduledForDate(habit: any, dateStr: string): boolean {
     if (ft === 'daily') return true
     if (ft === 'x_per_day') return true
     if (ft === 'custom_days') {
-        const d = new Date(dateStr + 'T00:00:00')
+        const [year, month, day] = dateStr.split('-').map(Number)
+        const d = new Date(year, month - 1, day)
         let isoDay = d.getDay()
         if (isoDay === 0) isoDay = 7
         return (habit.frequency_days || []).includes(isoDay)

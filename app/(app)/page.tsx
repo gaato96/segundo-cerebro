@@ -4,8 +4,6 @@ import { DailySnapshot } from '@/components/dashboard/DailySnapshot'
 import { PomodoroWidget } from '@/components/dashboard/PomodoroWidget'
 import { QuickStats } from '@/components/dashboard/QuickStats'
 import { TodayEventsWidget } from '@/components/dashboard/TodayEventsWidget'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
 import { StickyNotesWidget } from '@/components/dashboard/StickyNotesWidget'
 import { getStickyNotes } from '@/lib/actions/sticky_notes'
 import { IdealRoutineWidget } from '@/components/dashboard/IdealRoutineWidget'
@@ -14,6 +12,7 @@ import { getRitualLog } from '@/lib/actions/morning_ritual'
 import Link from 'next/link'
 import { Sun } from 'lucide-react'
 import { QuickTransactionModal } from '@/components/dashboard/QuickTransactionModal'
+import { getLocalDateStr, getLocalMonthYearStr, getLocalDayOfWeek, formatLocalDate } from '@/lib/utils'
 
 export default async function DashboardPage() {
     const supabase = await createClient()
@@ -21,20 +20,11 @@ export default async function DashboardPage() {
     if (!user) redirect('/login')
 
     const now = new Date()
-    const formatter = new Intl.DateTimeFormat('en-US', {
-        timeZone: 'America/Argentina/Buenos_Aires',
-        year: 'numeric', month: '2-digit', day: '2-digit'
-    })
-    const parts = formatter.formatToParts(now)
-    const yr = parts.find(p => p.type === 'year')?.value
-    const mo = parts.find(p => p.type === 'month')?.value
-    const da = parts.find(p => p.type === 'day')?.value
-
-    const todayStr = `${yr}-${mo}-${da}`
-    const monthYear = `${yr}-${mo}`
+    const todayStr = getLocalDateStr(now)
+    const monthYear = getLocalMonthYearStr(now)
 
     // Calculate today's ISO day of week (1 = Mon ... 7 = Sun)
-    const dayOfWeek = now.getDay()
+    const dayOfWeek = getLocalDayOfWeek(now)
     const todayIsoDay = dayOfWeek === 0 ? 7 : dayOfWeek
 
     // Fetch profile, tasks, habits, events, ritual log in parallel
@@ -67,7 +57,7 @@ export default async function DashboardPage() {
     const income = finances.filter((f: { type: string }) => f.type === 'Income').reduce((sum: number, f: { amount: number }) => sum + f.amount, 0)
     const expenses = finances.filter((f: { type: string }) => f.type !== 'Income').reduce((sum: number, f: { amount: number }) => sum + f.amount, 0)
 
-    const todayFormatted = format(now, "EEEE d 'de' MMMM", { locale: es })
+    const todayFormatted = formatLocalDate(now)
     const stickyNotes = await getStickyNotes()
 
     return (

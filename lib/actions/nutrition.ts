@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { getLocalDateStr, getLocalDayOfWeek } from '@/lib/utils'
 
 function getGeminiModel() {
     const apiKey = process.env.GEMINI_API_KEY
@@ -498,7 +499,7 @@ export async function addProgressEntry(data: {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
 
-    const dateStr = data.date || new Date().toISOString().split('T')[0]
+    const dateStr = data.date || getLocalDateStr()
 
     const { error } = await supabase
         .from('nutrition_progress')
@@ -640,11 +641,12 @@ export async function approveAndSyncNutritionMeal(
     // Sync to weekly_menus if approved
     if (approved && activeOption) {
         const now = new Date()
-        const dayOfWeek = now.getDay()
+        const dayOfWeek = getLocalDayOfWeek(now)
         const diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
-        const monday = new Date(now)
-        monday.setDate(now.getDate() + diffToMon)
-        const startDateStr = monday.toISOString().split('T')[0]
+        const todayStr = getLocalDateStr(now)
+        const [_y, _m, _d] = todayStr.split('-').map(Number)
+        const monday = new Date(_y, _m - 1, _d + diffToMon)
+        const startDateStr = getLocalDateStr(monday)
 
         const DAY_NAMES_ENG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
         const dayEng = DAY_NAMES_ENG[(dayNumber - 1) % 7]

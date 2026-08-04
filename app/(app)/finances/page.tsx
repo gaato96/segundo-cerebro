@@ -2,12 +2,12 @@ import { getFinances } from '@/lib/actions/finances'
 import { getEnvelopes } from '@/lib/actions/budget_envelopes'
 import { getBudgetProjections } from '@/lib/actions/budget_projections'
 import { FinancesClient } from './page.client'
+import { getLocalMonthYearStr } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
 export default async function FinancesPage() {
-    const date = new Date()
-    const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+    const monthYear = getLocalMonthYearStr()
 
     const [financesData, envelopes, projections] = await Promise.all([
         getFinances(monthYear),
