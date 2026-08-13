@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Check, Circle, Flame, Calendar as CalendarIcon, MoreVertical, CheckSquare } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import confetti from 'canvas-confetti'
-import { getPriorityColor, getPriorityLabel } from '@/lib/utils'
+import { getPriorityColor, getPriorityLabel, formatDate } from '@/lib/utils'
 import { format } from 'date-fns'
 
 interface Task {
@@ -229,11 +229,11 @@ export function DailySnapshot({ tasks: initialTasks, habits, completedHabitIds: 
                                                 </span>
                                             )}
                                             {task.due_date && (
-                                                <span className="text-[10px] flex items-center gap-1 text-muted-foreground ml-auto">
-                                                    <CalendarIcon className="w-3 h-3" />
-                                                    {format(new Date(task.due_date), 'dd/MM')}
-                                                </span>
-                                            )}
+                                                 <span className="text-[10px] flex items-center gap-1 text-muted-foreground ml-auto">
+                                                     <CalendarIcon className="w-3 h-3" />
+                                                     {formatDate(task.due_date).substring(0, 5)}
+                                                 </span>
+                                             )}
                                         </div>
                                     </div>
                                 </motion.div>
