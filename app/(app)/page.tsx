@@ -14,10 +14,14 @@ import { Sun } from 'lucide-react'
 import { QuickTransactionModal } from '@/components/dashboard/QuickTransactionModal'
 import { getLocalDateStr, getLocalMonthYearStr, getLocalDayOfWeek, formatLocalDate } from '@/lib/utils'
 
+import { syncRecurringTasks } from '@/lib/actions/tasks'
+
 export default async function DashboardPage() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect('/login')
+
+    await syncRecurringTasks(user.id)
 
     const now = new Date()
     const todayStr = getLocalDateStr(now)
@@ -30,7 +34,7 @@ export default async function DashboardPage() {
     // Fetch profile, tasks, habits, events, ritual log in parallel
     const [profileRes, todayTasksRes, habitsRes, todayLogsRes, financesRes, todayEvents, ritualLog] = await Promise.all([
         supabase.from('profiles').select('ideal_routine_json').eq('id', user.id).single(),
-        supabase.from('tasks').select('*').eq('user_id', user.id).neq('status', 'Done').or(`planned_date.eq.${todayStr},and(planned_date.is.null,due_date.lte.${todayStr})`).order('priority', { ascending: true }).limit(8),
+        supabase.from('tasks').select('*').eq('user_id', user.id).in('status', ['Todo', 'InProgress']).or(`planned_date.eq.${todayStr},and(planned_date.is.null,due_date.lte.${todayStr})`).order('priority', { ascending: true }).limit(8),
         supabase.from('habits').select('*').eq('user_id', user.id).eq('is_active', true),
         supabase.from('habit_logs').select('habit_id').eq('user_id', user.id).gte('completed_at', `${todayStr}T00:00:00-03:00`),
         supabase.from('finances').select('type, amount').eq('user_id', user.id).eq('month_year', monthYear),

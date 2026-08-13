@@ -8,6 +8,8 @@ export async function getTasks() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
 
+    await syncRecurringTasks(user.id)
+
     const { data, error } = await supabase
         .from('tasks')
         .select(`
@@ -15,6 +17,7 @@ export async function getTasks() {
           objectives (title)
         `)
         .eq('user_id', user.id)
+        .neq('status', 'Missed')
         .order('status', { ascending: true }) // Todo, InProgress, Done
         .order('priority', { ascending: true }) // 1, 2, 3
         .order('due_date', { ascending: true, nullsFirst: false })
@@ -242,10 +245,110 @@ export async function deleteSubtask(subtaskId: string) {
 // RECURRING TASKS
 // ============================================================
 
+export async function syncRecurringTasks(userId?: string) {
+    const supabase = await createClient()
+    let currentUserId = userId
+    if (!currentUserId) {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+        currentUserId = user.id
+    }
+
+    const now = new Date()
+    const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Argentina/Buenos_Aires',
+        year: 'numeric', month: '2-digit', day: '2-digit'
+    })
+    const parts = formatter.formatToParts(now)
+    const y = parts.find(p => p.type === 'year')?.value
+    const m = parts.find(p => p.type === 'month')?.value
+    const d = parts.find(p => p.type === 'day')?.value
+    const todayStr = `${y}-${m}-${d}`
+
+    // 1. Get all recurring templates for user
+    const { data: templates } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', currentUserId)
+        .eq('is_recurring', true)
+        .is('recurring_parent_id', null)
+
+    if (!templates || templates.length === 0) return
+
+    for (const template of templates) {
+        // 2. Mark overdue pending instances for this template as 'Missed'
+        await supabase
+            .from('tasks')
+            .update({ status: 'Missed', updated_at: new Date().toISOString() })
+            .eq('user_id', currentUserId)
+            .eq('recurring_parent_id', template.id)
+            .in('status', ['Todo', 'InProgress'])
+            .lt('due_date', todayStr)
+
+        // 3. Check if an active instance (status Todo or InProgress) for due_date >= todayStr already exists
+        const { data: activeInstances } = await supabase
+            .from('tasks')
+            .select('*')
+            .eq('user_id', currentUserId)
+            .eq('recurring_parent_id', template.id)
+            .in('status', ['Todo', 'InProgress'])
+            .gte('due_date', todayStr)
+
+        if (!activeInstances || activeInstances.length === 0) {
+            // No active instance for today or future! Generate the next one!
+            const todayDate = new Date(`${todayStr}T00:00:00`)
+            const nextDate = calculateNextOccurrenceDate(
+                todayDate,
+                template.recurrence_type,
+                template.recurrence_days || [],
+                template.recurrence_interval || 1,
+                true
+            )
+
+            const nextDateStr = formatDateStr(nextDate)
+
+            // Verify end date
+            if (!template.recurrence_end_date || nextDateStr <= template.recurrence_end_date) {
+                // Double check if any instance for this exact due_date already exists
+                const { data: existingSameDate } = await supabase
+                    .from('tasks')
+                    .select('id')
+                    .eq('user_id', currentUserId)
+                    .eq('recurring_parent_id', template.id)
+                    .eq('due_date', nextDateStr)
+                    .limit(1)
+
+                if (!existingSameDate || existingSameDate.length === 0) {
+                    await supabase
+                        .from('tasks')
+                        .insert({
+                            user_id: currentUserId,
+                            title: template.title,
+                            description: template.description,
+                            priority: template.priority,
+                            category: template.category,
+                            energy_level: template.energy_level,
+                            due_date: nextDateStr,
+                            recurring_parent_id: template.id,
+                            status: 'Todo'
+                        })
+
+                    await supabase
+                        .from('tasks')
+                        .update({ next_occurrence_date: nextDateStr })
+                        .eq('id', template.id)
+                }
+            }
+        }
+    }
+}
+
 export async function getRecurringTasks() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
+
+    await syncRecurringTasks(user.id)
 
     const { data, error } = await supabase
         .from('tasks')
@@ -276,9 +379,20 @@ export async function createRecurringTask(formData: FormData) {
     const recurrence_interval = parseInt(formData.get('recurrence_interval') as string) || 1
     const recurrence_end_date = formData.get('recurrence_end_date') as string || null
 
-    // Calculate initial next occurrence date
-    const nextDate = calculateNextOccurrenceDate(new Date(), recurrence_type, recurrence_days, recurrence_interval)
-    const nextDateStr = nextDate.toISOString().split('T')[0]
+    const now = new Date()
+    const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Argentina/Buenos_Aires',
+        year: 'numeric', month: '2-digit', day: '2-digit'
+    })
+    const parts = formatter.formatToParts(now)
+    const y = parts.find(p => p.type === 'year')?.value
+    const m = parts.find(p => p.type === 'month')?.value
+    const d = parts.find(p => p.type === 'day')?.value
+    const todayDate = new Date(`${y}-${m}-${d}T00:00:00`)
+
+    // Calculate initial next occurrence date (includeToday = true)
+    const nextDate = calculateNextOccurrenceDate(todayDate, recurrence_type, recurrence_days, recurrence_interval, true)
+    const nextDateStr = formatDateStr(nextDate)
 
     // 1. Create recurring template task
     const { data: template, error: templateError } = await supabase
@@ -294,7 +408,7 @@ export async function createRecurringTask(formData: FormData) {
             recurrence_type,
             recurrence_days,
             recurrence_interval,
-            recurrence_end_date: recurrence_end_date ? new Date(recurrence_end_date).toISOString().split('T')[0] : null,
+            recurrence_end_date: recurrence_end_date ? recurrence_end_date : null,
             next_occurrence_date: nextDateStr,
             status: 'Todo'
         })
@@ -353,13 +467,12 @@ export async function completeRecurringInstance(taskId: string) {
             .single()
 
         if (parent && parent.is_recurring) {
-            // Check end date limit
-            const baseDate = task.due_date ? new Date(task.due_date) : new Date()
-            const nextDate = calculateNextOccurrenceDate(baseDate, parent.recurrence_type, parent.recurrence_days || [], parent.recurrence_interval || 1)
+            // Check end date limit starting after task.due_date
+            const baseDate = task.due_date ? new Date(`${task.due_date}T00:00:00`) : new Date()
+            const nextDate = calculateNextOccurrenceDate(baseDate, parent.recurrence_type, parent.recurrence_days || [], parent.recurrence_interval || 1, false)
+            const nextDateStr = formatDateStr(nextDate)
             
-            if (!parent.recurrence_end_date || nextDate <= new Date(parent.recurrence_end_date)) {
-                const nextDateStr = nextDate.toISOString().split('T')[0]
-
+            if (!parent.recurrence_end_date || nextDateStr <= parent.recurrence_end_date) {
                 // Update parent next_occurrence_date
                 await supabase
                     .from('tasks')
@@ -405,18 +518,25 @@ export async function deleteRecurringTask(recurringParentId: string) {
     revalidatePath('/')
 }
 
+function formatDateStr(date: Date): string {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+}
+
 // Helper: Calculate next occurrence date
-function calculateNextOccurrenceDate(from: Date, type: string, days: number[], interval: number = 1): Date {
+function calculateNextOccurrenceDate(from: Date, type: string, days: number[], interval: number = 1, includeToday: boolean = false): Date {
     const next = new Date(from.getTime())
     next.setHours(0, 0, 0, 0)
+    const startOffset = includeToday ? 0 : 1
 
     if (type === 'daily') {
+        if (includeToday) return next
         next.setDate(next.getDate() + interval)
     } else if (type === 'weekly') {
         if (days && days.length > 0) {
-            // Pick next matching day of week (1=Mon ... 7=Sun)
-            let found = false
-            for (let i = 1; i <= 7 * interval; i++) {
+            for (let i = startOffset; i <= 7 * interval; i++) {
                 const check = new Date(next.getTime())
                 check.setDate(check.getDate() + i)
                 let isoDay = check.getDay()
@@ -426,14 +546,18 @@ function calculateNextOccurrenceDate(from: Date, type: string, days: number[], i
                 }
             }
         }
-        next.setDate(next.getDate() + 7 * interval)
+        next.setDate(next.getDate() + (includeToday ? 0 : 7 * interval))
     } else if (type === 'biweekly') {
+        if (includeToday) return next
         next.setDate(next.getDate() + 14 * interval)
     } else if (type === 'monthly') {
+        if (includeToday) return next
         next.setMonth(next.getMonth() + interval)
     } else if (type === 'quarterly') {
+        if (includeToday) return next
         next.setMonth(next.getMonth() + 3 * interval)
     } else {
+        if (includeToday) return next
         next.setDate(next.getDate() + 1)
     }
 

@@ -98,7 +98,7 @@ export async function getUnplannedTasks() {
         .from('tasks')
         .select('*')
         .eq('user_id', user.id)
-        .neq('status', 'Done')
+        .in('status', ['Todo', 'InProgress'])
         .is('planned_date', null)
         .order('priority', { ascending: true })
 

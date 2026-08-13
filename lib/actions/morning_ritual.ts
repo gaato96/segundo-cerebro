@@ -123,17 +123,21 @@ export async function saveRitualConfig(sectionsOrder: string[], promptText: stri
     return { success: true }
 }
 
+import { syncRecurringTasks } from '@/lib/actions/tasks'
+
 export async function getMorningData(dateStr: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return null
+
+    await syncRecurringTasks(user.id)
 
     const [tasksRes, habitsRes, inboxRes, eventsRes] = await Promise.all([
         supabase
             .from('tasks')
             .select('*')
             .eq('user_id', user.id)
-            .neq('status', 'Done')
+            .in('status', ['Todo', 'InProgress'])
             .or(`due_date.lte.${dateStr},planned_date.eq.${dateStr},due_date.is.null`)
             .order('priority', { ascending: true }),
 

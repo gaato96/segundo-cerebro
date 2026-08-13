@@ -42,7 +42,7 @@ export function TasksClient({ initialTasks, initialRecurringTasks }: TaskPagePro
         return true
     })
 
-    const pendingTasks = filteredTasks.filter(t => t.status !== 'Done')
+    const pendingTasks = filteredTasks.filter(t => t.status === 'Todo' || t.status === 'InProgress')
 
     const now = new Date()
     const parts = new Intl.DateTimeFormat('en-US', {
