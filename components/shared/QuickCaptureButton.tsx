@@ -14,15 +14,22 @@ export function QuickCaptureButton() {
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            // Ctrl+K or Cmd+K
-            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            // Ctrl/Cmd + Shift + K. Ctrl+K quedo para el command palette.
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'k') {
                 e.preventDefault()
                 setIsOpen(true)
             }
             if (e.key === 'Escape') setIsOpen(false)
         }
+        // El command palette tambien puede abrir el vaciado mental.
+        const handleOpenRequest = () => setIsOpen(true)
+
         window.addEventListener('keydown', handleKeyDown)
-        return () => window.removeEventListener('keydown', handleKeyDown)
+        window.addEventListener('sc:quick-capture', handleOpenRequest)
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown)
+            window.removeEventListener('sc:quick-capture', handleOpenRequest)
+        }
     }, [])
 
     async function handleSave() {

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { getPendingMentalNotes } from '@/lib/actions/mental_notes'
 import { InboxList } from '@/components/inbox/InboxList'
+import { InboxAIProcessor } from '@/components/inbox/InboxAIProcessor'
 
 export default async function InboxPage() {
     const supabase = await createClient()
@@ -22,6 +23,8 @@ export default async function InboxPage() {
                     </p>
                 </div>
             </div>
+
+            <InboxAIProcessor notes={notes.map(n => ({ id: n.id, content: n.content }))} />
 
             <InboxList initialNotes={notes} userId={user.id} />
         </div>

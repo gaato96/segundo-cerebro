@@ -2,8 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { GoogleGenerativeAI } from '@google/generative-ai'
-import Groq from 'groq-sdk'
+import { generateText } from '@/lib/ai'
 
 export async function getMediaBacklog() {
     const supabase = await createClient()
@@ -139,7 +138,7 @@ export async function deleteMediaItem(id: string) {
     revalidatePath('/media')
 }
 
-// AI recommendations for media using Gemini (or Groq fallback)
+// Recomendaciones de media (via lib/ai.ts: Gemini con caida a Groq)
 export async function getAIMediaRecommendations(category: 'cine' | 'books_games' = 'cine') {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -238,44 +237,12 @@ Intenta que las recomendaciones sean variadas y de alta calidad.`
             ? `Aún no he calificado películas o series en este sistema.${exclusionBlock}\nPor favor, recomiéndame 4 películas o series excelentes y populares de géneros variados (drama, ciencia ficción, thriller, comedia) que NO estén en la lista prohibida de arriba.`
             : `Aún no he calificado libros o videojuegos en este sistema.${exclusionBlock}\nPor favor, recomiéndame 4 libros o juegos excelentes y aclamados de géneros variados que NO estén en la lista prohibida de arriba.`
 
-    const geminiKey = process.env.GEMINI_API_KEY
-    const groqKey = process.env.GROQ_API_KEY
-
     let resultText = ''
-
-    if (geminiKey) {
-        try {
-            const genAI = new GoogleGenerativeAI(geminiKey)
-            const model = genAI.getGenerativeModel({
-                model: 'gemini-1.5-flash',
-                generationConfig: { responseMimeType: 'application/json' }
-            })
-            const chatResult = await model.generateContent([systemPrompt, userPrompt])
-            resultText = chatResult.response.text()
-        } catch (e) {
-            console.error('Error in Gemini recommendation:', e)
-        }
-    }
-
-    if (!resultText && groqKey) {
-        try {
-            const groq = new Groq({ apiKey: groqKey })
-            const chatCompletion = await groq.chat.completions.create({
-                messages: [
-                    { role: 'system', content: systemPrompt },
-                    { role: 'user', content: userPrompt }
-                ],
-                model: 'llama-3.3-70b-versatile',
-                response_format: { type: 'json_object' }
-            })
-            resultText = chatCompletion.choices[0]?.message?.content || ''
-        } catch (e) {
-            console.error('Error in Groq recommendation:', e)
-        }
-    }
-
-    if (!resultText) {
-        return { error: 'No se pudo generar recomendaciones por falta de API Key.' }
+    try {
+        resultText = await generateText(userPrompt, { system: systemPrompt, json: true })
+    } catch (e: any) {
+        console.error('Error generando recomendaciones de media:', e)
+        return { error: e?.message || 'No se pudieron generar recomendaciones.' }
     }
 
     try {

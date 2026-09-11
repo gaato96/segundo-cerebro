@@ -2,8 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import Groq from 'groq-sdk'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import { generateText } from '@/lib/ai'
 
 export interface FootballObjective {
     id: string
@@ -187,9 +186,6 @@ export async function generateAIFootballChallenge(params: {
     league?: string
     country?: string
 }) {
-    const groqKey = process.env.GROQ_API_KEY
-    const geminiKey = process.env.GEMINI_API_KEY
-
     const systemPrompt = `Eres un creador de retos profesional de modo carrera para Football Manager (FM24) y EA Sports FC (EAFC 26), inspirándote en comunidades como FMSite, FM Scout y FC Tools Hub.
 Generas retos sumamente entretenidos, realistas y profundos para un equipo específico.
 
@@ -224,42 +220,7 @@ REGLAS CRÍTICAS PARA LOS OBJETIVOS:
 
     const userPrompt = `Genera un reto realista y divertido para ${params.game} con el equipo "${params.teamName}" ${params.league ? `de la liga ${params.league}` : ''} ${params.country ? `(${params.country})` : ''}.`
 
-    let resultText = ''
-
-    if (groqKey) {
-        try {
-            const groq = new Groq({ apiKey: groqKey })
-            const chatCompletion = await groq.chat.completions.create({
-                messages: [
-                    { role: 'system', content: systemPrompt },
-                    { role: 'user', content: userPrompt }
-                ],
-                model: 'llama-3.3-70b-versatile',
-                response_format: { type: 'json_object' }
-            })
-            resultText = chatCompletion.choices[0]?.message?.content || ''
-        } catch (e) {
-            console.error('Error in Groq challenge generator:', e)
-        }
-    }
-
-    if (!resultText && geminiKey) {
-        try {
-            const genAI = new GoogleGenerativeAI(geminiKey)
-            const model = genAI.getGenerativeModel({
-                model: 'gemini-1.5-flash',
-                generationConfig: { responseMimeType: 'application/json' }
-            })
-            const chatResult = await model.generateContent([systemPrompt, userPrompt])
-            resultText = chatResult.response.text()
-        } catch (e) {
-            console.error('Error in Gemini challenge generator:', e)
-        }
-    }
-
-    if (!resultText) {
-        throw new Error('No se pudo conectar con la IA para generar el reto (faltan API keys de Groq/Gemini).')
-    }
+    const resultText = await generateText(userPrompt, { system: systemPrompt, json: true })
 
     try {
         let cleaned = resultText.trim()
@@ -405,9 +366,6 @@ export async function regenerateSingleObjective(params: {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
 
-    const groqKey = process.env.GROQ_API_KEY
-    const geminiKey = process.env.GEMINI_API_KEY
-
     const prompt = `Eres un creador de retos de modo carrera para ${params.game}.
 Genera UN ÚNICO objetivo alternativo para el equipo "${params.teamName}" ${params.league ? `(${params.league})` : ''}.
 
@@ -420,37 +378,7 @@ El objetivo debe:
 Devuelve SOLO JSON válido con esta estructura:
 {"text": "Texto del nuevo objetivo"}`
 
-    let resultText = ''
-
-    if (groqKey) {
-        try {
-            const groq = new Groq({ apiKey: groqKey })
-            const res = await groq.chat.completions.create({
-                messages: [{ role: 'user', content: prompt }],
-                model: 'llama-3.3-70b-versatile',
-                response_format: { type: 'json_object' }
-            })
-            resultText = res.choices[0]?.message?.content || ''
-        } catch (e) {
-            console.error('Groq error regenerating objective:', e)
-        }
-    }
-
-    if (!resultText && geminiKey) {
-        try {
-            const genAI = new GoogleGenerativeAI(geminiKey)
-            const model = genAI.getGenerativeModel({
-                model: 'gemini-1.5-flash',
-                generationConfig: { responseMimeType: 'application/json' }
-            })
-            const res = await model.generateContent(prompt)
-            resultText = res.response.text()
-        } catch (e) {
-            console.error('Gemini error regenerating objective:', e)
-        }
-    }
-
-    if (!resultText) throw new Error('No se pudo regenerar el objetivo (sin API key disponible).')
+    const resultText = await generateText(prompt, { json: true })
 
     let newText = ''
     try {

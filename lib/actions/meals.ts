@@ -2,8 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import Groq from 'groq-sdk'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import { generateText, parseJSON } from '@/lib/ai'
 
 // --- RECIPES CRUD ---
 
@@ -126,7 +125,7 @@ export async function saveMenuState(startDate: string, menuData: any, shoppingLi
     return { success: true }
 }
 
-// --- THE MEAL ENGINE (AI AGENT via Groq/Llama) ---
+// --- THE MEAL ENGINE (via lib/ai.ts: Gemini con caida a Groq) ---
 
 export async function generateWeeklyMenu(startDate: string, isSingleDay: boolean = false, targetDay: string = '') {
     const supabase = await createClient()
@@ -199,21 +198,13 @@ Responde EXACTAMENTE así:
     const userPrompt = isSingleDay ? singleDayPrompt : fullWeekPrompt
 
     try {
-        const groq = new Groq({ apiKey })
-        const chatCompletion = await groq.chat.completions.create({
-            messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: userPrompt }
-            ],
-            model: 'llama-3.3-70b-versatile',
+        const responseText = await generateText(userPrompt, {
+            system: systemPrompt,
             temperature: isSingleDay ? 0.7 : 0.4, // Más variedad si es un solo día
-            response_format: { type: 'json_object' }
+            json: true
         })
 
-        const responseText = chatCompletion.choices[0]?.message?.content
-        if (!responseText) return { error: 'La IA no devolvió contenido.' }
-
-        const result = JSON.parse(responseText)
+        const result = parseJSON<any>(responseText)
 
         if (isSingleDay) {
             // No guardamos directamente a BD si es un día suelto, lo devolvemos al frontend para que haga merge.
@@ -776,56 +767,12 @@ Asegúrate de que las recetas propuestas sean diferentes a las que ya tiene y f�
         ? `Aquí están mis recetas guardadas actualmente:\n${recipesSummary}\n\nRecomiéndame 3 recetas nuevas basadas en esto.`
         : `Aún no he cargado recetas. Recomiéndame 3 recetas caseras populares y deliciosas para empezar mi catálogo.`
 
-    const geminiKey = process.env.GEMINI_API_KEY
-    const groqKey = process.env.GROQ_API_KEY
-
-    let resultText = ''
-
-    if (geminiKey) {
-        try {
-            const genAI = new GoogleGenerativeAI(geminiKey)
-            const model = genAI.getGenerativeModel({
-                model: 'gemini-1.5-flash',
-                generationConfig: { responseMimeType: 'application/json' }
-            })
-            const chatResult = await model.generateContent([systemPrompt, userPrompt])
-            resultText = chatResult.response.text()
-        } catch (e) {
-            console.error('Error in Gemini recipe recommendations:', e)
-        }
-    }
-
-    if (!resultText && groqKey) {
-        try {
-            const groq = new Groq({ apiKey: groqKey })
-            const chatCompletion = await groq.chat.completions.create({
-                messages: [
-                    { role: 'system', content: systemPrompt },
-                    { role: 'user', content: userPrompt }
-                ],
-                model: 'llama-3.3-70b-versatile',
-                response_format: { type: 'json_object' }
-            })
-            resultText = chatCompletion.choices[0]?.message?.content || ''
-        } catch (e) {
-            console.error('Error in Groq recipe recommendations:', e)
-        }
-    }
-
-    if (!resultText) {
-        return { error: 'No se pudo generar recomendaciones de recetas por falta de API Key.' }
-    }
-
     try {
-        let cleaned = resultText.trim()
-        if (cleaned.startsWith('```')) {
-            cleaned = cleaned.replace(/^```json\s*/, '').replace(/```$/, '').trim()
-        }
-        const data = JSON.parse(cleaned)
-        return { data }
+        const resultText = await generateText(userPrompt, { system: systemPrompt, json: true })
+        return { data: parseJSON<any>(resultText) }
     } catch (err: any) {
-        console.error('Failed parsing recipe recommendations JSON:', resultText)
-        return { error: 'Error parseando recomendaciones de recetas: ' + err.message }
+        console.error('Error generando recomendaciones de recetas:', err)
+        return { error: err?.message || 'No se pudieron generar recomendaciones de recetas.' }
     }
 }
 

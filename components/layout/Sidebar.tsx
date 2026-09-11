@@ -8,7 +8,7 @@ import {
     DollarSign, Baby, Tv, Target, BookOpen,
     Heart, LogOut, ChevronLeft, ChevronRight,
     Utensils, Inbox, Sun, CalendarRange, Calendar,
-    Sparkles, MessageCircleHeart, Dumbbell
+    Sparkles, MessageCircleHeart, Dumbbell, Moon, LineChart, Settings
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useState } from 'react'
@@ -18,6 +18,7 @@ const navItems = [
     { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/asistente', icon: MessageCircleHeart, label: 'Copiloto' },
     { href: '/ritual', icon: Sun, label: 'Ritual Matutino' },
+    { href: '/cierre', icon: Moon, label: 'Cierre del Día' },
     { href: '/planner', icon: CalendarRange, label: 'Planificador' },
     { href: '/calendar', icon: Calendar, label: 'Calendario' },
     { href: '/inbox', icon: Inbox, label: 'Inbox' },
@@ -32,6 +33,8 @@ const navItems = [
     { href: '/okrs', icon: Target, label: 'Objetivos' },
     { href: '/journal', icon: BookOpen, label: 'Journal' },
     { href: '/wishlist', icon: Heart, label: 'Wishlist' },
+    { href: '/insights', icon: LineChart, label: 'Indicadores' },
+    { href: '/ajustes', icon: Settings, label: 'Ajustes' },
 ]
 
 export function Sidebar() {

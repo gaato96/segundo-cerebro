@@ -10,13 +10,15 @@ import { IdealRoutineWidget } from '@/components/dashboard/IdealRoutineWidget'
 import { getEventsForDate } from '@/lib/actions/events'
 import { getRitualLog } from '@/lib/actions/morning_ritual'
 import Link from 'next/link'
-import { Sun } from 'lucide-react'
+import { Sun, Moon } from 'lucide-react'
 import { QuickTransactionModal } from '@/components/dashboard/QuickTransactionModal'
 import { getLocalDateStr, getLocalMonthYearStr, getLocalDayOfWeek, formatLocalDate, addDaysToDateStr } from '@/lib/utils'
 
 import { syncRecurringTasks } from '@/lib/actions/tasks'
 import { CommitmentWidget } from '@/components/commitments/CommitmentWidget'
 import { getCommitment, getCommitmentStats } from '@/lib/actions/commitments'
+import { MonthForecastWidget } from '@/components/finances/MonthForecastWidget'
+import { getMonthForecast } from '@/lib/actions/forecast'
 
 export default async function DashboardPage() {
     const supabase = await createClient()
@@ -65,11 +67,12 @@ export default async function DashboardPage() {
 
     const todayFormatted = formatLocalDate(now)
 
-    const [stickyNotes, todayCommitment, tomorrowCommitment, commitmentStats] = await Promise.all([
+    const [stickyNotes, todayCommitment, tomorrowCommitment, commitmentStats, forecast] = await Promise.all([
         getStickyNotes(),
         getCommitment(todayStr).catch(() => null),
         getCommitment(addDaysToDateStr(todayStr, 1)).catch(() => null),
-        getCommitmentStats().catch(() => ({ done: 0, total: 0, successRate: 0, streak: 0, partial: 0, skipped: 0 }))
+        getCommitmentStats().catch(() => ({ done: 0, total: 0, successRate: 0, streak: 0, partial: 0, skipped: 0 })),
+        getMonthForecast().catch(() => null)
     ])
 
     return (
@@ -98,6 +101,14 @@ export default async function DashboardPage() {
                     >
                         <Sun className="w-4 h-4 text-amber-400 shrink-0" />
                         <span>{ritualLog ? '✓ Ritual Completado' : 'Iniciar Ritual →'}</span>
+                    </Link>
+
+                    <Link
+                        href="/cierre"
+                        className="px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 border shadow-lg transition-all whitespace-nowrap bg-indigo-500/10 text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/20"
+                    >
+                        <Moon className="w-4 h-4 text-indigo-400 shrink-0" />
+                        <span>Cerrar el día</span>
                     </Link>
                 </div>
             </div>
@@ -135,6 +146,7 @@ export default async function DashboardPage() {
                         tomorrow={tomorrowCommitment}
                         stats={commitmentStats}
                     />
+                    {forecast && <MonthForecastWidget forecast={forecast} compact />}
                     <PomodoroWidget
                         tasks={todayTasks}
                         userId={user.id}

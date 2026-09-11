@@ -2,37 +2,8 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import { generateText, parseJSON } from '@/lib/ai'
 import { getLocalDateStr, getLocalDayOfWeek, addDaysToDateStr } from '@/lib/utils'
-
-function getGeminiModel() {
-    const apiKey = process.env.GEMINI_API_KEY
-    if (!apiKey) throw new Error('GEMINI_API_KEY no está configurada en .env.local')
-    const genAI = new GoogleGenerativeAI(apiKey)
-    return genAI.getGenerativeModel({ model: 'gemini-3.6-flash' })
-}
-
-function parseAIResponseJSON(text: string) {
-    let str = text.trim()
-    if (str.startsWith('```json')) {
-        str = str.replace(/^```json/, '').replace(/```$/, '').trim()
-    } else if (str.startsWith('```')) {
-        str = str.replace(/^```/, '').replace(/```$/, '').trim()
-    }
-
-    // Try extracting JSON object substring
-    const match = str.match(/\{[\s\S]*\}/)
-    if (match) {
-        str = match[0]
-    }
-
-    try {
-        return JSON.parse(str)
-    } catch (e) {
-        console.error('Failed to parse JSON from AI response:', text)
-        throw new Error('La respuesta de la IA no tuvo un formato JSON válido. Reintentá nuevamente.')
-    }
-}
 
 const SYSTEM_PROMPT_NUTRITIONIST = `
 Sos el Asistente Nutricionista IA de "Segundo Cerebro", un profesional de nutrición experto en descenso de peso, hipertrofia muscular y salud integral en Argentina.
@@ -194,8 +165,6 @@ export async function generateMonthlyPlan(month: string) {
     const profile = await getNutritionProfile()
     if (!profile) throw new Error('Tenés que completar tu perfil nutricional primero.')
 
-    const model = getGeminiModel()
-
     const prompt = `
 Generá un plan de alimentación semanal modelo de 7 días (Lunes a Domingo) para el mes ${month}, adaptado a Tucumán, Argentina.
 
@@ -270,11 +239,10 @@ Respondé EXCLUSIVAMENTE con un JSON válido estructurado exactamente así:
 `
 
     try {
-        console.log('[nutrition] Calling Gemini for multi-option plan generation...')
-        const result = await model.generateContent(prompt)
-        const responseText = result.response.text().trim()
-        console.log('[nutrition] Gemini response received, length:', responseText.length)
-        const parsed = parseAIResponseJSON(responseText)
+        console.log('[nutrition] Generando plan mensual con IA...')
+        const responseText = await generateText(prompt, { temperature: 0.8, maxOutputTokens: 8192, json: true })
+        console.log('[nutrition] Respuesta recibida, largo:', responseText.length)
+        const parsed = parseJSON<any>(responseText)
 
         const payload = {
             user_id: user.id,
@@ -308,8 +276,8 @@ Respondé EXCLUSIVAMENTE con un JSON válido estructurado exactamente así:
         revalidatePath('/meals/nutrition')
         return data
     } catch (err: any) {
-        console.error('[nutrition] Error generating monthly plan:', err?.message || err)
-        throw new Error(err.message || 'Error al comunicarse con Gemini AI')
+        console.error('[nutrition] Error generando el plan mensual:', err?.message || err)
+        throw new Error(err.message || 'Error al comunicarse con la IA')
     }
 }
 
@@ -427,7 +395,6 @@ export async function swapMeal(planId: string, dayNumber: number, mealType: stri
     const currentMeal = plan.plan_data?.days?.find((d: any) => d.day_number === dayNumber)?.meals?.[mealType]
     const targetCals = currentMeal?.calories || 400
 
-    const model = getGeminiModel()
     const prompt = `
 Generá UNA comida de reemplazo para la comida "${mealType}" de un paciente en Tucumán.
 Comida anterior: "${currentMeal?.name || mealType}".
@@ -448,9 +415,8 @@ Respondé SOLO con JSON válido con este formato exacto:
 `
 
     try {
-        const result = await model.generateContent(prompt)
-        const responseText = result.response.text().trim()
-        const newMeal = parseAIResponseJSON(responseText)
+        const responseText = await generateText(prompt, { temperature: 0.8, json: true })
+        const newMeal = parseJSON<any>(responseText)
 
         const updatedPlanData = { ...plan.plan_data }
         const dayObj = updatedPlanData.days?.find((d: any) => d.day_number === dayNumber)
@@ -565,9 +531,7 @@ export async function chatWithNutritionist(userMessage: string) {
     const profile = await getNutritionProfile()
     const history = await getChatHistory()
 
-    const model = getGeminiModel()
-
-    let promptContext = `${SYSTEM_PROMPT_NUTRITIONIST}\n\n`
+    let promptContext = ''
     if (profile) {
         promptContext += `DATOS DEL PACIENTE ACTUAL:\n- Peso: ${profile.weight_kg}kg, Altura: ${profile.height_cm}cm, Objetivo: ${profile.goal}, Calorías objetivo: ${profile.target_calories}kcal, Proteínas: ${profile.target_protein_g}g, Agua: ${profile.water_liters}L/día.\n- Restricciones/Disgustos: ${profile.disliked_ingredients?.join(', ') || 'Ninguno'}\n- CONTEXTO PERSONAL Y HORARIOS: ${profile.custom_notes || 'Ninguna especificada'}\n\n`
     }
@@ -579,8 +543,11 @@ export async function chatWithNutritionist(userMessage: string) {
 
     promptContext += `\nUsuario: ${userMessage}\nNutricionista:`
 
-    const result = await model.generateContent(promptContext)
-    const replyText = result.response.text().trim()
+    const replyText = await generateText(promptContext, {
+        system: SYSTEM_PROMPT_NUTRITIONIST,
+        temperature: 0.8,
+        maxOutputTokens: 1200
+    })
 
     await supabase
         .from('nutrition_conversations')

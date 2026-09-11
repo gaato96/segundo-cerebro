@@ -2,6 +2,7 @@ import { Sidebar } from '@/components/layout/Sidebar'
 import { BottomBar } from '@/components/layout/BottomBar'
 import { QuickCaptureButton } from '@/components/shared/QuickCaptureButton'
 import { AssistantLauncher } from '@/components/assistant/AssistantLauncher'
+import { CommandPalette } from '@/components/shared/CommandPalette'
 
 export default function AppLayout({
     children,
@@ -18,6 +19,7 @@ export default function AppLayout({
                 {children}
             </main>
 
+            <CommandPalette />
             <QuickCaptureButton />
             <AssistantLauncher />
 

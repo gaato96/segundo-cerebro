@@ -245,7 +245,14 @@ export async function deleteSubtask(subtaskId: string) {
 // RECURRING TASKS
 // ============================================================
 
-export async function syncRecurringTasks(userId?: string) {
+/**
+ * Cache en memoria del proceso: evita repetir la sincronizacion (que escribe en la
+ * base) en cada carga de pagina. Antes corria completa en cada render del dashboard.
+ * Se resetea solo cuando cambia el dia o cuando el proceso arranca de cero.
+ */
+const lastSyncByUser = new Map<string, string>()
+
+export async function syncRecurringTasks(userId?: string, force = false) {
     const supabase = await createClient()
     let currentUserId = userId
     if (!currentUserId) {
@@ -264,6 +271,9 @@ export async function syncRecurringTasks(userId?: string) {
     const m = parts.find(p => p.type === 'month')?.value
     const d = parts.find(p => p.type === 'day')?.value
     const todayStr = `${y}-${m}-${d}`
+
+    if (!force && lastSyncByUser.get(currentUserId) === todayStr) return
+    lastSyncByUser.set(currentUserId, todayStr)
 
     // 1. Get all recurring templates for user
     const { data: templates } = await supabase
