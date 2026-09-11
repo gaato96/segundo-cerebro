@@ -42,7 +42,7 @@ Tus recomendaciones de comida deben ser 100% accesibles, económicas y realistas
 Tus funciones clave:
 1. Hablar con voseo argentino empático y motivador (ej: "Mirá", "Che", "Te aconsejo", "Tenés que probar").
 2. Generar dietas balanceadas cumpliendo los objetivos calóricos y de macronutrientes.
-3. Proponer rutinas de ejercicio en casa de máximo 15 minutos (sin necesidad de gimnasio).
+3. Para el entrenamiento, apoyarte en el plan trimestral del módulo Entrenamiento (equipamiento real, progresión de 12 semanas y soga). Podés ajustar volumen o sustituir ejercicios, pero no inventes rutinas paralelas.
 4. Recomendar hidratación adecuada (en litros) y suplementos básicos si corresponde (proteína de suero, creatina, multivitamínico).
 5. Explicar claramente el origen de tus cálculos (Mifflin-St Jeor) y cómo medir el progreso semanalmente.
 `
@@ -221,9 +221,7 @@ INSTRUCCIONES CLAVE DE VARIEDAD Y RUTINA:
 4. INCLUIR DÍAS DE PERMITIDO / CHEAT MEAL:
    - Para el fin de semana (ej: Cena del Sábado o Almuerzo del Domingo), incluir como opción 1 o 2 un "Permitido / Cheat Meal" recomendado por el nutricionista (ej: "2 empanadas tucumanas tradicionales" o "Pizza casera magra"), marcando "is_cheat_meal": true.
    - Incluir una recomendación en "cheat_meal_recommendation" (ej: "Se recomienda 1 comida libre el fin de semana para mantener la adherencia").
-5. RUTINA DE EJERCICIO OPTIMIZADA:
-   - Generar rutina para MÁXIMO 3 a 4 DÍAS por semana (ej: Lunes, Miércoles, Viernes). NUNCA 7 días seguidos (los otros días son de descanso).
-   - Sesiones cortas de 12 a 15 minutos en casa sin equipamiento.
+5. NO generes rutina de ejercicio: el entrenamiento se maneja en su propio módulo (plan periodizado de 12 semanas con equipamiento). Limitate a la alimentación.
 
 Respondé EXCLUSIVAMENTE con un JSON válido estructurado exactamente así:
 {
@@ -267,11 +265,6 @@ Respondé EXCLUSIVAMENTE con un JSON válido estructurado exactamente así:
         }
       }
     }
-  ],
-  "exercise_plan": [
-    { "day": "Lunes", "title": "Rutina Piernas & Core (12 min)", "exercises": ["12 Sentadillas sin peso (3 series)", "30 seg Plancha frontal (3 series)"] },
-    { "day": "Miércoles", "title": "Rutina HIIT & Cardio (15 min)", "exercises": ["40 seg Jumping Jacks (4 rondas)", "12 Estocadas por pierna (3 series)"] },
-    { "day": "Viernes", "title": "Rutina Tonificación & Fuerza (14 min)", "exercises": ["15 Puentes de cadera (3 series)", "12 Sentadillas sumo (3 series)"] }
   ]
 }
 `
@@ -294,7 +287,6 @@ Respondé EXCLUSIVAMENTE con un JSON válido estructurado exactamente así:
                 cheat_meal_recommendation: parsed.cheat_meal_recommendation || '1 comida libre sugerida por semana.',
                 days: parsed.days || []
             },
-            exercise_plan: parsed.exercise_plan ? { routines: parsed.exercise_plan } : {},
             supplements: profile.supplements_recommended || [],
             water_liters: profile.water_liters || 2.0,
             status: 'active',

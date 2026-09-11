@@ -12,9 +12,11 @@ import { getRitualLog } from '@/lib/actions/morning_ritual'
 import Link from 'next/link'
 import { Sun } from 'lucide-react'
 import { QuickTransactionModal } from '@/components/dashboard/QuickTransactionModal'
-import { getLocalDateStr, getLocalMonthYearStr, getLocalDayOfWeek, formatLocalDate } from '@/lib/utils'
+import { getLocalDateStr, getLocalMonthYearStr, getLocalDayOfWeek, formatLocalDate, addDaysToDateStr } from '@/lib/utils'
 
 import { syncRecurringTasks } from '@/lib/actions/tasks'
+import { CommitmentWidget } from '@/components/commitments/CommitmentWidget'
+import { getCommitment, getCommitmentStats } from '@/lib/actions/commitments'
 
 export default async function DashboardPage() {
     const supabase = await createClient()
@@ -62,7 +64,13 @@ export default async function DashboardPage() {
     const expenses = finances.filter((f: { type: string }) => f.type !== 'Income').reduce((sum: number, f: { amount: number }) => sum + f.amount, 0)
 
     const todayFormatted = formatLocalDate(now)
-    const stickyNotes = await getStickyNotes()
+
+    const [stickyNotes, todayCommitment, tomorrowCommitment, commitmentStats] = await Promise.all([
+        getStickyNotes(),
+        getCommitment(todayStr).catch(() => null),
+        getCommitment(addDaysToDateStr(todayStr, 1)).catch(() => null),
+        getCommitmentStats().catch(() => ({ done: 0, total: 0, successRate: 0, streak: 0, partial: 0, skipped: 0 }))
+    ])
 
     return (
         <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6 animate-fade-in pb-24">
@@ -120,8 +128,13 @@ export default async function DashboardPage() {
                     <TodayEventsWidget events={todayEvents} />
                 </div>
 
-                {/* Right: Pomodoro */}
-                <div>
+                {/* Right: Compromiso + Pomodoro */}
+                <div className="space-y-6">
+                    <CommitmentWidget
+                        today={todayCommitment}
+                        tomorrow={tomorrowCommitment}
+                        stats={commitmentStats}
+                    />
                     <PomodoroWidget
                         tasks={todayTasks}
                         userId={user.id}

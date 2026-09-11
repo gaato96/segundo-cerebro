@@ -106,7 +106,7 @@ export function NutritionPageClient({
                     { id: 'dashboard', label: 'Panel', icon: Sparkles },
                     { id: 'plan', label: 'Mi Plan Mensual', icon: Utensils },
                     { id: 'progress', label: 'Progreso', icon: TrendingUp },
-                    { id: 'exercise', label: 'Ejercicio (15m)', icon: Dumbbell },
+                    { id: 'exercise', label: 'Entrenamiento', icon: Dumbbell },
                     { id: 'chat', label: 'Chat Nutricionista', icon: MessageSquare }
                 ].map((tab) => {
                     const Icon = tab.icon

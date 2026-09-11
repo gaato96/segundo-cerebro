@@ -6,12 +6,14 @@ import { motion } from 'framer-motion'
 import {
     LayoutDashboard, CheckSquare, Flame, DollarSign,
     Baby, Tv, Target, BookOpen, Heart, Utensils,
-    Inbox, Sun, CalendarRange, Calendar, Sparkles
+    Inbox, Sun, CalendarRange, Calendar, Sparkles,
+    MessageCircleHeart, Dumbbell
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const bottomNavItems = [
     { href: '/', icon: LayoutDashboard, label: 'Inicio' },
+    { href: '/asistente', icon: MessageCircleHeart, label: 'Copiloto' },
     { href: '/ritual', icon: Sun, label: 'Ritual' },
     { href: '/planner', icon: CalendarRange, label: 'Planner' },
     { href: '/calendar', icon: Calendar, label: 'Calendario' },
@@ -19,6 +21,7 @@ const bottomNavItems = [
     { href: '/tasks', icon: CheckSquare, label: 'Tareas' },
     { href: '/habits', icon: Flame, label: 'Hábitos' },
     { href: '/meals/nutrition', icon: Sparkles, label: 'Nutrición' },
+    { href: '/entrenamiento', icon: Dumbbell, label: 'Entreno' },
     { href: '/meals', icon: Utensils, label: 'Comidas' },
     { href: '/finances', icon: DollarSign, label: 'Finanzas' },
     { href: '/julian', icon: Baby, label: 'Julián' },

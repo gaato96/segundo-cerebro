@@ -1,6 +1,7 @@
 import { Sidebar } from '@/components/layout/Sidebar'
 import { BottomBar } from '@/components/layout/BottomBar'
 import { QuickCaptureButton } from '@/components/shared/QuickCaptureButton'
+import { AssistantLauncher } from '@/components/assistant/AssistantLauncher'
 
 export default function AppLayout({
     children,
@@ -18,6 +19,7 @@ export default function AppLayout({
             </main>
 
             <QuickCaptureButton />
+            <AssistantLauncher />
 
             {/* Mobile Bottom Bar */}
             <BottomBar />
