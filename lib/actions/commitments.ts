@@ -177,7 +177,7 @@ Respondé SOLO con este JSON:
   "reasoning": "una frase explicando por qué elegiste esto mirando sus datos"
 }`.trim()
 
-    const text = await generateText(prompt, { temperature: 0.7, maxOutputTokens: 700, json: true })
+    const text = await generateText(prompt, { temperature: 0.7, maxOutputTokens: 1200, json: true })
     const parsed = parseJSON<any>(text)
 
     return {
