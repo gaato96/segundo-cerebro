@@ -1,0 +1,54 @@
+# Cron de notificaciones.
+#
+# Vercel Hobby solo permite crons diarios, y este proyecto necesita mirar la
+# hora cada 15 minutos para avisar a la hora que firmaste el compromiso.
+# Este workflow le pega al mismo endpoint desde GitHub Actions, que en repos
+# publicos es gratis y sin limite de minutos.
+#
+# Requiere dos secrets del repo (Settings > Secrets and variables > Actions):
+#   CRON_URL     https://tu-dominio.vercel.app/api/notifications/cron
+#   CRON_SECRET  el mismo valor que cargaste en Vercel
+#
+# Ojo: GitHub desactiva los workflows programados si el repo pasa 60 dias sin
+# actividad. Si dejan de llegar avisos, revisa la pestana Actions.
+
+name: Cron de notificaciones
+
+on:
+  schedule:
+    # Cada 15 minutos. GitHub no garantiza puntualidad: puede atrasarse varios
+    # minutos, por eso abajo se pide una ventana de 25 en vez de la de 15.
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: notificaciones
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Llamar al endpoint de notificaciones
+        env:
+          CRON_URL: ${{ secrets.CRON_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -u
+          if [ -z "${CRON_URL}" ] || [ -z "${CRON_SECRET}" ]; then
+            echo "Faltan los secrets CRON_URL y/o CRON_SECRET. No hago nada."
+            exit 0
+          fi
+          # Solo se loguea el codigo HTTP: este repo es publico y la respuesta
+          # trae titulos de tareas y compromisos.
+          code=$(curl -sS -o /dev/null -w '%{http_code}' \
+            --max-time 60 \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${CRON_URL}?window=25")
+          echo "HTTP ${code}"
+          if [ "${code}" != "200" ]; then
+            echo "El endpoint no respondio 200."
+            exit 1
+          fi
