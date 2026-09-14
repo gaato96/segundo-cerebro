@@ -77,7 +77,11 @@ export function CierrePageClient({
         setGenerating(true)
         try {
             const r = await generateWeeklyReview(weekStart)
-            setReview(r)
+            if (!r.ok) {
+                alert(`No se pudo generar la revisión: ${r.error}`)
+                return
+            }
+            setReview(r.data)
             router.refresh()
         } catch (e: any) {
             alert(`No se pudo generar la revisión: ${e?.message}`)

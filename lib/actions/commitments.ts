@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { generateText, parseJSON } from '@/lib/ai'
 import { getLocalDateStr, addDaysToDateStr } from '@/lib/utils'
 import { buildBrainSnapshot } from '@/lib/actions/assistant'
+import { runAction, type ActionResult } from '@/lib/actionResult'
 
 /**
  * "Compromiso de mañana": una sola acción no negociable, firmada la noche anterior,
@@ -141,11 +142,33 @@ export async function getCommitmentStats() {
     }
 }
 
+export interface CommitmentSuggestion {
+    date: string
+    action: string
+    scheduled_time: string | null
+    location: string | null
+    two_minute_version: string | null
+    identity_why: string | null
+    obstacle: string | null
+    if_then_plan: string | null
+    reasoning: string
+}
+
 /**
  * El coach propone el compromiso de mañana leyendo todo el Segundo Cerebro:
  * qué viene fallando, qué tareas hay abiertas, qué entrenamiento toca.
+ *
+ * Devuelve ActionResult en vez de tirar el error: en producción Next.js
+ * enmascara cualquier excepción de una server action y el usuario solo ve
+ * "An error occurred in the Server Components render".
  */
-export async function suggestTomorrowCommitment(targetDate?: string) {
+export async function suggestTomorrowCommitment(
+    targetDate?: string
+): Promise<ActionResult<CommitmentSuggestion>> {
+    return runAction('suggestTomorrowCommitment', () => buildCommitmentSuggestion(targetDate))
+}
+
+async function buildCommitmentSuggestion(targetDate?: string): Promise<CommitmentSuggestion> {
     const date = targetDate || addDaysToDateStr(getLocalDateStr(), 1)
     const snapshot = await buildBrainSnapshot()
 
@@ -177,12 +200,14 @@ Respondé SOLO con este JSON:
   "reasoning": "una frase explicando por qué elegiste esto mirando sus datos"
 }`.trim()
 
-    const text = await generateText(prompt, { temperature: 0.7, maxOutputTokens: 700, json: true })
+    const text = await generateText(prompt, { temperature: 0.7, maxOutputTokens: 1600, json: true })
     const parsed = parseJSON<any>(text)
+
+    if (!parsed.action) throw new Error('La IA no devolvió ninguna acción. Probá de nuevo.')
 
     return {
         date,
-        action: parsed.action || '',
+        action: parsed.action,
         scheduled_time: parsed.scheduled_time || null,
         location: parsed.location || null,
         two_minute_version: parsed.two_minute_version || null,

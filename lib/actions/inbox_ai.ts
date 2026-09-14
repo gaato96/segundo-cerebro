@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { generateText, parseJSON } from '@/lib/ai'
 import { getLocalDateStr, addDaysToDateStr, formatLocalDate } from '@/lib/utils'
+import { runAction, type ActionResult } from '@/lib/actionResult'
 
 /**
  * Procesar el inbox con IA.
@@ -42,8 +43,17 @@ const DESTINATIONS_DOC = `
 - "discard": es ruido, quedó viejo o ya no aplica.
 `
 
-/** Propone destino para hasta 20 capturas en una sola llamada. */
-export async function suggestInboxActions(noteIds?: string[]): Promise<NoteSuggestion[]> {
+/**
+ * Propone destino para hasta 20 capturas en una sola llamada.
+ *
+ * Devuelve ActionResult: si tira el error, en producción Next.js lo enmascara
+ * y el usuario no se entera de qué falló.
+ */
+export async function suggestInboxActions(noteIds?: string[]): Promise<ActionResult<NoteSuggestion[]>> {
+    return runAction('suggestInboxActions', () => buildInboxSuggestions(noteIds))
+}
+
+async function buildInboxSuggestions(noteIds?: string[]): Promise<NoteSuggestion[]> {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')

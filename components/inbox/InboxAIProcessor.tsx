@@ -40,7 +40,12 @@ export function InboxAIProcessor({ notes }: Props) {
         setLoading(true)
         setError(null)
         try {
-            const result = await suggestInboxActions()
+            const res = await suggestInboxActions()
+            if (!res.ok) {
+                setError(res.error)
+                return
+            }
+            const result = res.data
             setSuggestions(result)
             // Todo viene marcado menos lo que propone descartar: eso se confirma a mano.
             setSelected(new Set(result.filter(s => s.destination !== 'discard').map(s => s.note_id)))

@@ -28,8 +28,44 @@ export interface GenerateOptions {
 }
 
 /**
+ * Saca de los mensajes de error cualquier cosa que parezca una API key.
+ * Los errores de los SDK a veces incluyen la URL con `?key=...`, y esos
+ * mensajes terminan mostrandose en pantalla.
+ */
+function sanitize(message: string): string {
+    return message
+        .replace(/([?&]key=)[^&\s"']+/gi, '$1[oculta]')
+        .replace(/AIza[0-9A-Za-z_\-]{10,}/g, '[api-key]')
+        .replace(/gsk_[0-9A-Za-z]{10,}/g, '[api-key]')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 300)
+}
+
+/** Texto de una respuesta de Gemini sin que `.text()` explote si vino vacia. */
+function readGeminiText(response: any): { text: string; reason: string } {
+    const blocked = response?.promptFeedback?.blockReason
+    if (blocked) return { text: '', reason: `bloqueado por seguridad (${blocked})` }
+
+    const candidate = response?.candidates?.[0]
+    const parts = candidate?.content?.parts || []
+    const text = parts.map((part: any) => part?.text || '').join('').trim()
+    if (text) return { text, reason: '' }
+
+    const finish = candidate?.finishReason
+    if (finish === 'MAX_TOKENS') {
+        return { text: '', reason: 'se quedo sin tokens antes de escribir la respuesta (subi maxOutputTokens)' }
+    }
+    return { text: '', reason: `respuesta vacia${finish ? ` (finishReason: ${finish})` : ''}` }
+}
+
+/**
  * Genera texto con el primer proveedor que responda.
  * Lanza error solo si fallan TODOS los proveedores configurados.
+ *
+ * El error incluye el motivo de cada proveedor: sin eso, en produccion
+ * Next.js reemplaza el mensaje por uno generico y no hay forma de saber
+ * si falto una API key, si el modelo no existe o si se acabo la cuota.
  */
 export async function generateText(prompt: string, options: GenerateOptions = {}): Promise<string> {
     const { system, temperature = 0.7, maxOutputTokens = 2048, json = false } = options
@@ -50,15 +86,15 @@ export async function generateText(prompt: string, options: GenerateOptions = {}
                     }
                 })
                 const result = await model.generateContent(prompt)
-                const text = result.response.text().trim()
+                const { text, reason } = readGeminiText(result.response)
                 if (text) return text
-                errors.push(`${modelName}: respuesta vacía`)
+                errors.push(`${modelName}: ${reason}`)
             } catch (e: any) {
-                errors.push(`${modelName}: ${e?.message || e}`)
+                errors.push(`${modelName}: ${sanitize(String(e?.message || e))}`)
             }
         }
     } else {
-        errors.push('GEMINI_API_KEY no configurada')
+        errors.push('Gemini: falta GEMINI_API_KEY')
     }
 
     const groqKey = process.env.GROQ_API_KEY
@@ -77,16 +113,16 @@ export async function generateText(prompt: string, options: GenerateOptions = {}
             })
             const text = completion.choices[0]?.message?.content?.trim()
             if (text) return text
-            errors.push('groq: respuesta vacía')
+            errors.push(`${GROQ_MODEL}: respuesta vacia`)
         } catch (e: any) {
-            errors.push(`groq: ${e?.message || e}`)
+            errors.push(`${GROQ_MODEL}: ${sanitize(String(e?.message || e))}`)
         }
     } else {
-        errors.push('GROQ_API_KEY no configurada')
+        errors.push('Groq: falta GROQ_API_KEY')
     }
 
     console.error('[ai] Todos los proveedores fallaron:', errors)
-    throw new Error('No se pudo generar la respuesta. Revisá las API keys en .env.local.')
+    throw new Error(`Ningun proveedor de IA respondio. Motivo de cada uno: ${errors.join(' | ')}`)
 }
 
 /** Extrae y parsea el primer objeto JSON válido de una respuesta de IA. */

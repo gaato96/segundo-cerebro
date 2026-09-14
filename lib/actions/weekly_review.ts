@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { generateText, parseJSON } from '@/lib/ai'
+import { runAction, type ActionResult } from '@/lib/actionResult'
 import { buildSystemPrompt } from '@/lib/assistantPersonas'
 import { getAssistantContextProfile } from '@/lib/actions/assistant'
 import { getLocalDateStr, getLocalDayOfWeek, addDaysToDateStr } from '@/lib/utils'
@@ -142,7 +143,11 @@ export async function getWeeklyReview(weekStart: string) {
     return data
 }
 
-export async function generateWeeklyReview(weekStart?: string) {
+export async function generateWeeklyReview(weekStart?: string): Promise<ActionResult<any>> {
+    return runAction('generateWeeklyReview', () => buildWeeklyReview(weekStart))
+}
+
+async function buildWeeklyReview(weekStart?: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')

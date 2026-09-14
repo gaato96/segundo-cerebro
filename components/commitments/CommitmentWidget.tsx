@@ -32,6 +32,7 @@ export function CommitmentWidget({ today, tomorrow, stats }: Props) {
     const [targetDate, setTargetDate] = useState(addDaysToDateStr(getLocalDateStr(), 1))
     const [form, setForm] = useState({ ...EMPTY })
     const [reasoning, setReasoning] = useState('')
+    const [suggestError, setSuggestError] = useState('')
     const [busy, setBusy] = useState(false)
     const [suggesting, setSuggesting] = useState(false)
     const [resolving, setResolving] = useState(false)
@@ -50,13 +51,20 @@ export function CommitmentWidget({ today, tomorrow, stats }: Props) {
             if_then_plan: existing.if_then_plan || ''
         } : { ...EMPTY })
         setReasoning('')
+        setSuggestError('')
         setEditorOpen(true)
     }
 
     async function handleSuggest() {
         setSuggesting(true)
+        setSuggestError('')
         try {
-            const s = await suggestTomorrowCommitment(targetDate)
+            const res = await suggestTomorrowCommitment(targetDate)
+            if (!res.ok) {
+                setSuggestError(res.error)
+                return
+            }
+            const s = res.data
             setForm({
                 action: s.action,
                 scheduled_time: s.scheduled_time || '',
@@ -68,7 +76,7 @@ export function CommitmentWidget({ today, tomorrow, stats }: Props) {
             })
             setReasoning(s.reasoning)
         } catch (e: any) {
-            alert(`No pude sugerirte nada ahora: ${e?.message}`)
+            setSuggestError(e?.message || 'No pude contactar al servidor.')
         } finally {
             setSuggesting(false)
         }
@@ -301,6 +309,12 @@ export function CommitmentWidget({ today, tomorrow, stats }: Props) {
                                     {suggesting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                                     Que lo proponga el coach mirando mis datos
                                 </button>
+
+                                {suggestError && (
+                                    <p className="text-[11px] text-red-300 bg-red-500/10 border border-red-500/25 rounded-lg p-2.5 leading-relaxed break-words">
+                                        No pude sugerirte nada ahora: {suggestError}
+                                    </p>
+                                )}
 
                                 {reasoning && (
                                     <p className="text-[11px] text-violet-300/90 bg-violet-500/10 border border-violet-500/20 rounded-lg p-2.5 leading-relaxed">
