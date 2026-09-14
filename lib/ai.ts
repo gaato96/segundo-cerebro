@@ -50,12 +50,17 @@ function readGeminiText(response: any): { text: string; reason: string } {
     const candidate = response?.candidates?.[0]
     const parts = candidate?.content?.parts || []
     const text = parts.map((part: any) => part?.text || '').join('').trim()
-    if (text) return { text, reason: '' }
 
+    // Los modelos "thinking" (gemini-3.x) gastan parte de maxOutputTokens
+    // pensando antes de escribir la respuesta. Si se corta por MAX_TOKENS,
+    // lo que haya en `text` puede ser un JSON a medio escribir: no sirve,
+    // aunque no esté vacío.
     const finish = candidate?.finishReason
     if (finish === 'MAX_TOKENS') {
-        return { text: '', reason: 'se quedo sin tokens antes de escribir la respuesta (subi maxOutputTokens)' }
+        return { text: '', reason: 'se quedo sin tokens antes de terminar la respuesta (subi maxOutputTokens)' }
     }
+
+    if (text) return { text, reason: '' }
     return { text: '', reason: `respuesta vacia${finish ? ` (finishReason: ${finish})` : ''}` }
 }
 
@@ -82,8 +87,17 @@ export async function generateText(prompt: string, options: GenerateOptions = {}
                     generationConfig: {
                         temperature,
                         maxOutputTokens,
-                        ...(json ? { responseMimeType: 'application/json' } : {})
-                    }
+                        ...(json ? {
+                            responseMimeType: 'application/json',
+                            // Sin esto, los modelos "thinking" (gemini-3.x) gastan una
+                            // cantidad variable de maxOutputTokens "pensando" antes de
+                            // escribir el JSON, y con prompts largos eso deja poco o
+                            // nada de presupuesto para la respuesta real (JSON truncado).
+                            // Estas respuestas son formateo estructurado, no necesitan
+                            // razonamiento visible.
+                            thinkingConfig: { thinkingBudget: 0 }
+                        } : {})
+                    } as any
                 })
                 const result = await model.generateContent(prompt)
                 const { text, reason } = readGeminiText(result.response)
