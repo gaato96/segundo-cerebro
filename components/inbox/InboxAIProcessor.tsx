@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     Sparkles, Loader2, CheckSquare, Calendar, BookOpen, Heart,
-    FileText, Trash2, Check, X
+    FileText, Trash2, Check, X, Lightbulb
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import {
@@ -22,6 +22,7 @@ const DESTINATIONS: { id: NoteDestination; label: string; icon: any; color: stri
     { id: 'event', label: 'Evento', icon: Calendar, color: 'text-sky-400 border-sky-500/30 bg-sky-500/10' },
     { id: 'journal', label: 'Journal', icon: BookOpen, color: 'text-orange-400 border-orange-500/30 bg-orange-500/10' },
     { id: 'wishlist', label: 'Deseo', icon: Heart, color: 'text-rose-400 border-rose-500/30 bg-rose-500/10' },
+    { id: 'idea', label: 'Banco de ideas', icon: Lightbulb, color: 'text-amber-400 border-amber-500/30 bg-amber-500/10' },
     { id: 'note', label: 'Solo archivar', icon: FileText, color: 'text-muted-foreground border-border bg-secondary/50' },
     { id: 'discard', label: 'Descartar', icon: Trash2, color: 'text-red-400 border-red-500/30 bg-red-500/10' }
 ]

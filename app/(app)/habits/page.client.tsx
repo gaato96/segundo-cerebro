@@ -4,10 +4,13 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     Flame, Plus, Clock, Check, Sun, Sunset, Moon, Sparkles,
-    TrendingUp, Calendar, Trash2, Edit2, X, Loader2, RefreshCw
+    TrendingUp, Calendar, Trash2, Edit2, X, Loader2, RefreshCw, Wand2, Link2
 } from 'lucide-react'
-import { HabitItem, HabitLogItem, createHabit, updateHabit, deleteHabit } from '@/lib/actions/habits'
-import { isHabitScheduledForDate, getLocalDateStr } from '@/lib/utils'
+import {
+    HabitItem, HabitLogItem, createHabit, updateHabit, deleteHabit,
+    suggestHabits, createHabitFromSuggestion, type HabitSuggestion
+} from '@/lib/actions/habits'
+import { isHabitScheduledForDate, getLocalDateStr, getWeekStartStr, addDaysToDateStr } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import confetti from 'canvas-confetti'
 
@@ -31,6 +34,7 @@ function frequencyLabel(h: HabitItem): string {
     const ft = h.frequency_type || 'daily'
     if (ft === 'daily') return 'Diario'
     if (ft === 'x_per_day') return `${h.frequency_times_per_day}× por día`
+    if (ft === 'x_per_week') return `${h.frequency_times_per_week || 3}× por semana`
     if (ft === 'custom_days') {
         if (!h.frequency_days?.length) return 'Sin días'
         const map: Record<number, string> = { 1: 'Lun', 2: 'Mar', 3: 'Mié', 4: 'Jue', 5: 'Vie', 6: 'Sáb', 7: 'Dom' }
@@ -55,7 +59,14 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
     const [frequencyType, setFrequencyType] = useState<'daily' | 'custom_days' | 'x_per_week' | 'x_per_day'>('daily')
     const [frequencyDays, setFrequencyDays] = useState<number[]>([])
     const [frequencyTimesPerDay, setFrequencyTimesPerDay] = useState(1)
+    const [frequencyTimesPerWeek, setFrequencyTimesPerWeek] = useState(3)
     const [loading, setLoading] = useState(false)
+
+    // --- Hábitos que propone la IA ---
+    const [suggesting, setSuggesting] = useState(false)
+    const [suggestions, setSuggestions] = useState<HabitSuggestion[] | null>(null)
+    const [suggestError, setSuggestError] = useState('')
+    const [addingIdx, setAddingIdx] = useState<number | null>(null)
 
     const supabase = createClient()
     const todayStr = getLocalDateStr()
@@ -64,6 +75,44 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
     const completedTodayIds = new Set(
         logs.filter(l => l.completed_at.startsWith(todayStr)).map(l => l.habit_id)
     )
+
+    // Los hábitos "X veces por semana" no se miden por día sino por cupo:
+    // la semana arranca el lunes y lo que importa es llegar al número.
+    const weekStart = getWeekStartStr(todayStr)
+    const weekEnd = addDaysToDateStr(weekStart, 6)
+
+    function weeklyCount(habitId: string) {
+        return logs.filter(l => {
+            const d = l.completed_at.slice(0, 10)
+            return l.habit_id === habitId && d >= weekStart && d <= weekEnd
+        }).length
+    }
+
+    async function handleSuggestHabits() {
+        setSuggesting(true)
+        setSuggestError('')
+        try {
+            const res = await suggestHabits()
+            if (!res.ok) {
+                setSuggestError(res.error)
+                return
+            }
+            setSuggestions(res.data)
+        } catch (e: any) {
+            setSuggestError(e?.message || 'No pude contactar al servidor.')
+        } finally {
+            setSuggesting(false)
+        }
+    }
+
+    async function handleAddSuggestion(suggestion: HabitSuggestion, idx: number) {
+        setAddingIdx(idx)
+        const res = await createHabitFromSuggestion(suggestion)
+        setAddingIdx(null)
+        if ('error' in res && res.error) return alert(res.error)
+        setSuggestions(prev => (prev || []).filter((_, i) => i !== idx))
+        window.location.reload()
+    }
 
     async function handleToggleHabit(habitId: string) {
         const isDone = completedTodayIds.has(habitId)
@@ -88,6 +137,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
         setFrequencyType('daily')
         setFrequencyDays([])
         setFrequencyTimesPerDay(1)
+        setFrequencyTimesPerWeek(3)
         setIsModalOpen(true)
     }
 
@@ -100,6 +150,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
         setFrequencyType(h.frequency_type || 'daily')
         setFrequencyDays(h.frequency_days || [])
         setFrequencyTimesPerDay(h.frequency_times_per_day || 1)
+        setFrequencyTimesPerWeek(h.frequency_times_per_week || 3)
         setIsModalOpen(true)
     }
 
@@ -122,6 +173,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
         formData.append('frequency_type', frequencyType)
         formData.append('frequency_days', frequencyDays.join(','))
         formData.append('frequency_times_per_day', frequencyTimesPerDay.toString())
+        formData.append('frequency_times_per_week', frequencyTimesPerWeek.toString())
 
         if (habitToEdit) {
             await updateHabit(habitToEdit.id, formData)
@@ -255,6 +307,95 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                 </button>
             </div>
 
+            {/* El coach propone hábitos nuevos mirando todo el contexto */}
+            <div className="glass p-5 rounded-2xl border border-violet-500/25 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                        <h3 className="text-sm font-heading font-bold text-white">
+                            ¿Qué hábito me convendría sumar?
+                        </h3>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                            La IA mira tus objetivos, lo que venís cumpliendo y lo que se te cae, y propone 3.
+                        </p>
+                    </div>
+                    <button
+                        onClick={handleSuggestHabits}
+                        disabled={suggesting}
+                        className="px-4 py-2.5 bg-violet-600/90 hover:bg-violet-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition-colors disabled:opacity-60 shrink-0"
+                    >
+                        {suggesting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+                        {suggesting ? 'Leyendo tus datos…' : 'Recomendame hábitos'}
+                    </button>
+                </div>
+
+                {suggestError && (
+                    <p className="text-[11px] text-red-300 bg-red-500/10 border border-red-500/25 rounded-xl p-3 leading-relaxed break-words">
+                        No pude recomendarte nada ahora: {suggestError}
+                    </p>
+                )}
+
+                {suggestions && suggestions.length > 0 && (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 pt-1">
+                        {suggestions.map((sug, idx) => (
+                            <div
+                                key={idx}
+                                className="p-3.5 rounded-2xl bg-secondary/40 border border-border/50 space-y-2 flex flex-col"
+                                style={{ borderLeftWidth: 4, borderLeftColor: sug.color_hex }}
+                            >
+                                <h4 className="text-sm font-bold text-white leading-snug">{sug.title}</h4>
+
+                                <div className="flex flex-wrap gap-1.5">
+                                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/25 text-indigo-300 font-semibold">
+                                        {sug.frequency_type === 'x_per_week'
+                                            ? `${sug.frequency_times_per_week}× por semana`
+                                            : sug.frequency_type === 'x_per_day'
+                                                ? `${sug.frequency_times_per_day}× por día`
+                                                : sug.frequency_type === 'custom_days'
+                                                    ? sug.frequency_days.map(d => DAYS_ISO.find(x => x.iso === d)?.label).join(' · ')
+                                                    : 'Diario'}
+                                    </span>
+                                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-muted-foreground">
+                                        {sug.estimated_minutes} min
+                                    </span>
+                                </div>
+
+                                <p className="text-[11px] text-muted-foreground leading-relaxed flex-1">{sug.why}</p>
+
+                                {sug.minimum_version && (
+                                    <p className="text-[10px] text-amber-300/90 bg-amber-500/5 border border-amber-500/20 rounded-lg p-2">
+                                        <strong className="text-amber-200">En el peor día:</strong> {sug.minimum_version}
+                                    </p>
+                                )}
+
+                                {sug.anchor && (
+                                    <p className="text-[10px] text-sky-300/90 flex items-start gap-1">
+                                        <Link2 className="w-3 h-3 shrink-0 mt-0.5" />
+                                        {sug.anchor}
+                                    </p>
+                                )}
+
+                                <div className="flex gap-1.5 pt-1">
+                                    <button
+                                        onClick={() => handleAddSuggestion(sug, idx)}
+                                        disabled={addingIdx === idx}
+                                        className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 disabled:opacity-50"
+                                    >
+                                        {addingIdx === idx ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                                        Sumarlo
+                                    </button>
+                                    <button
+                                        onClick={() => setSuggestions(prev => (prev || []).filter((_, i) => i !== idx))}
+                                        className="px-2.5 py-2 bg-secondary hover:bg-secondary/70 border border-border text-muted-foreground rounded-lg text-[10px] font-semibold"
+                                    >
+                                        No
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
             {/* Habits List */}
             <div className="space-y-3">
                 {sortedHabits.map((h) => {
@@ -298,6 +439,20 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                             <RefreshCw className="w-2.5 h-2.5" />
                                             {frequencyLabel(h)}
                                         </span>
+                                        {h.frequency_type === 'x_per_week' && (() => {
+                                            const done = weeklyCount(h.id)
+                                            const target = h.frequency_times_per_week || 3
+                                            const complete = done >= target
+                                            return (
+                                                <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${
+                                                    complete
+                                                        ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400'
+                                                        : 'bg-amber-500/10 border-amber-500/25 text-amber-300'
+                                                }`}>
+                                                    {done}/{target} esta semana{complete ? ' · cupo cumplido' : ''}
+                                                </span>
+                                            )
+                                        })()}
                                         {!scheduledToday && (
                                             <span className="text-[9px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-muted-foreground">
                                                 No es hoy
@@ -383,6 +538,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                         {([
                                             { value: 'daily', label: '🔁 Diario' },
                                             { value: 'custom_days', label: '📅 Días específicos' },
+                                            { value: 'x_per_week', label: '📆 X veces/semana' },
                                             { value: 'x_per_day', label: '🎯 X veces/día' },
                                         ] as const).map(opt => (
                                             <button
@@ -420,6 +576,34 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                                     </button>
                                                 ))}
                                             </div>
+                                        </div>
+                                    )}
+
+                                    {/* X times per week: no fija días, fija cupo semanal */}
+                                    {frequencyType === 'x_per_week' && (
+                                        <div className="mt-3">
+                                            <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">
+                                                Cantidad de veces por semana
+                                            </label>
+                                            <div className="flex gap-1.5 flex-wrap">
+                                                {[1, 2, 3, 4, 5, 6, 7].map(n => (
+                                                    <button
+                                                        key={n}
+                                                        type="button"
+                                                        onClick={() => setFrequencyTimesPerWeek(n)}
+                                                        className={`w-9 h-9 rounded-xl border text-xs font-bold transition-all ${frequencyTimesPerWeek === n
+                                                            ? 'bg-indigo-600 border-indigo-500 text-white'
+                                                            : 'bg-black/20 border-white/10 text-muted-foreground hover:text-white'
+                                                            }`}
+                                                    >
+                                                        {n}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
+                                                Sin día fijo: lo podés marcar cualquier día de la semana hasta completar
+                                                el cupo. La semana arranca el lunes.
+                                            </p>
                                         </div>
                                     )}
 

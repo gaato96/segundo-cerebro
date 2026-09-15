@@ -4,6 +4,9 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
 // type: 'Income' | 'Fixed_Expense' | 'Variable' | 'Debt_Payment'
+//
+// El alta y la edicion de deudas vive en lib/actions/debts.ts: ahi estan la
+// tasa real, los planes de pago y las observaciones de saldo.
 
 export async function getFinances(monthYear: string) {
     const supabase = await createClient()
@@ -91,70 +94,8 @@ export async function createTransaction(formData: FormData) {
     revalidatePath('/finances')
 }
 
-export async function createDebt(formData: FormData) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Unauthorized')
 
-    const creditor = formData.get('creditor') as string
-    const total_amount = parseFloat(formData.get('total_amount') as string)
-    const interest_rate = parseFloat(formData.get('interest_rate') as string) || 0
-    const due_day = parseInt(formData.get('due_day') as string)
 
-    const { error } = await supabase
-        .from('debts')
-        .insert({
-            user_id: user.id,
-            creditor,
-            total_amount,
-            remaining_amount: total_amount, // initially, remaining = total
-            interest_rate,
-            due_day
-        })
-
-    if (error) throw error
-    revalidatePath('/finances')
-}
-
-export async function deleteDebt(id: string) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Unauthorized')
-
-    const { error } = await supabase
-        .from('debts')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user.id)
-
-    if (error) throw error
-    revalidatePath('/finances')
-}
-
-export async function updateDebt(id: string, formData: FormData) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Unauthorized')
-
-    const creditor = formData.get('creditor') as string
-    const total_amount = parseFloat(formData.get('total_amount') as string)
-    const remaining_amount = parseFloat(formData.get('remaining_amount') as string)
-    const due_day = parseInt(formData.get('due_day') as string)
-
-    const { error } = await supabase
-        .from('debts')
-        .update({
-            creditor,
-            total_amount,
-            remaining_amount,
-            due_day
-        })
-        .eq('id', id)
-        .eq('user_id', user.id)
-
-    if (error) throw error
-    revalidatePath('/finances')
-}
 
 export async function deleteTransaction(id: string) {
     const supabase = await createClient()

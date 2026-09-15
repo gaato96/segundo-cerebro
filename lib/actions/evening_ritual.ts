@@ -2,7 +2,8 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { getLocalDateStr, addDaysToDateStr } from '@/lib/utils'
+import { addDaysToDateStr } from '@/lib/utils'
+import { getAppToday } from '@/lib/actions/day'
 
 /**
  * Ritual nocturno: el cierre que le faltaba al día.
@@ -31,7 +32,7 @@ export async function getEveningRitual(date?: string) {
         .from('evening_ritual_logs')
         .select('*')
         .eq('user_id', user.id)
-        .eq('date', date || getLocalDateStr())
+        .eq('date', date || await getAppToday())
         .maybeSingle()
 
     if (error) throw error
@@ -43,7 +44,7 @@ export async function saveEveningRitual(input: EveningRitualInput) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
 
-    const date = input.date || getLocalDateStr()
+    const date = input.date || await getAppToday()
 
     const { data, error } = await supabase
         .from('evening_ritual_logs')
@@ -112,7 +113,7 @@ export async function getEveningRitualStats(days = 30) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
 
-    const today = getLocalDateStr()
+    const today = await getAppToday()
     const from = addDaysToDateStr(today, -days)
 
     const { data, error } = await supabase

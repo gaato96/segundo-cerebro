@@ -19,6 +19,7 @@ import { CommitmentWidget } from '@/components/commitments/CommitmentWidget'
 import { getCommitment, getCommitmentStats } from '@/lib/actions/commitments'
 import { MonthForecastWidget } from '@/components/finances/MonthForecastWidget'
 import { getMonthForecast } from '@/lib/actions/forecast'
+import { getAppDay } from '@/lib/actions/day'
 
 export default async function DashboardPage() {
     const supabase = await createClient()
@@ -67,10 +68,14 @@ export default async function DashboardPage() {
 
     const todayFormatted = formatLocalDate(now)
 
+    // El compromiso vive en el día lógico: pasada la medianoche sigue siendo
+    // el día que estás terminando, no uno nuevo.
+    const appDay = await getAppDay()
+
     const [stickyNotes, todayCommitment, tomorrowCommitment, commitmentStats, forecast] = await Promise.all([
         getStickyNotes(),
-        getCommitment(todayStr).catch(() => null),
-        getCommitment(addDaysToDateStr(todayStr, 1)).catch(() => null),
+        getCommitment(appDay.date).catch(() => null),
+        getCommitment(addDaysToDateStr(appDay.date, 1)).catch(() => null),
         getCommitmentStats().catch(() => ({ done: 0, total: 0, successRate: 0, streak: 0, partial: 0, skipped: 0 })),
         getMonthForecast().catch(() => null)
     ])
@@ -145,6 +150,8 @@ export default async function DashboardPage() {
                         today={todayCommitment}
                         tomorrow={tomorrowCommitment}
                         stats={commitmentStats}
+                        date={appDay.date}
+                        isAfterMidnight={appDay.isAfterMidnight}
                     />
                     {forecast && <MonthForecastWidget forecast={forecast} compact />}
                     <PomodoroWidget

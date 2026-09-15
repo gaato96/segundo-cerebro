@@ -2,12 +2,16 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Sun, CheckCircle2, ArrowRight, ArrowLeft, Flame, Inbox, Sparkles, Loader2, Edit3, Target, Calendar, CheckSquare, RefreshCw } from 'lucide-react'
-import { saveRitualLog, saveRitualDraft, MorningRitualLog } from '@/lib/actions/morning_ritual'
+import {
+    Sun, CheckCircle2, ArrowRight, ArrowLeft, Flame, Inbox, Sparkles, Loader2,
+    Edit3, Target, CheckSquare, RefreshCw, Swords, AlertTriangle, Wand2
+} from 'lucide-react'
+import { saveRitualLog, saveRitualDraft, suggestMorningPlan, MorningRitualLog } from '@/lib/actions/morning_ritual'
 import { updateTaskStatus } from '@/lib/actions/tasks'
 import { RitualStepper } from '@/components/ritual/RitualStepper'
 import { MITSelector } from '@/components/ritual/MITSelector'
 import { DayTimeline } from '@/components/ritual/DayTimeline'
+import { CommitmentWidget } from '@/components/commitments/CommitmentWidget'
 import Link from 'next/link'
 import confetti from 'canvas-confetti'
 import { getPriorityColor, getPriorityLabel } from '@/lib/utils'
@@ -17,9 +21,16 @@ interface RitualClientProps {
     existingLog: MorningRitualLog | null
     morningData: any
     todayStr: string
+    commitment: any
+    tomorrowCommitment: any
+    commitmentStats: any
+    appDay: { date: string; calendarDate: string; isAfterMidnight: boolean; cutoffHour: number }
 }
 
-export function RitualClient({ config, existingLog, morningData, todayStr }: RitualClientProps) {
+export function RitualClient({
+    config, existingLog, morningData, todayStr,
+    commitment, tomorrowCommitment, commitmentStats, appDay
+}: RitualClientProps) {
     const isAlreadyCompleted = !!(existingLog && existingLog.completed_at)
 
     const [isEditing, setIsEditing] = useState(!isAlreadyCompleted)
@@ -31,13 +42,19 @@ export function RitualClient({ config, existingLog, morningData, todayStr }: Rit
     const [loading, setLoading] = useState(false)
     const [mitTasks, setMitTasks] = useState<any[]>(morningData?.tasks || [])
 
+    // --- Arranque asistido por IA ---
+    const [planning, setPlanning] = useState(false)
+    const [planError, setPlanError] = useState('')
+    const [plan, setPlan] = useState<any>(null)
+
     const steps = [
         { id: 'objective', label: '1. Objetivo #1' },
-        { id: 'tasks', label: '2. Tareas Focus' },
-        { id: 'habits', label: '3. Hábitos' },
-        { id: 'inbox', label: '4. Inbox & Eventos' },
-        { id: 'affirmation', label: '5. Intención' },
-        { id: 'summary', label: '6. Listo' }
+        { id: 'commitment', label: '2. Compromiso' },
+        { id: 'tasks', label: '3. Tareas Focus' },
+        { id: 'habits', label: '4. Hábitos' },
+        { id: 'inbox', label: '5. Inbox & Eventos' },
+        { id: 'affirmation', label: '6. Intención' },
+        { id: 'summary', label: '7. Listo' }
     ]
 
     function toggleMit(id: string) {
@@ -51,6 +68,36 @@ export function RitualClient({ config, existingLog, morningData, todayStr }: Rit
 
     async function autoSaveDraft(obj = dailyObjective, aff = affirmation, mits = selectedMitIds) {
         await saveRitualDraft(todayStr, obj, aff, mits)
+    }
+
+    /**
+     * El coach mira todo el Segundo Cerebro y decide por dónde arrancar.
+     * Es la respuesta a "es la primera tarjeta y no sé con qué empezar".
+     */
+    async function handleSuggestPlan() {
+        setPlanning(true)
+        setPlanError('')
+        try {
+            const res = await suggestMorningPlan(todayStr)
+            if (!res.ok) {
+                setPlanError(res.error)
+                return
+            }
+            const p = res.data
+            setPlan(p)
+            setDailyObjective(p.daily_objective)
+            if (p.affirmation) setAffirmation(p.affirmation)
+            if (p.mit_task_ids?.length) setSelectedMitIds(p.mit_task_ids.slice(0, 3))
+            await autoSaveDraft(
+                p.daily_objective,
+                p.affirmation || affirmation,
+                p.mit_task_ids?.length ? p.mit_task_ids.slice(0, 3) : selectedMitIds
+            )
+        } catch (e: any) {
+            setPlanError(e?.message || 'No pude contactar al servidor.')
+        } finally {
+            setPlanning(false)
+        }
     }
 
     async function handleNextStep() {
@@ -200,6 +247,15 @@ export function RitualClient({ config, existingLog, morningData, todayStr }: Rit
                             </button>
                         </div>
                     </div>
+
+                    {/* El compromiso sigue vivo aunque el ritual esté cerrado. */}
+                    <CommitmentWidget
+                        today={commitment}
+                        tomorrow={tomorrowCommitment}
+                        stats={commitmentStats}
+                        date={appDay.date}
+                        isAfterMidnight={appDay.isAfterMidnight}
+                    />
                 </div>
             ) : (
                 /* WIZARD MODE */
@@ -232,6 +288,57 @@ export function RitualClient({ config, existingLog, morningData, todayStr }: Rit
                                     <p className="text-xs text-muted-foreground">
                                         Si solo pudieras lograr UNA sola cosa hoy para considerar el día un éxito, ¿cuál sería?
                                     </p>
+
+                                    {/* El coach decide por vos cuando la hoja en blanco pesa */}
+                                    <button
+                                        onClick={handleSuggestPlan}
+                                        disabled={planning}
+                                        className="w-full py-3 bg-violet-600/90 hover:bg-violet-500 text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-60 shadow-lg shadow-violet-600/20"
+                                    >
+                                        {planning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+                                        {planning ? 'Leyendo todo tu Segundo Cerebro…' : 'No sé por dónde empezar: que decida el coach'}
+                                    </button>
+
+                                    {planError && (
+                                        <p className="text-[11px] text-red-300 bg-red-500/10 border border-red-500/25 rounded-xl p-3 leading-relaxed break-words">
+                                            No pude armarte el plan ahora: {planError}
+                                        </p>
+                                    )}
+
+                                    {plan && (
+                                        <div className="space-y-2.5">
+                                            {plan.reasoning && (
+                                                <p className="text-[11px] text-violet-300/90 bg-violet-500/10 border border-violet-500/20 rounded-xl p-3 leading-relaxed">
+                                                    {plan.reasoning}
+                                                </p>
+                                            )}
+                                            {plan.warning && (
+                                                <p className="text-[11px] text-amber-200 bg-amber-500/10 border border-amber-500/25 rounded-xl p-3 leading-relaxed flex items-start gap-2">
+                                                    <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                                                    <span>{plan.warning}</span>
+                                                </p>
+                                            )}
+                                            {plan.mits?.length > 0 && (
+                                                <div className="space-y-1.5">
+                                                    <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">
+                                                        Y estas son las tareas que eligió (ya quedaron marcadas)
+                                                    </span>
+                                                    {plan.mits.map((m: any, i: number) => (
+                                                        <div key={i} className="text-[11px] bg-secondary/40 border border-border/50 rounded-xl p-2.5">
+                                                            <p className="font-semibold text-white">{m.title}</p>
+                                                            {m.reason && <p className="text-muted-foreground mt-0.5">{m.reason}</p>}
+                                                            {!m.task_id && (
+                                                                <p className="text-amber-400/90 mt-0.5">
+                                                                    Esta todavía no existe como tarea: creála en Tareas si te sirve.
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
                                     <textarea
                                         rows={4}
                                         value={dailyObjective}
@@ -251,6 +358,32 @@ export function RitualClient({ config, existingLog, morningData, todayStr }: Rit
                                     exit={{ opacity: 0, x: -10 }}
                                     className="space-y-4 flex-1"
                                 >
+                                    <div className="flex items-center gap-2 text-amber-400 font-heading font-bold text-lg">
+                                        <Swords className="w-5 h-5" />
+                                        Tu compromiso de hoy
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        El objetivo dice a dónde vas. El compromiso es la única acción no negociable
+                                        que sí o sí hacés hoy. Si anoche no lo firmaste, firmalo ahora o pedíselo al coach.
+                                    </p>
+                                    <CommitmentWidget
+                                        today={commitment}
+                                        tomorrow={tomorrowCommitment}
+                                        stats={commitmentStats}
+                                        date={appDay.date}
+                                        isAfterMidnight={appDay.isAfterMidnight}
+                                    />
+                                </motion.div>
+                            )}
+
+                            {stepIndex === 2 && (
+                                <motion.div
+                                    key="step2"
+                                    initial={{ opacity: 0, x: 10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -10 }}
+                                    className="space-y-4 flex-1"
+                                >
                                     <h3 className="font-heading font-bold text-lg text-white">
                                         Seleccioná tus 3 Tareas Focus (MITs)
                                     </h3>
@@ -265,9 +398,9 @@ export function RitualClient({ config, existingLog, morningData, todayStr }: Rit
                                 </motion.div>
                             )}
 
-                            {stepIndex === 2 && (
+                            {stepIndex === 3 && (
                                 <motion.div
-                                    key="step2"
+                                    key="step3"
                                     initial={{ opacity: 0, x: 10 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: -10 }}
@@ -295,9 +428,9 @@ export function RitualClient({ config, existingLog, morningData, todayStr }: Rit
                                 </motion.div>
                             )}
 
-                            {stepIndex === 3 && (
+                            {stepIndex === 4 && (
                                 <motion.div
-                                    key="step3"
+                                    key="step4"
                                     initial={{ opacity: 0, x: 10 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: -10 }}
@@ -334,9 +467,9 @@ export function RitualClient({ config, existingLog, morningData, todayStr }: Rit
                                 </motion.div>
                             )}
 
-                            {stepIndex === 4 && (
+                            {stepIndex === 5 && (
                                 <motion.div
-                                    key="step4"
+                                    key="step5"
                                     initial={{ opacity: 0, x: 10 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: -10 }}
@@ -359,9 +492,9 @@ export function RitualClient({ config, existingLog, morningData, todayStr }: Rit
                                 </motion.div>
                             )}
 
-                            {stepIndex === 5 && (
+                            {stepIndex === 6 && (
                                 <motion.div
-                                    key="step5"
+                                    key="step6"
                                     initial={{ opacity: 0, x: 10 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: -10 }}
@@ -377,6 +510,11 @@ export function RitualClient({ config, existingLog, morningData, todayStr }: Rit
                                         <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
                                             Objetivo #1: "{dailyObjective || 'Sin definir'}"
                                         </p>
+                                        {commitment?.action && (
+                                            <p className="text-xs text-amber-300/90 mt-2 max-w-md mx-auto">
+                                                Compromiso: "{commitment.action}"
+                                            </p>
+                                        )}
                                     </div>
                                 </motion.div>
                             )}

@@ -21,6 +21,7 @@ interface Props {
     weekStart: string
     weeklyPlan: any
     initialTab: 'dia' | 'semana'
+    appDay: { date: string; calendarDate: string; isAfterMidnight: boolean; cutoffHour: number }
 }
 
 const RATINGS = [
@@ -33,7 +34,7 @@ const RATINGS = [
 
 export function CierrePageClient({
     ritual, commitment, tomorrow, commitmentStats, ritualStats,
-    weekStart, weeklyPlan, initialTab
+    weekStart, weeklyPlan, initialTab, appDay
 }: Props) {
     const router = useRouter()
     const [tab, setTab] = useState<'dia' | 'semana'>(initialTab)
@@ -57,6 +58,7 @@ export function CierrePageClient({
         setSaving(true)
         try {
             await saveEveningRitual({
+                date: appDay.date,
                 day_rating: rating,
                 win: win.trim() || null,
                 gratitude: gratitude.trim() || null,
@@ -149,11 +151,24 @@ export function CierrePageClient({
 
             {tab === 'dia' && (
                 <div className="space-y-4">
+                    {appDay.isAfterMidnight && (
+                        <div className="glass p-3.5 rounded-2xl border border-sky-500/25 bg-sky-500/5 flex items-start gap-2.5">
+                            <Moon className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
+                            <p className="text-[11px] text-sky-200/90 leading-relaxed">
+                                Son pasadas las 12, pero tu día todavía no cerró: estás cerrando el{' '}
+                                <strong className="text-sky-100">
+                                    {appDay.date.split('-').reverse().slice(0, 2).join('/')}
+                                </strong>. El corte está configurado a las {String(appDay.cutoffHour).padStart(2, '0')}:00 y lo podés cambiar en Ajustes.
+                            </p>
+                        </div>
+                    )}
                     {/* Paso 1: resolver el compromiso de hoy */}
                     <CommitmentWidget
                         today={commitment}
                         tomorrow={tomorrow}
                         stats={commitmentStats}
+                        date={appDay.date}
+                        isAfterMidnight={appDay.isAfterMidnight}
                     />
 
                     {/* Paso 2: cómo estuvo el día */}

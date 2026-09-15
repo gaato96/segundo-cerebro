@@ -1,7 +1,8 @@
 import { getEveningRitual, getEveningRitualStats } from '@/lib/actions/evening_ritual'
 import { getCommitment, getCommitmentStats } from '@/lib/actions/commitments'
 import { getWeekStart, getWeeklyReview } from '@/lib/actions/weekly_review'
-import { getLocalDateStr, addDaysToDateStr } from '@/lib/utils'
+import { addDaysToDateStr } from '@/lib/utils'
+import { getAppDay } from '@/lib/actions/day'
 import { CierrePageClient } from './page.client'
 
 export const dynamic = 'force-dynamic'
@@ -15,7 +16,11 @@ export default async function CierrePage({
     searchParams: Promise<{ tab?: string }>
 }) {
     const { tab } = await searchParams
-    const today = getLocalDateStr()
+    // "Hoy" acá es el día lógico: si son las 01:30, el cierre sigue siendo
+    // el del día anterior. Antes el sistema ya estaba en el día siguiente y
+    // el cierre quedaba imposible de hacer.
+    const appDay = await getAppDay()
+    const today = appDay.date
     const weekStart = await getWeekStart()
 
     const [ritual, ritualStats, commitment, tomorrow, commitmentStats, weeklyPlan] = await Promise.all([
@@ -37,6 +42,7 @@ export default async function CierrePage({
             weekStart={weekStart}
             weeklyPlan={weeklyPlan}
             initialTab={tab === 'semana' ? 'semana' : 'dia'}
+            appDay={appDay}
         />
     )
 }

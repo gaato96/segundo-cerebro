@@ -7,13 +7,17 @@ import {
     Loader2, Sparkles, Flame, PenLine
 } from 'lucide-react'
 import { saveCommitment, resolveCommitment, suggestTomorrowCommitment } from '@/lib/actions/commitments'
-import { getLocalDateStr, addDaysToDateStr, cn } from '@/lib/utils'
+import { addDaysToDateStr, cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 
 interface Props {
     today: any | null
     tomorrow: any | null
     stats: { done: number; total: number; successRate: number; streak: number }
+    /** Fecha lógica de "hoy" (respeta el corte del día, no la medianoche). */
+    date: string
+    /** true si son las 00:xx pero el sistema sigue parado en el día anterior. */
+    isAfterMidnight?: boolean
 }
 
 const EMPTY = {
@@ -26,10 +30,11 @@ const EMPTY = {
     if_then_plan: ''
 }
 
-export function CommitmentWidget({ today, tomorrow, stats }: Props) {
+export function CommitmentWidget({ today, tomorrow, stats, date, isAfterMidnight }: Props) {
     const router = useRouter()
+    const tomorrowDate = addDaysToDateStr(date, 1)
     const [editorOpen, setEditorOpen] = useState(false)
-    const [targetDate, setTargetDate] = useState(addDaysToDateStr(getLocalDateStr(), 1))
+    const [targetDate, setTargetDate] = useState(tomorrowDate)
     const [form, setForm] = useState({ ...EMPTY })
     const [reasoning, setReasoning] = useState('')
     const [suggestError, setSuggestError] = useState('')
@@ -112,7 +117,7 @@ export function CommitmentWidget({ today, tomorrow, stats }: Props) {
         }
         setResolving(true)
         try {
-            await resolveCommitment(getLocalDateStr(), status, reflection)
+            await resolveCommitment(date, status, reflection)
             setShowReflection(null)
             setReflection('')
             router.refresh()
@@ -146,6 +151,12 @@ export function CommitmentWidget({ today, tomorrow, stats }: Props) {
                         </div>
                     )}
                 </div>
+
+                {isAfterMidnight && (
+                    <p className="text-[10px] text-sky-300/90 bg-sky-500/10 border border-sky-500/20 rounded-lg px-2.5 py-1.5 leading-relaxed">
+                        Ya pasó la medianoche, pero el día todavía no cerró: esto sigue siendo el {date.split('-').reverse().slice(0, 2).join('/')}.
+                    </p>
+                )}
 
                 {/* Compromiso de hoy */}
                 {today ? (
@@ -243,7 +254,7 @@ export function CommitmentWidget({ today, tomorrow, stats }: Props) {
                             Hoy no tenés compromiso firmado. Por eso a la mañana la decisión sigue abierta.
                         </p>
                         <button
-                            onClick={() => openEditor(getLocalDateStr(), null)}
+                            onClick={() => openEditor(date, null)}
                             className="text-xs font-semibold text-amber-400 hover:text-amber-300 transition-colors"
                         >
                             Firmar uno para hoy
@@ -260,7 +271,7 @@ export function CommitmentWidget({ today, tomorrow, stats }: Props) {
                         </span>
                     </div>
                     <button
-                        onClick={() => openEditor(addDaysToDateStr(getLocalDateStr(), 1), tomorrow)}
+                        onClick={() => openEditor(tomorrowDate, tomorrow)}
                         className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-[11px] font-semibold shrink-0 flex items-center gap-1.5 transition-colors"
                     >
                         <PenLine className="w-3 h-3" />

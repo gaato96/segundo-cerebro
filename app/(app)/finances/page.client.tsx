@@ -2,37 +2,51 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { DollarSign, Wallet, TrendingUp, TrendingDown, Landmark, Plus, Trash2, X, Target, PieChart, Sparkles } from 'lucide-react'
+import { DollarSign, Wallet, TrendingUp, TrendingDown, Landmark, Plus, Trash2, X, Target, PieChart, Sparkles, Compass, HandCoins } from 'lucide-react'
 import { FinancesChart } from '@/components/finances/FinancesChart'
 import { BudgetEnvelopes } from '@/components/finances/BudgetEnvelopes'
 import { BudgetProjections } from '@/components/finances/BudgetProjections'
 import { BudgetEnvelopeItem, createEnvelope, deleteEnvelope } from '@/lib/actions/budget_envelopes'
 import { BudgetProjectionItem } from '@/lib/actions/budget_projections'
-import { createTransaction, createDebt, deleteDebt, deleteTransaction } from '@/lib/actions/finances'
+import { createTransaction, deleteTransaction } from '@/lib/actions/finances'
+import { DebtManager } from '@/components/finances/DebtManager'
+import { DebtStrategyPanel } from '@/components/finances/DebtStrategy'
+import { IncomeSources } from '@/components/finances/IncomeSources'
+import type { DebtsOverview } from '@/lib/actions/debts'
+import type { IncomeSourceItem } from '@/lib/actions/income_sources'
 import { formatCurrency } from '@/lib/utils'
 
 interface FinancesClientProps {
     transactions: any[]
-    debts: any[]
     initialBudget: any
     initialGoals: any[]
     envelopes: BudgetEnvelopeItem[]
     projections: BudgetProjectionItem[]
     monthYear: string
+    debtsOverview: DebtsOverview
+    incomeSources: IncomeSourceItem[]
+    incomeRange: { floor: number; ceiling: number; sources: number }
+    upcomingIncome: { date: string; name: string; amount: number; confidence: string; kind: string }[]
+    allocations: any[]
 }
 
 export function FinancesClient({
     transactions: initialTransactions,
-    debts: initialDebts,
     initialGoals,
     envelopes: initialEnvelopes,
     projections: initialProjections,
-    monthYear
+    monthYear,
+    debtsOverview,
+    incomeSources,
+    incomeRange,
+    upcomingIncome,
+    allocations
 }: FinancesClientProps) {
     const [transactions, setTransactions] = useState<any[]>(initialTransactions || [])
-    const [debts, setDebts] = useState<any[]>(initialDebts || [])
     const [envelopes, setEnvelopes] = useState<BudgetEnvelopeItem[]>(initialEnvelopes || [])
-    const [activeTab, setActiveTab] = useState<'overview' | 'projections' | 'envelopes' | 'transactions' | 'debts'>('overview')
+    const [activeTab, setActiveTab] = useState<
+        'overview' | 'estrategia' | 'debts' | 'income' | 'projections' | 'envelopes' | 'transactions'
+    >('overview')
 
     // Modals
     const [isTxModalOpen, setIsTxModalOpen] = useState(false)
@@ -165,10 +179,12 @@ export function FinancesClient({
             <div className="glass p-2 rounded-2xl border border-border/50 flex items-center gap-2 overflow-x-auto">
                 {[
                     { id: 'overview', label: 'Overview', icon: PieChart },
+                    { id: 'estrategia', label: 'Estrategia', icon: Compass },
+                    { id: 'debts', label: 'Deudas', icon: Landmark },
+                    { id: 'income', label: 'Ingresos', icon: HandCoins },
                     { id: 'projections', label: 'Proyección Mensual', icon: Sparkles },
                     { id: 'envelopes', label: 'Sobres de Presupuesto', icon: Wallet },
                     { id: 'transactions', label: 'Transacciones', icon: DollarSign },
-                    { id: 'debts', label: 'Deudas', icon: Landmark },
                 ].map((tab: any) => {
                     const Icon = tab.icon
                     const isActive = activeTab === tab.id
@@ -250,29 +266,21 @@ export function FinancesClient({
             )}
 
             {activeTab === 'debts' && (
-                <div className="glass rounded-3xl p-5 border border-border/50 space-y-4">
-                    <div className="flex items-center justify-between border-b border-white/5 pb-3">
-                        <h3 className="font-heading font-bold text-base text-white">Deudas Activas</h3>
-                    </div>
-                    <div className="space-y-2">
-                        {debts.length === 0 ? (
-                            <p className="text-xs text-muted-foreground italic text-center py-6">¡Excelente! No tienes deudas registradas.</p>
-                        ) : (
-                            debts.map(d => (
-                                <div key={d.id} className="flex items-center justify-between p-3.5 rounded-2xl bg-secondary/20 border border-border/50 text-xs">
-                                    <div>
-                                        <p className="font-bold text-white">{d.creditor}</p>
-                                        <span className="text-[10px] text-muted-foreground">Vence día {d.due_day}</span>
-                                    </div>
-                                    <div className="font-mono text-right">
-                                        <p className="font-bold text-white">{formatCurrency(d.remaining_amount)}</p>
-                                        <span className="text-[10px] text-muted-foreground">Total: {formatCurrency(d.total_amount)}</span>
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                    </div>
-                </div>
+                <DebtManager overview={debtsOverview} />
+            )}
+
+            {activeTab === 'estrategia' && (
+                <DebtStrategyPanel
+                    overview={debtsOverview}
+                    incomeRange={incomeRange}
+                    upcoming={upcomingIncome}
+                    monthlyExpenses={fixedExpenses + variableExpenses}
+                    allocations={allocations}
+                />
+            )}
+
+            {activeTab === 'income' && (
+                <IncomeSources sources={incomeSources} range={incomeRange} />
             )}
 
             {/* Modal: Registrar Movimiento */}

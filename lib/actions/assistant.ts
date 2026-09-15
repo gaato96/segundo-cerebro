@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { generateText } from '@/lib/ai'
 import { buildSystemPrompt, getPersona } from '@/lib/assistantPersonas'
+import { dailyRatePct, dailyInterestCost, dailyToMonthlyPct, rateSource } from '@/lib/debtMath'
 import {
     getLocalDateStr,
     getLocalMonthYearStr,
@@ -115,7 +116,8 @@ export async function buildBrainSnapshot(): Promise<string> {
         nutProfileRes, nutProgressRes,
         trainPlanRes, trainLogsRes,
         commitmentsRes, weeklyPlanRes,
-        mediaRes, wishlistRes, childRes
+        mediaRes, wishlistRes, childRes,
+        ideasRes, incomeSourcesRes
     ] = await Promise.all([
         q('assistant_context').maybeSingle(),
         q('tasks').in('status', ['Todo', 'InProgress']).order('priority', { ascending: true }).limit(40),
@@ -141,7 +143,9 @@ export async function buildBrainSnapshot(): Promise<string> {
         q('weekly_plans').eq('week_start_date', weekStart).maybeSingle(),
         q('media_backlog').eq('status', 'Active').limit(8),
         q('wishlist').eq('purchased', false).order('desire_level', { ascending: false }).limit(8),
-        q('child_registry').order('created_at', { ascending: false }).limit(5)
+        q('child_registry').order('created_at', { ascending: false }).limit(5),
+        q('idea_bank').in('status', ['raw', 'exploring']).order('created_at', { ascending: false }).limit(15),
+        q('income_sources').eq('is_active', true)
     ])
 
     const ctx = ctxRes.data
@@ -169,6 +173,8 @@ export async function buildBrainSnapshot(): Promise<string> {
     const media = mediaRes.data || []
     const wishlist = wishlistRes.data || []
     const child = childRes.data || []
+    const ideas = ideasRes.data || []
+    const incomeSources = incomeSourcesRes.data || []
 
     const L: string[] = []
 
@@ -260,9 +266,32 @@ export async function buildBrainSnapshot(): Promise<string> {
     if (biggest.length) {
         L.push(`- Gastos más grandes del mes: ${biggest.map((f: any) => `${f.description} ${money(Number(f.amount))}`).join(' | ')}`)
     }
-    if (debts.length) {
-        const totalDebt = debts.reduce((s: number, d: any) => s + Number(d.remaining_amount), 0)
-        L.push(`- Deudas: total pendiente ${money(totalDebt)} → ${debts.map((d: any) => `${d.creditor} ${money(Number(d.remaining_amount))}${d.interest_rate ? ` (${d.interest_rate}%)` : ''}`).join(' | ')}`)
+    const openDebts = debts.filter((d: any) => Number(d.remaining_amount) > 0)
+    if (openDebts.length) {
+        const totalDebt = openDebts.reduce((s: number, d: any) => s + Number(d.remaining_amount), 0)
+        const dailyBurn = openDebts.reduce((s: number, d: any) => s + dailyInterestCost(d), 0)
+        L.push(`- Deudas: total pendiente ${money(totalDebt)}${dailyBurn > 0 ? ` · le corren ${money(dailyBurn)} de interés POR DÍA (${money(dailyBurn * 30)} al mes)` : ''}`)
+        for (const d of openDebts) {
+            const daily = dailyRatePct(d)
+            const src = rateSource(d)
+            const bits = [`  - ${d.creditor} (${d.kind || 'otro'}): ${money(Number(d.remaining_amount))}`]
+            if (src === 'sin_datos') bits.push('TASA DESCONOCIDA, no se puede priorizar a ciegas')
+            else bits.push(`${daily.toFixed(3)}%/día ≈ ${dailyToMonthlyPct(daily).toFixed(1)}%/mes (tasa ${src})`)
+            if (d.plan_active && d.plan_installments) {
+                const left = Number(d.plan_installments) - Number(d.plan_installments_paid || 0)
+                bits.push(`EN PLAN: ${left} cuotas de ${money(Number(d.plan_installment_amount || 0))}`)
+            }
+            if (d.due_day) bits.push(`vence el ${d.due_day}`)
+            L.push(bits.join(' · '))
+        }
+    }
+
+    if (incomeSources.length) {
+        const monthly = (s: any) => Number(s.amount || 0) / Math.max(Number(s.frequency_months || 1), 1)
+        const floor = incomeSources.filter((s: any) => s.confidence === 'confirmada').reduce((acc: number, s: any) => acc + monthly(s), 0)
+        const ceiling = incomeSources.reduce((acc: number, s: any) => acc + monthly(s), 0)
+        L.push(`- Ingresos: piso ${money(floor)} (solo lo confirmado) / techo ${money(ceiling)} (si entra todo)`)
+        L.push(`  - Fuentes: ${incomeSources.map((s: any) => `${s.name} ${money(Number(s.amount))} (${s.kind}, ${s.confidence}${s.kind === 'installments' && s.installments_total ? `, pago ${Number(s.installments_paid) + 1}/${s.installments_total}` : ''})`).join(' | ')}`)
     }
     if (goals.length) {
         L.push(`- Metas financieras: ${goals.map((g: any) => `${g.title} ${money(Number(g.current_amount))}/${money(Number(g.target_amount))}`).join(' | ')}`)
@@ -353,6 +382,9 @@ export async function buildBrainSnapshot(): Promise<string> {
     L.push(`\n## ÚLTIMOS INGRESOS AL SEGUNDO CEREBRO`)
     if (notes.length) {
         L.push(`- Vaciado mental sin procesar (${notes.length}): ${notes.slice(0, 10).map((n: any) => `"${trim(n.content, 140)}"`).join(' | ')}`)
+    }
+    if (ideas.length) {
+        L.push(`- Banco de ideas sin ejecutar (${ideas.length}): ${ideas.slice(0, 10).map((i: any) => `"${trim(i.title, 90)}"${i.impact ? ` [impacto ${i.impact}/5, esfuerzo ${i.effort ?? '?'}/5]` : ''}`).join(' | ')}`)
     }
     if (wins.length) {
         L.push(`- Victorias diarias: ${wins.slice(0, 6).map((w: any) => `${w.date}: ${trim(w.win, 100)}`).join(' | ')}`)

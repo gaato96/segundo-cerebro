@@ -52,6 +52,41 @@ export function getLocalDateStr(date: Date = new Date(), timeZone: string = 'Ame
     return `${yr}-${mo}-${da}`
 }
 
+/** Returns the hour (0-23) in the target timezone */
+export function getLocalHour(date: Date = new Date(), timeZone: string = 'America/Argentina/Buenos_Aires'): number {
+    const formatter = new Intl.DateTimeFormat('en-US', { timeZone, hour: '2-digit', hour12: false })
+    const hour = Number(formatter.format(date))
+    return Number.isNaN(hour) ? 0 : hour % 24
+}
+
+/**
+ * El día "lógico" del Segundo Cerebro.
+ *
+ * El día no termina a las 00:00 sino cuando el usuario se va a dormir. Si son
+ * las 01:30 y el corte está en 4, esto devuelve la fecha de AYER: el cierre del
+ * día, el compromiso y el ritual siguen apuntando al día que estás terminando.
+ */
+export function getLogicalDateStr(
+    cutoffHour: number = 4,
+    date: Date = new Date(),
+    timeZone: string = 'America/Argentina/Buenos_Aires'
+): string {
+    const calendarDate = getLocalDateStr(date, timeZone)
+    const cutoff = Math.min(Math.max(Math.trunc(cutoffHour) || 0, 0), 12)
+    if (cutoff === 0) return calendarDate
+    return getLocalHour(date, timeZone) < cutoff
+        ? addDaysToDateStr(calendarDate, -1)
+        : calendarDate
+}
+
+/** Lunes de la semana a la que pertenece una fecha YYYY-MM-DD. */
+export function getWeekStartStr(dateStr: string): string {
+    const [y, m, d] = dateStr.split('-').map(Number)
+    const dt = new Date(y, m - 1, d)
+    const isoDay = dt.getDay() === 0 ? 7 : dt.getDay()
+    return addDaysToDateStr(dateStr, 1 - isoDay)
+}
+
 /** Returns YYYY-MM in the target timezone */
 export function getLocalMonthYearStr(date: Date = new Date(), timeZone: string = 'America/Argentina/Buenos_Aires'): string {
     return getLocalDateStr(date, timeZone).slice(0, 7)
@@ -153,6 +188,9 @@ export function isHabitScheduledForDate(habit: any, dateStr: string): boolean {
     const ft = habit.frequency_type || 'daily'
     if (ft === 'daily') return true
     if (ft === 'x_per_day') return true
+    // "X veces por semana" no fija días: está disponible cualquier día hasta
+    // que se completa el cupo semanal. El cupo se controla aparte, con los logs.
+    if (ft === 'x_per_week') return true
     if (ft === 'custom_days') {
         const [year, month, day] = dateStr.split('-').map(Number)
         const d = new Date(year, month - 1, day)

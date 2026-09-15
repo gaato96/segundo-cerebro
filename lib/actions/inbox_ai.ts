@@ -14,7 +14,7 @@ import { runAction, type ActionResult } from '@/lib/actionResult'
  * y vos confirmás. La IA nunca escribe sola en tus tablas.
  */
 
-export type NoteDestination = 'task' | 'event' | 'journal' | 'wishlist' | 'note' | 'discard'
+export type NoteDestination = 'task' | 'event' | 'journal' | 'wishlist' | 'idea' | 'note' | 'discard'
 
 export interface NoteSuggestion {
     note_id: string
@@ -39,6 +39,7 @@ const DESTINATIONS_DOC = `
 - "event": hay una fecha y hora específicas (reunión, turno, cumpleaños).
 - "journal": es una reflexión, un estado de ánimo o algo que pasó. No hay acción.
 - "wishlist": es algo que quiere comprar.
+- "idea": es una idea, un proyecto posible, algo que se le ocurrió y podría hacer algún día. NO se descarta: va al Banco de Ideas para volver a mirarla.
 - "note": información de referencia que conviene guardar pero no es ninguna de las anteriores.
 - "discard": es ruido, quedó viejo o ya no aplica.
 `
@@ -93,6 +94,7 @@ Reglas:
 - Si no hay fecha clara, dejá las fechas en null. No inventes.
 - priority: 1 alta, 2 media, 3 baja. Solo para tareas.
 - category: "Work" si es del trabajo o de clientes, "Personal" si no.
+- Si es una idea o un proyecto posible, usá "idea", NUNCA "discard". Descartar es solo para ruido real o cosas que ya vencieron.
 - "reason" es una sola frase corta explicando por qué elegiste ese destino.
 - Español rioplatense.
 
@@ -202,10 +204,24 @@ export async function applyInboxSuggestion(suggestion: NoteSuggestion) {
             break
         }
 
+        case 'idea': {
+            const { error } = await supabase.from('idea_bank').insert({
+                user_id: user.id,
+                title: suggestion.title.slice(0, 200),
+                content: suggestion.description || note.content,
+                category: suggestion.category === 'Work' ? 'Trabajo' : 'Personal',
+                source: 'inbox',
+                source_note_id: suggestion.note_id
+            })
+            if (error) throw error
+            break
+        }
+
         case 'note':
         case 'discard':
         default:
             // No se crea nada: solo se saca del inbox.
+            // Igual queda visible en /ideas > Archivo de capturas: nada se borra.
             break
     }
 
@@ -223,6 +239,7 @@ export async function applyInboxSuggestion(suggestion: NoteSuggestion) {
     if (markError) throw markError
 
     revalidatePath('/inbox')
+    revalidatePath('/ideas')
     revalidatePath('/tasks')
     revalidatePath('/calendar')
     revalidatePath('/')

@@ -3,8 +3,9 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Target, Sparkles, Plus, CheckCircle2, Circle, Clock, Flame, Calendar, Trash2, Edit2, X, ChevronRight, CheckSquare, Trophy } from 'lucide-react'
-import { ObjectiveItem, createObjective, updateObjectiveProgress, deleteObjective } from '@/lib/actions/okrs'
+import { ObjectiveItem, KeyResult, createObjective, updateObjectiveProgress, deleteObjective, updateKeyResults } from '@/lib/actions/okrs'
 import { DreamItem, createDream, deleteDream } from '@/lib/actions/dreams'
+import { ObjectiveSuggester } from '@/components/okrs/ObjectiveSuggester'
 
 interface OKRsClientProps {
     objectives: ObjectiveItem[]
@@ -40,6 +41,26 @@ export function OKRsClient({ objectives: initialObjectives, linkedTasks, dreams:
     const overallProgress = objectives.length > 0
         ? Math.round(objectives.reduce((acc, o) => acc + (o.progress_pct || 0), 0) / objectives.length)
         : 0
+
+    /**
+     * Mover un resultado clave recalcula el progreso del objetivo solo: el
+     * progreso deja de ser un slider que movés a ojo y pasa a salir de números.
+     */
+    async function handleKeyResultChange(obj: ObjectiveItem, index: number, current: number) {
+        const krs = [...(obj.key_results || [])]
+        if (!krs[index]) return
+        krs[index] = { ...krs[index], current }
+
+        const ratios = krs.filter(k => k.target > 0).map(k => Math.min(k.current / k.target, 1))
+        const progress = ratios.length ? Math.round((ratios.reduce((a, b) => a + b, 0) / ratios.length) * 100) : obj.progress_pct
+
+        setObjectives(prev => prev.map(o =>
+            o.id === obj.id
+                ? { ...o, key_results: krs, progress_pct: progress, status: progress >= 100 ? 'Completed' : o.status }
+                : o
+        ))
+        await updateKeyResults(obj.id, krs)
+    }
 
     async function handleProgressChange(id: string, pct: number) {
         setObjectives(prev => prev.map(o => o.id === id ? { ...o, progress_pct: pct, status: pct >= 100 ? 'Completed' : 'Active' } : o))
@@ -116,6 +137,9 @@ export function OKRsClient({ objectives: initialObjectives, linkedTasks, dreams:
                     </button>
                 </div>
             </div>
+
+            {/* El estratega propone objetivos SMART y los aterriza en tareas y hábitos */}
+            <ObjectiveSuggester />
 
             {/* Vision Board / Dreams Section */}
             <div className="space-y-3">
@@ -269,6 +293,39 @@ export function OKRsClient({ objectives: initialObjectives, linkedTasks, dreams:
                                         </button>
                                     </div>
                                 </div>
+
+                                {/* Resultados clave: de acá sale el progreso real */}
+                                {(obj.key_results?.length ?? 0) > 0 && (
+                                    <div className="space-y-2">
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                                            Resultados clave
+                                        </span>
+                                        {(obj.key_results || []).map((kr: KeyResult, i: number) => {
+                                            const pct = kr.target > 0 ? Math.min((kr.current / kr.target) * 100, 100) : 0
+                                            return (
+                                                <div key={i} className="bg-secondary/30 border border-border/50 rounded-xl p-3 space-y-1.5">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span className="text-xs text-white">{kr.title}</span>
+                                                        <div className="flex items-center gap-1 shrink-0">
+                                                            <input
+                                                                type="number"
+                                                                value={kr.current}
+                                                                onChange={(e) => handleKeyResultChange(obj, i, Number(e.target.value) || 0)}
+                                                                className="w-16 bg-black/30 border border-white/10 rounded-lg px-2 py-1 text-[11px] text-white font-mono text-right focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                                            />
+                                                            <span className="text-[11px] text-muted-foreground font-mono">
+                                                                / {kr.target} {kr.unit}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="h-1.5 bg-black/40 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                )}
 
                                 {/* Progress Slider Bar */}
                                 <div className="space-y-1.5 pt-2">

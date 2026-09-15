@@ -7,7 +7,7 @@ import {
     LayoutDashboard, CheckSquare, Flame, DollarSign,
     Baby, Tv, Target, BookOpen, Heart, Utensils,
     Inbox, Sun, CalendarRange, Calendar, Sparkles,
-    MessageCircleHeart, Dumbbell, Moon, LineChart, Settings
+    MessageCircleHeart, Dumbbell, Moon, LineChart, Settings, Lightbulb
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -19,6 +19,7 @@ const bottomNavItems = [
     { href: '/planner', icon: CalendarRange, label: 'Planner' },
     { href: '/calendar', icon: Calendar, label: 'Calendario' },
     { href: '/inbox', icon: Inbox, label: 'Inbox' },
+    { href: '/ideas', icon: Lightbulb, label: 'Ideas' },
     { href: '/tasks', icon: CheckSquare, label: 'Tareas' },
     { href: '/habits', icon: Flame, label: 'Hábitos' },
     { href: '/meals/nutrition', icon: Sparkles, label: 'Nutrición' },

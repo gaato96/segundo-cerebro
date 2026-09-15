@@ -8,7 +8,7 @@ import {
     DollarSign, Baby, Tv, Target, BookOpen,
     Heart, LogOut, ChevronLeft, ChevronRight,
     Utensils, Inbox, Sun, CalendarRange, Calendar,
-    Sparkles, MessageCircleHeart, Dumbbell, Moon, LineChart, Settings
+    Sparkles, MessageCircleHeart, Dumbbell, Moon, LineChart, Settings, Lightbulb
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useState } from 'react'
@@ -22,6 +22,7 @@ const navItems = [
     { href: '/planner', icon: CalendarRange, label: 'Planificador' },
     { href: '/calendar', icon: Calendar, label: 'Calendario' },
     { href: '/inbox', icon: Inbox, label: 'Inbox' },
+    { href: '/ideas', icon: Lightbulb, label: 'Banco de Ideas' },
     { href: '/tasks', icon: CheckSquare, label: 'Tareas' },
     { href: '/habits', icon: Flame, label: 'Hábitos' },
     { href: '/meals/nutrition', icon: Sparkles, label: 'Nutricionista IA' },

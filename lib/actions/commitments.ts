@@ -3,7 +3,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { generateText, parseJSON } from '@/lib/ai'
-import { getLocalDateStr, addDaysToDateStr } from '@/lib/utils'
+import { addDaysToDateStr } from '@/lib/utils'
+import { getAppToday } from '@/lib/actions/day'
 import { buildBrainSnapshot } from '@/lib/actions/assistant'
 import { runAction, type ActionResult } from '@/lib/actionResult'
 
@@ -43,7 +44,7 @@ export async function getCommitment(date: string) {
 }
 
 export async function getTodayCommitment() {
-    return getCommitment(getLocalDateStr())
+    return getCommitment(await getAppToday())
 }
 
 export async function getCommitmentHistory(days = 30) {
@@ -51,7 +52,7 @@ export async function getCommitmentHistory(days = 30) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
 
-    const from = addDaysToDateStr(getLocalDateStr(), -days)
+    const from = addDaysToDateStr(await getAppToday(), -days)
 
     const { data, error } = await supabase
         .from('daily_commitments')
@@ -122,7 +123,7 @@ export async function getCommitmentStats() {
     const partial = history.filter((c: any) => c.status === 'partial').length
 
     // Racha: días consecutivos hacia atrás con compromiso cumplido (done o partial)
-    const today = getLocalDateStr()
+    const today = await getAppToday()
     const byDate = new Map(history.map((c: any) => [c.date, c]))
     let streak = 0
     for (let i = 0; i < 60; i++) {
@@ -169,7 +170,7 @@ export async function suggestTomorrowCommitment(
 }
 
 async function buildCommitmentSuggestion(targetDate?: string): Promise<CommitmentSuggestion> {
-    const date = targetDate || addDaysToDateStr(getLocalDateStr(), 1)
+    const date = targetDate || addDaysToDateStr(await getAppToday(), 1)
     const snapshot = await buildBrainSnapshot()
 
     const prompt = `
