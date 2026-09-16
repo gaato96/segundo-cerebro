@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Check, Circle, Flame, Calendar as CalendarIcon, MoreVertical, CheckSquare } from 'lucide-react'
+import { Check, Circle, Flame, Calendar as CalendarIcon, MoreVertical, CheckSquare, AlertCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import confetti from 'canvas-confetti'
-import { getPriorityColor, getPriorityLabel, formatDate } from '@/lib/utils'
+import { getPriorityColor, getPriorityLabel, formatDate, isTaskOverdue } from '@/lib/utils'
 import { format } from 'date-fns'
 
 interface Task {
@@ -191,7 +191,9 @@ export function DailySnapshot({ tasks: initialTasks, habits, completedHabitIds: 
                                 <p className="text-xs text-muted-foreground mt-1">Disfrutá tu tiempo libre o adelantá tareas.</p>
                             </motion.div>
                         ) : (
-                            tasks.map((task) => (
+                            tasks.map((task) => {
+                                const overdue = isTaskOverdue(task.due_date)
+                                return (
                                 <motion.div
                                     key={task.id}
                                     layout
@@ -199,7 +201,11 @@ export function DailySnapshot({ tasks: initialTasks, habits, completedHabitIds: 
                                     animate={{ opacity: 1, scale: 1 }}
                                     exit={{ opacity: 0, scale: 0.95, x: 20 }}
                                     whileHover={{ scale: 1.01 }}
-                                    className="group flex gap-3 p-4 rounded-xl bg-secondary/30 border border-border/50 hover:bg-secondary/50 transition-colors"
+                                    className={`group flex gap-3 p-4 rounded-xl border transition-colors ${
+                                        overdue
+                                            ? 'bg-red-500/5 border-red-500/30 hover:bg-red-500/10'
+                                            : 'bg-secondary/30 border-border/50 hover:bg-secondary/50'
+                                    }`}
                                 >
                                     <button
                                         onClick={() => handleCompleteTask(task.id)}
@@ -228,8 +234,14 @@ export function DailySnapshot({ tasks: initialTasks, habits, completedHabitIds: 
                                                     {task.energy_level === 'Deep Work' ? '⚡' : task.energy_level === 'Low Energy' ? '🔋' : '📱'} {task.energy_level}
                                                 </span>
                                             )}
+                                            {overdue && (
+                                                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-red-500/15 text-red-400 border border-red-500/30 flex items-center gap-1 ml-auto">
+                                                    <AlertCircle className="w-3 h-3" />
+                                                    Vencida
+                                                </span>
+                                            )}
                                             {task.due_date && (
-                                                 <span className="text-[10px] flex items-center gap-1 text-muted-foreground ml-auto">
+                                                 <span className={`text-[10px] flex items-center gap-1 ${overdue ? 'text-red-400' : 'text-muted-foreground ml-auto'}`}>
                                                      <CalendarIcon className="w-3 h-3" />
                                                      {formatDate(task.due_date).substring(0, 5)}
                                                  </span>
@@ -237,7 +249,8 @@ export function DailySnapshot({ tasks: initialTasks, habits, completedHabitIds: 
                                         </div>
                                     </div>
                                 </motion.div>
-                            ))
+                                )
+                            })
                         )}
                     </AnimatePresence>
                 </div>

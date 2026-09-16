@@ -1,8 +1,8 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Check, Circle, Clock, GripVertical } from 'lucide-react'
-import { getPriorityColor, getPriorityLabel } from '@/lib/utils'
+import { Check, Circle, Clock, GripVertical, AlertCircle } from 'lucide-react'
+import { getPriorityColor, getPriorityLabel, isTaskOverdue, formatDate } from '@/lib/utils'
 import { useDraggable } from '@dnd-kit/core'
 
 interface TaskDragCardProps {
@@ -23,12 +23,18 @@ export function TaskDragCard({ task, onComplete, onUnassign }: TaskDragCardProps
         opacity: isDragging ? 0.4 : 1,
     } : undefined
 
+    const overdue = isTaskOverdue(task.due_date, task.status)
+
     return (
         <div
             ref={setNodeRef}
             style={style}
-            className={`group flex flex-col gap-2 p-2.5 rounded-xl bg-secondary/40 border transition-all text-xs select-none ${
-                isDragging ? 'border-indigo-500 bg-indigo-500/10 shadow-lg' : 'border-border/50 hover:bg-secondary/70'
+            className={`group flex flex-col gap-2 p-2.5 rounded-xl border transition-all text-xs select-none ${
+                isDragging
+                    ? 'border-indigo-500 bg-indigo-500/10 shadow-lg'
+                    : overdue
+                        ? 'bg-red-500/5 border-red-500/30 hover:bg-red-500/10'
+                        : 'bg-secondary/40 border-border/50 hover:bg-secondary/70'
             }`}
         >
             <div className="flex items-start justify-between gap-1.5">
@@ -66,12 +72,17 @@ export function TaskDragCard({ task, onComplete, onUnassign }: TaskDragCardProps
                         {task.category}
                     </span>
                 )}
-                {task.estimated_minutes && (
+                {overdue ? (
+                    <span className="px-1.5 py-0.5 rounded-full font-bold bg-red-500/15 text-red-400 border border-red-500/30 flex items-center gap-0.5 ml-auto">
+                        <AlertCircle className="w-2.5 h-2.5" />
+                        Vencida {formatDate(task.due_date).slice(0, 5)}
+                    </span>
+                ) : task.estimated_minutes ? (
                     <span className="font-mono text-indigo-300 flex items-center gap-0.5 ml-auto">
                         <Clock className="w-2.5 h-2.5" />
                         {task.estimated_minutes}m
                     </span>
-                )}
+                ) : null}
             </div>
         </div>
     )

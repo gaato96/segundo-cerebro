@@ -283,9 +283,7 @@ export async function syncRecurringTasks(userId?: string, force = false) {
         .eq('is_recurring', true)
         .is('recurring_parent_id', null)
 
-    if (!templates || templates.length === 0) return
-
-    for (const template of templates) {
+    for (const template of templates || []) {
         // 2. Mark overdue pending instances for this template as 'Missed'
         await supabase
             .from('tasks')
@@ -350,6 +348,44 @@ export async function syncRecurringTasks(userId?: string, force = false) {
                 }
             }
         }
+    }
+
+    await unstickOverdueTasks(supabase, currentUserId, todayStr)
+}
+
+/**
+ * Tareas normales (no recurrentes) que quedaron planificadas para un día que
+ * ya pasó sin completarse.
+ *
+ * Antes se quedaban ancladas a `planned_date` para siempre: no aparecían en
+ * "pendientes de hoy" (esa fecha ya no es hoy) ni en el backlog del
+ * planificador (`planned_date` no es null), y solo se las podía encontrar
+ * navegando el planificador hasta la semana exacta en la que se planificaron.
+ *
+ * Esto las desancla: vuelven al backlog (`planned_date = null`) y, si no
+ * tenían una fecha límite propia, el día planificado pasa a serlo —así
+ * quedan visibles como vencidas en vez de perderse.
+ */
+async function unstickOverdueTasks(supabase: any, userId: string, todayStr: string) {
+    const { data: stuck } = await supabase
+        .from('tasks')
+        .select('id, due_date, planned_date')
+        .eq('user_id', userId)
+        .in('status', ['Todo', 'InProgress'])
+        .is('recurring_parent_id', null)
+        .not('planned_date', 'is', null)
+        .lt('planned_date', todayStr)
+
+    for (const task of stuck || []) {
+        await supabase
+            .from('tasks')
+            .update({
+                planned_date: null,
+                due_date: task.due_date || task.planned_date,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', task.id)
+            .eq('user_id', userId)
     }
 }
 

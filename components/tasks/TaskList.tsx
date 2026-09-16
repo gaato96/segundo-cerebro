@@ -2,9 +2,9 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Check, Circle, Trash2, Calendar as CalendarIcon, GripVertical, Bell, Repeat } from 'lucide-react'
+import { Check, Circle, Trash2, Calendar as CalendarIcon, GripVertical, Bell, Repeat, AlertCircle } from 'lucide-react'
 import { updateTaskStatus, deleteTask } from '@/lib/actions/tasks'
-import { getPriorityColor, getPriorityLabel, formatDate } from '@/lib/utils'
+import { getPriorityColor, getPriorityLabel, formatDate, isTaskOverdue } from '@/lib/utils'
 import confetti from 'canvas-confetti'
 import { TaskEditModal } from './TaskEditModal'
 
@@ -57,7 +57,9 @@ export function TaskList({ pendingTasks, completedTasks }: TaskListProps) {
         })
     }
 
-    const renderTask = (task: any, isCompleted: boolean = false) => (
+    const renderTask = (task: any, isCompleted: boolean = false) => {
+        const overdue = !isCompleted && isTaskOverdue(task.due_date, task.status)
+        return (
         <motion.div
             layout
             key={task.id}
@@ -67,7 +69,9 @@ export function TaskList({ pendingTasks, completedTasks }: TaskListProps) {
             whileHover={{ scale: 1.005 }}
             className={`group flex items-start gap-3 p-4 rounded-xl border transition-all cursor-pointer ${isCompleted
                 ? 'bg-secondary/20 border-border/30 opacity-60'
-                : 'glass hover:bg-secondary/50 border-border/50 shadow-sm'
+                : overdue
+                    ? 'glass hover:bg-red-500/5 border-red-500/30 shadow-sm'
+                    : 'glass hover:bg-secondary/50 border-border/50 shadow-sm'
                 }`}
             onClick={(e) => {
                 const target = e.target as HTMLElement
@@ -136,11 +140,15 @@ export function TaskList({ pendingTasks, completedTasks }: TaskListProps) {
                         </span>
                     )}
 
+                    {overdue && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-red-500/15 text-red-400 border border-red-500/30 flex items-center gap-1 ml-auto">
+                            <AlertCircle className="w-3 h-3" />
+                            Vencida
+                        </span>
+                    )}
+
                     {task.due_date && (
-                        <span className={`text-[10px] flex items-center gap-1 ml-auto ${!isCompleted && new Date(task.due_date) < new Date() && new Date(task.due_date).toDateString() !== new Date().toDateString()
-                            ? 'text-red-400 font-medium'
-                            : 'text-muted-foreground'
-                            }`}>
+                        <span className={`text-[10px] flex items-center gap-1 ${overdue ? 'text-red-400 font-medium' : 'text-muted-foreground ml-auto'}`}>
                             <CalendarIcon className="w-3 h-3" />
                             {formatDate(task.due_date)}
                         </span>
@@ -164,7 +172,8 @@ export function TaskList({ pendingTasks, completedTasks }: TaskListProps) {
                 </button>
             </div>
         </motion.div>
-    )
+        )
+    }
 
     return (
         <div className="space-y-8">

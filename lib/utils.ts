@@ -144,6 +144,20 @@ export function getPriorityColor(priority: number) {
     }
 }
 
+/**
+ * true si una tarea tiene fecha límite vencida y todavía no se completó.
+ *
+ * Centralizado acá porque antes cada componente comparaba `new Date(due_date)`
+ * contra `new Date()` a mano, lo que arrastra el huso horario del navegador
+ * (una tarea con vencimiento hoy podía marcarse vencida a la tarde). Al ser
+ * `due_date` una columna DATE (YYYY-MM-DD), comparar como texto contra
+ * `getLocalDateStr()` es exacto y no depende de a qué hora del día se mire.
+ */
+export function isTaskOverdue(dueDate: string | null | undefined, status?: string | null): boolean {
+    if (!dueDate || status === 'Done') return false
+    return dueDate.slice(0, 10) < getLocalDateStr()
+}
+
 export function getStatusLabel(status: string) {
     const labels: Record<string, string> = {
         'Todo': 'Pendiente',

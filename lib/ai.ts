@@ -8,14 +8,25 @@ import Groq from 'groq-sdk'
  * en la cuenta) y cae a Groq/Llama si Gemini falla por completo.
  */
 
+// gemini-2.0-flash y gemini-1.5-flash fueron dados de baja por Google (404
+// "no longer available"): no dejarlos en la cadena, porque cada intento
+// muerto es una llamada perdida antes de llegar al modelo que sí responde.
 const GEMINI_MODELS = [
     process.env.GEMINI_MODEL,
+    'gemini-3.8-flash',
+    'gemini-3.7-flash',
     'gemini-3.6-flash',
-    'gemini-2.0-flash',
-    'gemini-1.5-flash'
+    'gemini-3.5-flash'
 ].filter(Boolean) as string[]
 
-const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile'
+// llama-3.3-70b-versatile pasó a ser solo para cuentas enterprise de Groq;
+// en developer tier devuelve 404. openai/gpt-oss-120b es el reemplazo que
+// recomienda Groq para esa migración.
+const GROQ_MODELS = [
+    process.env.GROQ_MODEL,
+    'openai/gpt-oss-120b',
+    'openai/gpt-oss-20b'
+].filter(Boolean) as string[]
 
 export interface GenerateOptions {
     /** Instrucción de sistema (personalidad / rol). */
@@ -87,16 +98,15 @@ export async function generateText(prompt: string, options: GenerateOptions = {}
                     generationConfig: {
                         temperature,
                         maxOutputTokens,
-                        ...(json ? {
-                            responseMimeType: 'application/json',
-                            // Sin esto, los modelos "thinking" (gemini-3.x) gastan una
-                            // cantidad variable de maxOutputTokens "pensando" antes de
-                            // escribir el JSON, y con prompts largos eso deja poco o
-                            // nada de presupuesto para la respuesta real (JSON truncado).
-                            // Estas respuestas son formateo estructurado, no necesitan
-                            // razonamiento visible.
-                            thinkingConfig: { thinkingBudget: 0 }
-                        } : {})
+                        // Los modelos "thinking" (gemini-3.x) gastan una cantidad
+                        // variable de maxOutputTokens "pensando" antes de escribir la
+                        // respuesta. Esto pasaba antes SOLO en llamadas con json:true,
+                        // pero el chat del copiloto (json:false) se quedaba sin tokens
+                        // de la misma forma y el usuario veía "no me pude conectar".
+                        // Ninguno de los usos de este módulo necesita razonamiento
+                        // visible, así que se desactiva siempre.
+                        thinkingConfig: { thinkingBudget: 0 },
+                        ...(json ? { responseMimeType: 'application/json' } : {})
                     } as any
                 })
                 const result = await model.generateContent(prompt)
@@ -113,23 +123,25 @@ export async function generateText(prompt: string, options: GenerateOptions = {}
 
     const groqKey = process.env.GROQ_API_KEY
     if (groqKey) {
-        try {
-            const groq = new Groq({ apiKey: groqKey })
-            const completion = await groq.chat.completions.create({
-                model: GROQ_MODEL,
-                temperature,
-                max_tokens: maxOutputTokens,
-                ...(json ? { response_format: { type: 'json_object' as const } } : {}),
-                messages: [
-                    ...(system ? [{ role: 'system' as const, content: system }] : []),
-                    { role: 'user' as const, content: prompt }
-                ]
-            })
-            const text = completion.choices[0]?.message?.content?.trim()
-            if (text) return text
-            errors.push(`${GROQ_MODEL}: respuesta vacia`)
-        } catch (e: any) {
-            errors.push(`${GROQ_MODEL}: ${sanitize(String(e?.message || e))}`)
+        const groq = new Groq({ apiKey: groqKey })
+        for (const modelName of GROQ_MODELS) {
+            try {
+                const completion = await groq.chat.completions.create({
+                    model: modelName,
+                    temperature,
+                    max_tokens: maxOutputTokens,
+                    ...(json ? { response_format: { type: 'json_object' as const } } : {}),
+                    messages: [
+                        ...(system ? [{ role: 'system' as const, content: system }] : []),
+                        { role: 'user' as const, content: prompt }
+                    ]
+                })
+                const text = completion.choices[0]?.message?.content?.trim()
+                if (text) return text
+                errors.push(`${modelName}: respuesta vacia`)
+            } catch (e: any) {
+                errors.push(`${modelName}: ${sanitize(String(e?.message || e))}`)
+            }
         }
     } else {
         errors.push('Groq: falta GROQ_API_KEY')
