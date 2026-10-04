@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { MessageCircleHeart, X, Maximize2, Loader2, Sun } from 'lucide-react'
+import { MessageCircleHeart, X, Maximize2, Loader2, Sun, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { AssistantChat, type ChatMessage } from './AssistantChat'
-import { getDailyBriefing } from '@/lib/actions/assistant'
+import { getDailyBriefing, getSessionMessages } from '@/lib/actions/assistant'
 import type { PersonaId } from '@/lib/assistantPersonas'
 
 const STORAGE_KEY = 'sc_assistant_persona'
+const SESSION_KEY = 'sc_assistant_session'
 
 /**
  * Botón flotante del Copiloto: está disponible en todas las páginas.
@@ -18,13 +19,58 @@ export function AssistantLauncher() {
     const [open, setOpen] = useState(false)
     const [persona, setPersona] = useState<PersonaId>('terapeuta')
     const [sessionId, setSessionId] = useState<string | null>(null)
+    // El hilo vive acá y no en el chat: el panel se desmonta al cerrarse y
+    // antes cada vez que se volvía a abrir la charla aparecía vacía.
+    const [messages, setMessages] = useState<ChatMessage[]>([])
+    const [chatKey, setChatKey] = useState(0)
+    const [restoring, setRestoring] = useState(false)
+    const [restored, setRestored] = useState(false)
     const [briefing, setBriefing] = useState<ChatMessage | null>(null)
     const [briefingLoading, setBriefingLoading] = useState(false)
 
     useEffect(() => {
-        const saved = localStorage.getItem(STORAGE_KEY) as PersonaId | null
-        if (saved) setPersona(saved)
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY) as PersonaId | null
+            if (saved) setPersona(saved)
+        } catch { /* sin storage */ }
     }, [])
+
+    // Al abrir por primera vez (o después de recargar), se retoma la última charla.
+    useEffect(() => {
+        if (!open || restored) return
+        setRestored(true)
+        let savedSession: string | null = null
+        try { savedSession = localStorage.getItem(SESSION_KEY) } catch { /* sin storage */ }
+        if (!savedSession || sessionId) return
+
+        setRestoring(true)
+        getSessionMessages(savedSession)
+            .then((msgs: any[]) => {
+                if (!msgs?.length) return
+                setSessionId(savedSession)
+                setMessages(msgs.map(m => ({ id: m.id, role: m.role, content: m.content, persona: m.persona })))
+                const last = [...msgs].reverse().find(m => m.persona)?.persona as PersonaId | undefined
+                if (last) setPersona(last)
+                setChatKey(k => k + 1)
+            })
+            .catch(() => {
+                try { localStorage.removeItem(SESSION_KEY) } catch { /* sin storage */ }
+            })
+            .finally(() => setRestoring(false))
+    }, [open, restored, sessionId])
+
+    function handleSessionCreated(id: string) {
+        setSessionId(id)
+        try { localStorage.setItem(SESSION_KEY, id) } catch { /* sin storage */ }
+    }
+
+    function newChat() {
+        setSessionId(null)
+        setMessages([])
+        setBriefing(null)
+        setChatKey(k => k + 1)
+        try { localStorage.removeItem(SESSION_KEY) } catch { /* sin storage */ }
+    }
 
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
@@ -40,7 +86,7 @@ export function AssistantLauncher() {
 
     function changePersona(p: PersonaId) {
         setPersona(p)
-        localStorage.setItem(STORAGE_KEY, p)
+        try { localStorage.setItem(STORAGE_KEY, p) } catch { /* sin storage */ }
     }
 
     async function handleBriefing() {
@@ -98,6 +144,13 @@ export function AssistantLauncher() {
 
                                 <div className="flex items-center gap-1">
                                     <button
+                                        onClick={newChat}
+                                        title="Nueva charla"
+                                        className="p-2 text-muted-foreground hover:text-violet-400 transition-colors"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                    </button>
+                                    <button
                                         onClick={handleBriefing}
                                         disabled={briefingLoading}
                                         title="Briefing de hoy"
@@ -106,7 +159,7 @@ export function AssistantLauncher() {
                                         {briefingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sun className="w-4 h-4" />}
                                     </button>
                                     <Link
-                                        href="/asistente"
+                                        href={sessionId ? `/asistente?sesion=${sessionId}` : '/asistente'}
                                         onClick={() => setOpen(false)}
                                         title="Abrir pantalla completa"
                                         className="p-2 text-muted-foreground hover:text-foreground transition-colors"
@@ -122,14 +175,23 @@ export function AssistantLauncher() {
                                 </div>
                             </div>
 
-                            <AssistantChat
-                                sessionId={sessionId}
-                                persona={persona}
-                                injectedMessage={briefing}
-                                onPersonaChange={changePersona}
-                                onSessionCreated={setSessionId}
-                                className="flex-1 min-h-0"
-                            />
+                            {restoring ? (
+                                <div className="flex-1 flex items-center justify-center text-muted-foreground text-xs gap-2">
+                                    <Loader2 className="w-4 h-4 animate-spin" /> Retomando la última charla…
+                                </div>
+                            ) : (
+                                <AssistantChat
+                                    key={chatKey}
+                                    sessionId={sessionId}
+                                    persona={persona}
+                                    initialMessages={messages}
+                                    injectedMessage={briefing}
+                                    onPersonaChange={changePersona}
+                                    onSessionCreated={handleSessionCreated}
+                                    onMessagesChange={setMessages}
+                                    className="flex-1 min-h-0"
+                                />
+                            )}
                         </motion.div>
                     </div>
                 )}

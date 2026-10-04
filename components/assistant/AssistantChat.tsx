@@ -35,6 +35,8 @@ interface AssistantChatProps {
     initialMessages?: ChatMessage[]
     onPersonaChange: (p: PersonaId) => void
     onSessionCreated?: (sessionId: string) => void
+    /** Avisa cada cambio del hilo, para que el padre lo conserve si el chat se desmonta. */
+    onMessagesChange?: (messages: ChatMessage[]) => void
     /** Mensaje inyectado desde afuera (ej: el briefing diario). Se agrega al hilo. */
     injectedMessage?: ChatMessage | null
     /** Oculta el selector de personas (cuando ya está arriba en la página). */
@@ -48,6 +50,7 @@ export function AssistantChat({
     initialMessages = [],
     onPersonaChange,
     onSessionCreated,
+    onMessagesChange,
     injectedMessage = null,
     hidePersonaPicker = false,
     className
@@ -56,15 +59,15 @@ export function AssistantChat({
     const [input, setInput] = useState('')
     const [loading, setLoading] = useState(false)
     const [savedTasks, setSavedTasks] = useState<Set<string>>(new Set())
-    const endRef = useRef<HTMLDivElement>(null)
+    const scrollRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLTextAreaElement>(null)
 
     const p = getPersona(persona)
     const accent = ACCENT[p.accent] || ACCENT.indigo
 
-    useEffect(() => {
-        setMessages(initialMessages)
-    }, [sessionId])
+    // El hilo NO se reinicia cuando cambia sessionId: en una charla nueva el id
+    // llega recién con la primera respuesta, y reiniciar ahí borraba la
+    // conversación en pantalla. Para cambiar de charla, el padre cambia la `key`.
 
     useEffect(() => {
         if (!injectedMessage) return
@@ -72,7 +75,15 @@ export function AssistantChat({
     }, [injectedMessage?.id])
 
     useEffect(() => {
-        endRef.current?.scrollIntoView({ behavior: 'smooth' })
+        onMessagesChange?.(messages)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [messages])
+
+    // Se scrollea solo la lista de mensajes. scrollIntoView movía también la
+    // página entera (y en el celular parecía que el chat se cerraba).
+    useEffect(() => {
+        const el = scrollRef.current
+        if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
     }, [messages, loading])
 
     async function handleSend(preset?: string) {
@@ -140,7 +151,7 @@ export function AssistantChat({
             )}
 
             {/* Mensajes */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+            <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
                 {messages.length === 0 && (
                     <div className="text-center py-6 space-y-3">
                         <div className={cn('w-12 h-12 rounded-2xl flex items-center justify-center mx-auto', accent.bg, accent.text)}>
@@ -240,7 +251,6 @@ export function AssistantChat({
                         </div>
                     </div>
                 )}
-                <div ref={endRef} />
             </div>
 
             {/* Input */}

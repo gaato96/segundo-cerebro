@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
     Plus, Trash2, UserCog, MessagesSquare,
@@ -33,6 +33,19 @@ export function AsistentePageClient({ initialSessions, initialContext }: Props) 
     const [snapshot, setSnapshot] = useState<string>('')
     const [snapshotLoading, setSnapshotLoading] = useState(false)
     const [showSidebar, setShowSidebar] = useState(false)
+    // Cambia solo cuando el usuario abre otra charla o empieza una nueva.
+    // No depende de sessionId: la sesión nueva se crea con el primer mensaje
+    // y remontar el chat en ese momento borraba la conversación.
+    const [chatKey, setChatKey] = useState(0)
+
+    // Desde el panel flotante, "pantalla completa" abre la misma charla.
+    useEffect(() => {
+        const id = new URLSearchParams(window.location.search).get('sesion')
+        if (!id) return
+        const found = initialSessions.find(s => s.id === id)
+        openSession(found || { id, persona: 'terapeuta' }).catch(() => { /* sesión inexistente: queda una charla nueva */ })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     async function openSession(s: any) {
         setLoadingSession(true)
@@ -42,6 +55,7 @@ export function AsistentePageClient({ initialSessions, initialContext }: Props) 
             setSessionId(s.id)
             setPersona(s.persona)
             setMessages(msgs.map((m: any) => ({ id: m.id, role: m.role, content: m.content, persona: m.persona })))
+            setChatKey(k => k + 1)
             setTab('chat')
         } finally {
             setLoadingSession(false)
@@ -52,6 +66,7 @@ export function AsistentePageClient({ initialSessions, initialContext }: Props) 
         setSessionId(null)
         setMessages([])
         setBriefing(null)
+        setChatKey(k => k + 1)
         if (p) setPersona(p)
         setTab('chat')
         setShowSidebar(false)
@@ -215,12 +230,13 @@ export function AsistentePageClient({ initialSessions, initialContext }: Props) 
                             </div>
                         ) : (
                             <AssistantChat
-                                key={sessionId || 'new'}
+                                key={chatKey}
                                 sessionId={sessionId}
                                 persona={persona}
                                 initialMessages={messages}
                                 injectedMessage={briefing}
                                 onPersonaChange={setPersona}
+                                onMessagesChange={setMessages}
                                 onSessionCreated={id => {
                                     setSessionId(id)
                                     setSessions(prev => [
