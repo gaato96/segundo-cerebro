@@ -4,13 +4,14 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     Moon, CalendarCheck, Loader2, Check, Trophy, Heart, Brain,
-    Sparkles, Flame, Scissors, Target, TrendingUp, AlertCircle, Save
+    Sparkles, Flame, Scissors, Target, TrendingUp, AlertCircle, Save, Receipt
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { saveEveningRitual } from '@/lib/actions/evening_ritual'
 import { generateWeeklyReview, saveWeeklyReflection } from '@/lib/actions/weekly_review'
 import { CommitmentWidget } from '@/components/commitments/CommitmentWidget'
-import { cn } from '@/lib/utils'
+import { QuickExpenseTrigger } from '@/components/finances/QuickExpenseButton'
+import { cn, formatCurrency } from '@/lib/utils'
 
 interface Props {
     ritual: any
@@ -22,6 +23,7 @@ interface Props {
     weeklyPlan: any
     initialTab: 'dia' | 'semana'
     appDay: { date: string; calendarDate: string; isAfterMidnight: boolean; cutoffHour: number }
+    daySpend: { total: number; count: number } | null
 }
 
 const RATINGS = [
@@ -34,7 +36,7 @@ const RATINGS = [
 
 export function CierrePageClient({
     ritual, commitment, tomorrow, commitmentStats, ritualStats,
-    weekStart, weeklyPlan, initialTab, appDay
+    weekStart, weeklyPlan, initialTab, appDay, daySpend
 }: Props) {
     const router = useRouter()
     const [tab, setTab] = useState<'dia' | 'semana'>(initialTab)
@@ -170,6 +172,29 @@ export function CierrePageClient({
                         date={appDay.date}
                         isAfterMidnight={appDay.isAfterMidnight}
                     />
+
+                    {/* Gastos del día: el mejor momento para cargar lo que se escapó */}
+                    {daySpend && (
+                        <div className="glass p-4 rounded-2xl border border-emerald-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 shrink-0">
+                                    <Receipt className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-semibold text-foreground">
+                                        {daySpend.count > 0
+                                            ? `Hoy registraste ${formatCurrency(daySpend.total)} en ${daySpend.count} ${daySpend.count === 1 ? 'gasto' : 'gastos'}`
+                                            : 'Hoy no registraste ningún gasto'}
+                                    </p>
+                                    <p className="text-[11px] text-muted-foreground">
+                                        ¿Se te escapó alguno? Café, kiosco, Uber, transferencia...
+                                        {appDay.isAfterMidnight && ' Como ya pasaron las 12, cargalo con fecha "Ayer".'}
+                                    </p>
+                                </div>
+                            </div>
+                            <QuickExpenseTrigger label="Cargar gasto" className="self-start sm:self-auto" />
+                        </div>
+                    )}
 
                     {/* Paso 2: cómo estuvo el día */}
                     <Card icon={Moon} color="indigo" title="¿Cómo estuvo el día?" hint="Sin pensarlo mucho. La primera que se te viene.">

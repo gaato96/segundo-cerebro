@@ -8,7 +8,7 @@ import {
     Search, Loader2, Brain, CheckSquare, Utensils, Target, Calendar,
     Heart, Tv, BookOpen, LayoutDashboard, Sun, Moon, CalendarRange,
     Inbox, Flame, DollarSign, Baby, Sparkles, Dumbbell, MessageCircleHeart,
-    Bell, Plus, LineChart
+    Bell, Plus, LineChart, Receipt
 } from 'lucide-react'
 import { globalSearch, type SearchResult } from '@/lib/actions/search'
 import { cn } from '@/lib/utils'
@@ -34,7 +34,7 @@ const NAV_ITEMS = [
     { label: 'Entrenamiento', url: '/entrenamiento', icon: Dumbbell, keywords: 'gimnasio rutina soga plan' },
     { label: 'Nutricionista IA', url: '/meals/nutrition', icon: Sparkles, keywords: 'dieta calorias peso' },
     { label: 'Comidas', url: '/meals', icon: Utensils, keywords: 'recetas menu' },
-    { label: 'Finanzas', url: '/finances', icon: DollarSign, keywords: 'plata gastos ingresos deudas' },
+    { label: 'Finanzas', url: '/finances', icon: DollarSign, keywords: 'plata gastos ingresos deudas inversion ahorro reparto' },
     { label: 'Indicadores', url: '/insights', icon: LineChart, keywords: 'correlaciones patrones datos animo' },
     { label: 'Julián', url: '/julian', icon: Baby, keywords: 'hijo salud vacunas' },
     { label: 'Objetivos', url: '/okrs', icon: Target, keywords: 'okr metas sueños' },
@@ -155,6 +155,12 @@ export function CommandPalette() {
                                             label="Vaciado mental"
                                             hint="Ctrl+Shift+K"
                                             onSelect={() => { setOpen(false); window.dispatchEvent(new CustomEvent('sc:quick-capture')) }}
+                                        />
+                                        <Item
+                                            icon={Receipt}
+                                            label="Registrar gasto"
+                                            hint="Ctrl+Shift+L"
+                                            onSelect={() => { setOpen(false); window.dispatchEvent(new CustomEvent('sc:quick-expense')) }}
                                         />
                                         <Item icon={Plus} label="Nueva tarea" onSelect={() => go('/tasks')} />
                                         <Item icon={Moon} label="Cerrar el día" onSelect={() => go('/cierre')} />

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { getLocalMonthYearStr } from '@/lib/utils'
 
 // type: 'Income' | 'Fixed_Expense' | 'Variable' | 'Debt_Payment'
 //
@@ -72,9 +73,9 @@ export async function createTransaction(formData: FormData) {
     const due_day = formData.get('due_day') ? parseInt(formData.get('due_day') as string) : null
     const debt_id = formData.get('debt_id') as string || null
 
-    // Use current local month-year (e.g., "2026-03")
-    const date = new Date()
-    const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+    // Mes en hora argentina: con la hora del servidor (UTC) un gasto de las 22 h
+    // del último día del mes caía en el mes siguiente.
+    const monthYear = getLocalMonthYearStr()
 
     const { error } = await supabase
         .from('finances')

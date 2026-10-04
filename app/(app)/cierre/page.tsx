@@ -3,6 +3,7 @@ import { getCommitment, getCommitmentStats } from '@/lib/actions/commitments'
 import { getWeekStart, getWeeklyReview } from '@/lib/actions/weekly_review'
 import { addDaysToDateStr } from '@/lib/utils'
 import { getAppDay } from '@/lib/actions/day'
+import { getExpenseHistory } from '@/lib/actions/expenses'
 import { CierrePageClient } from './page.client'
 
 export const dynamic = 'force-dynamic'
@@ -23,14 +24,23 @@ export default async function CierrePage({
     const today = appDay.date
     const weekStart = await getWeekStart()
 
-    const [ritual, ritualStats, commitment, tomorrow, commitmentStats, weeklyPlan] = await Promise.all([
+    const [ritual, ritualStats, commitment, tomorrow, commitmentStats, weeklyPlan, recentExpenses] = await Promise.all([
         getEveningRitual(today).catch(() => null),
         getEveningRitualStats().catch(() => EMPTY_RITUAL_STATS),
         getCommitment(today).catch(() => null),
         getCommitment(addDaysToDateStr(today, 1)).catch(() => null),
         getCommitmentStats().catch(() => EMPTY_COMMITMENT_STATS),
-        getWeeklyReview(weekStart).catch(() => null)
+        getWeeklyReview(weekStart).catch(() => null),
+        getExpenseHistory(3).catch(() => null)
     ])
+
+    // Lo gastado en el día que se está cerrando, para no irse a dormir sin cargarlo.
+    const dayExpenses = recentExpenses
+        ? recentExpenses.filter(r => r.date === today && r.type === 'Variable')
+        : null
+    const daySpend = dayExpenses
+        ? { total: dayExpenses.reduce((s, r) => s + r.amount, 0), count: dayExpenses.length }
+        : null
 
     return (
         <CierrePageClient
@@ -43,6 +53,7 @@ export default async function CierrePage({
             weeklyPlan={weeklyPlan}
             initialTab={tab === 'semana' ? 'semana' : 'dia'}
             appDay={appDay}
+            daySpend={daySpend}
         />
     )
 }

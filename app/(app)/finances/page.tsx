@@ -3,8 +3,9 @@ import { getEnvelopes } from '@/lib/actions/budget_envelopes'
 import { getBudgetProjections } from '@/lib/actions/budget_projections'
 import { getDebtsOverview, getIncomeRange, getUpcomingIncome, getIncomeAllocations } from '@/lib/actions/debts'
 import { getIncomeSources } from '@/lib/actions/income_sources'
+import { getExpenseHistory, getMoneyPlan, getPlanContext } from '@/lib/actions/expenses'
 import { FinancesClient } from './page.client'
-import { getLocalMonthYearStr } from '@/lib/utils'
+import { getLocalMonthYearStr, getLocalDateStr } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,10 +17,12 @@ const EMPTY_OVERVIEW = {
 
 export default async function FinancesPage() {
     const monthYear = getLocalMonthYearStr()
+    const today = getLocalDateStr()
 
     const [
         financesData, envelopes, projections,
-        debtsOverview, incomeSources, incomeRange, upcomingIncome, allocations
+        debtsOverview, incomeSources, incomeRange, upcomingIncome, allocations,
+        expenseRecords, moneyPlan, planContext
     ] = await Promise.all([
         getFinances(monthYear),
         getEnvelopes(monthYear),
@@ -28,7 +31,10 @@ export default async function FinancesPage() {
         getIncomeSources().catch(() => []),
         getIncomeRange().catch(() => ({ floor: 0, ceiling: 0, sources: 0 })),
         getUpcomingIncome().catch(() => []),
-        getIncomeAllocations().catch(() => [])
+        getIncomeAllocations().catch(() => []),
+        getExpenseHistory(100).catch(() => []),
+        getMoneyPlan().catch(() => null),
+        getPlanContext()
     ])
 
     return (
@@ -44,6 +50,10 @@ export default async function FinancesPage() {
             incomeRange={incomeRange}
             upcomingIncome={upcomingIncome}
             allocations={allocations}
+            expenseRecords={expenseRecords}
+            moneyPlan={moneyPlan}
+            planContext={planContext}
+            today={today}
         />
     )
 }
