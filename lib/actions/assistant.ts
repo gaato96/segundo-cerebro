@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { generateText } from '@/lib/ai'
 import { buildSystemPrompt, getPersona } from '@/lib/assistantPersonas'
+import { resolvePlanProgress } from '@/lib/trainingProgress'
 import { dailyRatePct, dailyInterestCost, dailyToMonthlyPct, rateSource } from '@/lib/debtMath'
 import {
     getLocalDateStr,
@@ -138,7 +139,7 @@ export async function buildBrainSnapshot(): Promise<string> {
         q('nutrition_profiles').maybeSingle(),
         q('nutrition_progress').order('date', { ascending: false }).limit(8),
         q('training_plans').eq('status', 'active').order('start_date', { ascending: false }).limit(1).maybeSingle(),
-        q('training_logs').gte('date', fourteenDaysAgo).order('date', { ascending: false }).limit(20),
+        q('training_logs').order('date', { ascending: false }).limit(200),
         q('daily_commitments').gte('date', fourteenDaysAgo).order('date', { ascending: false }).limit(14),
         q('weekly_plans').eq('week_start_date', weekStart).maybeSingle(),
         q('media_backlog').eq('status', 'Active').limit(8),
@@ -167,7 +168,10 @@ export async function buildBrainSnapshot(): Promise<string> {
     const nutProfile = nutProfileRes.data
     const nutProgress = nutProgressRes.data || []
     const trainPlan = trainPlanRes.data
-    const trainLogs = trainLogsRes.data || []
+    // Todos los logs del plan: el progreso real necesita las 12 semanas, no solo
+    // las últimas dos. Para las estadísticas de "últimos 14 días" se filtra abajo.
+    const allTrainLogs = trainLogsRes.data || []
+    const trainLogs = allTrainLogs.filter((l: any) => l.date && l.date >= fourteenDaysAgo)
     const commitments = commitmentsRes.data || []
     const weeklyPlan = weeklyPlanRes.data
     const media = mediaRes.data || []
@@ -332,13 +336,14 @@ export async function buildBrainSnapshot(): Promise<string> {
     // ---------- Entrenamiento ----------
     if (trainPlan) {
         const weeks = trainPlan.plan_data?.weeks || []
-        const daysSinceStart = Math.floor(
-            (new Date(`${today}T12:00:00`).getTime() - new Date(`${trainPlan.start_date}T12:00:00`).getTime()) / 86400000
-        )
-        const currentWeek = Math.min(Math.max(Math.floor(daysSinceStart / 7) + 1, 1), weeks.length || 12)
+        const progress = resolvePlanProgress(trainPlan, allTrainLogs, today)
+        const currentWeek = progress.currentWeek
         const week = weeks.find((w: any) => w.week === currentWeek)
         L.push(`\n## ENTRENAMIENTO`)
-        L.push(`- Plan activo: "${trainPlan.name}" (${trainPlan.start_date} → ${trainPlan.end_date}) · semana ${currentWeek} de ${weeks.length || 12}`)
+        L.push(`- Plan activo: "${trainPlan.name}" (${trainPlan.start_date} → ${trainPlan.end_date}) · semana ${currentWeek} de ${progress.totalWeeks}`)
+        if (progress.weeksBehind > 0) {
+            L.push(`- ATENCIÓN: viene ${progress.weeksBehind} semana(s) atrasado. Por fecha tendría que estar en la semana ${progress.calendarWeek}, pero la ${currentWeek} todavía tiene días sin hacer. No lo trates como si viniera al día.`)
+        }
         if (week) {
             L.push(`- Semana actual: bloque "${week.block}", foco "${week.focus}"${week.deload ? ' — SEMANA DE DESCARGA' : ''}`)
             L.push(`- Sesiones de la semana: ${(week.days || []).map((d: any) => `${DAY_LABEL[d.day_iso % 7]}: ${d.title}`).join(' | ')}`)

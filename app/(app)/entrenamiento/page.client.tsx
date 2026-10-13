@@ -7,15 +7,16 @@ import { Dumbbell, Sparkles, Loader2, UserCog, ArrowLeft, CalendarRange } from '
 import { TrainingProfileForm } from '@/components/training/TrainingProfileForm'
 import { TrainingPlanView } from '@/components/training/TrainingPlanView'
 import { generateTrainingPlan } from '@/lib/actions/training'
+import type { PlanProgress } from '@/lib/trainingProgress'
 
 interface Props {
     profile: any
     plan: any
     logs: any[]
-    currentWeek: number
+    progress: PlanProgress
 }
 
-export function EntrenamientoPageClient({ profile, plan, logs, currentWeek }: Props) {
+export function EntrenamientoPageClient({ profile, plan, logs, progress }: Props) {
     const router = useRouter()
     const [editingProfile, setEditingProfile] = useState(!profile)
     const [generating, setGenerating] = useState(false)
@@ -105,7 +106,7 @@ export function EntrenamientoPageClient({ profile, plan, logs, currentWeek }: Pr
             )}
 
             {!editingProfile && plan && (
-                <TrainingPlanView plan={plan} logs={logs} currentWeek={currentWeek} />
+                <TrainingPlanView plan={plan} logs={logs} progress={progress} />
             )}
         </div>
     )

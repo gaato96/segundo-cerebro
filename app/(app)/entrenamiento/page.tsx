@@ -1,9 +1,9 @@
 import {
     getTrainingProfile,
     getActiveTrainingPlan,
-    getTrainingLogs,
-    getCurrentWeekNumber
+    getTrainingLogs
 } from '@/lib/actions/training'
+import { resolvePlanProgress } from '@/lib/trainingProgress'
 import { EntrenamientoPageClient } from './page.client'
 
 export const dynamic = 'force-dynamic'
@@ -14,17 +14,15 @@ export default async function EntrenamientoPage() {
         getActiveTrainingPlan().catch(() => null)
     ])
 
-    const [logs, currentWeek] = await Promise.all([
-        plan ? getTrainingLogs(plan.id).catch(() => []) : Promise.resolve([]),
-        getCurrentWeekNumber(plan)
-    ])
+    const logs = plan ? await getTrainingLogs(plan.id).catch(() => []) : []
+    const progress = resolvePlanProgress(plan, logs)
 
     return (
         <EntrenamientoPageClient
             profile={profile}
             plan={plan}
             logs={logs}
-            currentWeek={currentWeek}
+            progress={progress}
         />
     )
 }

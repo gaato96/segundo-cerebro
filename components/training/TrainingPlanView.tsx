@@ -4,16 +4,20 @@ import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     Dumbbell, Clock, Repeat, Check, RefreshCw, Shuffle,
-    Loader2, ChevronDown, Moon, Info, Zap
+    Loader2, ChevronDown, Moon, Info, Zap, RotateCcw, SkipForward, CalendarClock, AlertTriangle
 } from 'lucide-react'
-import { logTrainingSession, undoTrainingSession, regenerateWeek, swapExercise } from '@/lib/actions/training'
+import {
+    logTrainingSession, undoTrainingSession, regenerateWeek, swapExercise,
+    skipTrainingSession, restartTrainingPlan, setPlanProgressMode
+} from '@/lib/actions/training'
+import type { PlanProgress } from '@/lib/trainingProgress'
 import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 
 interface Props {
     plan: any
     logs: any[]
-    currentWeek: number
+    progress: PlanProgress
 }
 
 const DAY_NAMES = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
@@ -25,10 +29,11 @@ const BLOCK_STYLE: Record<string, { label: string; color: string; icon: any }> =
     vuelta_calma: { label: 'Vuelta a la calma', color: 'text-violet-400 border-violet-500/25 bg-violet-500/5', icon: Moon }
 }
 
-export function TrainingPlanView({ plan, logs, currentWeek }: Props) {
+export function TrainingPlanView({ plan, logs, progress }: Props) {
     const router = useRouter()
     const weeks = plan?.plan_data?.weeks || []
     const stats = plan?.plan_data?.stats
+    const currentWeek = progress.currentWeek
     const [selectedWeek, setSelectedWeek] = useState(currentWeek)
     const [openDay, setOpenDay] = useState<number | null>(0)
     const [busy, setBusy] = useState<string | null>(null)
@@ -37,6 +42,11 @@ export function TrainingPlanView({ plan, logs, currentWeek }: Props) {
 
     const doneSet = useMemo(
         () => new Set(logs.filter(l => l.completed).map(l => `${l.week_number}-${l.day_index}`)),
+        [logs]
+    )
+
+    const skippedSet = useMemo(
+        () => new Set(logs.filter(l => l.skipped && !l.completed).map(l => `${l.week_number}-${l.day_index}`)),
         [logs]
     )
 
@@ -87,6 +97,65 @@ export function TrainingPlanView({ plan, logs, currentWeek }: Props) {
         }
     }
 
+    async function handleUndo(dayIndex: number) {
+        const key = `${selectedWeek}-${dayIndex}`
+        setBusy(key)
+        try {
+            await undoTrainingSession(plan.id, selectedWeek, dayIndex)
+            router.refresh()
+        } catch (e: any) {
+            alert(e?.message)
+        } finally {
+            setBusy(null)
+        }
+    }
+
+    async function handleSkip(dayIndex: number) {
+        const key = `skip-${selectedWeek}-${dayIndex}`
+        setBusy(key)
+        try {
+            await skipTrainingSession(plan.id, selectedWeek, dayIndex)
+            router.refresh()
+        } catch (e: any) {
+            alert(e?.message)
+        } finally {
+            setBusy(null)
+        }
+    }
+
+    async function handleRestart() {
+        const keepLogs = confirm(
+            'Reiniciar el plan mueve el arranque a hoy y vuelve a la semana 1.\n\n' +
+            'Aceptar: conservar las sesiones que ya registraste.\n' +
+            'Cancelar: borrarlas y empezar de cero.'
+        )
+        if (!confirm(keepLogs ? '¿Reiniciamos conservando tu historial?' : '¿Reiniciamos borrando las sesiones registradas de este plan?')) return
+
+        setBusy('restart')
+        try {
+            await restartTrainingPlan(plan.id, { startFrom: 'today', keepLogs })
+            setSelectedWeek(1)
+            router.refresh()
+        } catch (e: any) {
+            alert(`No se pudo reiniciar: ${e?.message}`)
+        } finally {
+            setBusy(null)
+        }
+    }
+
+    async function handleToggleMode() {
+        const next = progress.mode === 'adaptive' ? 'calendar' : 'adaptive'
+        setBusy('mode')
+        try {
+            await setPlanProgressMode(plan.id, next)
+            router.refresh()
+        } catch (e: any) {
+            alert(e?.message)
+        } finally {
+            setBusy(null)
+        }
+    }
+
     if (!week) {
         return <p className="text-sm text-muted-foreground">No se encontró la semana {selectedWeek} en el plan.</p>
     }
@@ -115,7 +184,61 @@ export function TrainingPlanView({ plan, logs, currentWeek }: Props) {
                         {plan.plan_data.summary}
                     </p>
                 )}
+
+                <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-border/40">
+                    <button
+                        onClick={handleToggleMode}
+                        disabled={busy === 'mode'}
+                        title={
+                            progress.mode === 'adaptive'
+                                ? 'El plan espera a que completes cada semana. Tocá para que avance con el calendario.'
+                                : 'El plan avanza con las fechas aunque no entrenes. Tocá para que espere a que completes cada semana.'
+                        }
+                        className="px-2.5 py-1.5 glass border border-border/50 rounded-lg text-[10px] font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors"
+                    >
+                        {busy === 'mode' ? <Loader2 className="w-3 h-3 animate-spin" /> : <CalendarClock className="w-3 h-3" />}
+                        {progress.mode === 'adaptive' ? 'Avanza cuando completás' : 'Avanza con el calendario'}
+                    </button>
+                    <button
+                        onClick={handleRestart}
+                        disabled={busy === 'restart'}
+                        title="Mueve el arranque del plan a hoy y vuelve a la semana 1"
+                        className="px-2.5 py-1.5 glass border border-border/50 rounded-lg text-[10px] font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors"
+                    >
+                        {busy === 'restart' ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3" />}
+                        Reiniciar plan
+                    </button>
+                </div>
             </div>
+
+            {/* Por qué estás en esta semana y no en otra */}
+            {progress.mode === 'adaptive' && progress.weeksBehind > 0 && (
+                <div className="glass p-3.5 rounded-2xl border border-amber-500/30 bg-amber-950/10 flex items-start gap-2.5">
+                    <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                    <div className="text-[11px] leading-relaxed">
+                        <p className="text-foreground font-semibold">
+                            Seguís en la semana {progress.currentWeek}, no en la {progress.calendarWeek}.
+                        </p>
+                        <p className="text-muted-foreground mt-0.5">
+                            Por fecha ya tendrías que estar {progress.weeksBehind === 1 ? 'una semana' : `${progress.weeksBehind} semanas`} más adelante,
+                            pero la semana {progress.currentWeek} todavía tiene días sin hacer y el plan no avanza sin vos.
+                            Hacelos, salteá los que no vas a hacer, o reiniciá el plan desde hoy.
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            {progress.finished && (
+                <div className="glass p-3.5 rounded-2xl border border-emerald-500/30 bg-emerald-950/10 flex items-start gap-2.5">
+                    <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <div className="text-[11px] leading-relaxed">
+                        <p className="text-foreground font-semibold">Terminaste las 12 semanas.</p>
+                        <p className="text-muted-foreground mt-0.5">
+                            Generá un plan nuevo con tu perfil actualizado, o reiniciá este desde hoy.
+                        </p>
+                    </div>
+                </div>
+            )}
 
             {/* Selector de semanas */}
             <div className="space-y-2">
@@ -124,7 +247,9 @@ export function TrainingPlanView({ plan, logs, currentWeek }: Props) {
                         12 semanas · 3 bloques
                     </span>
                     <span className="text-[10px] text-muted-foreground">
-                        Hoy estás en la semana {currentWeek}
+                        {progress.mode === 'adaptive' && progress.weeksBehind > 0
+                            ? `Vas por la semana ${currentWeek} · el calendario va por la ${progress.calendarWeek}`
+                            : `Hoy estás en la semana ${currentWeek}`}
                     </span>
                 </div>
                 <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
@@ -217,6 +342,7 @@ export function TrainingPlanView({ plan, logs, currentWeek }: Props) {
                 {week.days.map((day: any) => {
                     const key = `${selectedWeek}-${day.index}`
                     const done = doneSet.has(key)
+                    const skipped = skippedSet.has(key)
                     const isOpen = openDay === day.index
 
                     return (
@@ -224,7 +350,11 @@ export function TrainingPlanView({ plan, logs, currentWeek }: Props) {
                             key={day.index}
                             className={cn(
                                 'glass rounded-2xl border overflow-hidden transition-colors',
-                                done ? 'border-emerald-500/35 bg-emerald-950/10' : 'border-border/50'
+                                done
+                                    ? 'border-emerald-500/35 bg-emerald-950/10'
+                                    : skipped
+                                        ? 'border-border/40 bg-secondary/20'
+                                        : 'border-border/50'
                             )}
                         >
                             <div className="p-4 flex items-center gap-3">
@@ -252,12 +382,41 @@ export function TrainingPlanView({ plan, logs, currentWeek }: Props) {
                                         <span className="text-[10px] text-muted-foreground flex items-center gap-1">
                                             <Clock className="w-3 h-3" />{day.duration_min} min
                                         </span>
+                                        {skipped && (
+                                            <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-secondary text-muted-foreground border border-border/60">
+                                                Salteada
+                                            </span>
+                                        )}
                                     </div>
-                                    <h5 className={cn('text-sm font-bold mt-1', done ? 'text-muted-foreground line-through' : 'text-foreground')}>
+                                    <h5 className={cn('text-sm font-bold mt-1', done || skipped ? 'text-muted-foreground line-through' : 'text-foreground')}>
                                         {day.title}
                                     </h5>
                                     <p className="text-[11px] text-muted-foreground">{day.focus}</p>
                                 </button>
+
+                                {!done && !skipped && (
+                                    <button
+                                        onClick={() => handleSkip(day.index)}
+                                        disabled={busy === `skip-${selectedWeek}-${day.index}`}
+                                        title="Darla por resuelta sin hacerla, para que el plan pueda avanzar"
+                                        className="p-1.5 rounded-lg text-muted-foreground hover:text-amber-400 hover:bg-amber-500/10 shrink-0 transition-colors"
+                                    >
+                                        {busy === `skip-${selectedWeek}-${day.index}`
+                                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                            : <SkipForward className="w-3.5 h-3.5" />}
+                                    </button>
+                                )}
+
+                                {skipped && (
+                                    <button
+                                        onClick={() => handleUndo(day.index)}
+                                        disabled={busy === key}
+                                        title="Deshacer: volver a dejarla pendiente"
+                                        className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground shrink-0 transition-colors"
+                                    >
+                                        {busy === key ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
+                                    </button>
+                                )}
 
                                 <ChevronDown
                                     onClick={() => setOpenDay(isOpen ? null : day.index)}

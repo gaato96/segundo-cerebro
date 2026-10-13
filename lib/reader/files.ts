@@ -5,7 +5,7 @@
 import { createClient } from '@/lib/supabase/client'
 
 export const BOOK_BUCKET = 'books'
-// Máximo por archivo del plan gratis de Supabase (y el límite del bucket en la migración 020).
+// Máximo por archivo del plan gratis de Supabase (y el límite del bucket en la migración 022).
 export const MAX_BOOK_BYTES = 50 * 1024 * 1024
 
 export function formatBytes(bytes: number | null | undefined) {
@@ -127,7 +127,7 @@ export async function uploadBookPdf(bookId: string, file: Blob, onProgress?: (fr
             if (xhr.status === 413 || /maximum allowed size|too large/i.test(message)) {
                 message = `El PDF supera el máximo permitido por Supabase (${formatBytes(MAX_BOOK_BYTES)}).`
             } else if (/bucket not found/i.test(message)) {
-                message = 'Falta crear el bucket "books": corré la migración 020 en Supabase.'
+                message = 'Falta crear el bucket "books": corré la migración 022 en Supabase.'
             }
             reject(new Error(message))
         }

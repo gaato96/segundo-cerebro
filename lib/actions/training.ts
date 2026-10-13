@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { generateText, parseJSON } from '@/lib/ai'
 import { getLocalDateStr, getLocalDayOfWeek, addDaysToDateStr } from '@/lib/utils'
 import { poolFor, equipmentLabel, type EquipmentId, type Level } from '@/lib/trainingLibrary'
+import { resolvePlanProgress, type PlanProgress, type ProgressMode } from '@/lib/trainingProgress'
 import {
     buildTwelveWeeks,
     blockParamsFor,
@@ -125,14 +126,92 @@ export async function getActiveTrainingPlan() {
     return data
 }
 
-/** Semana del plan en la que estás hoy (1-12). */
-export async function getCurrentWeekNumber(plan: { start_date: string } | null): Promise<number> {
-    if (!plan) return 1
+/**
+ * Dónde estás parado en el plan, mirando lo que hiciste y no solo la fecha.
+ * La cuenta vive en lib/trainingProgress para que la página, el copiloto y el
+ * cron de notificaciones no se contradigan entre sí.
+ */
+export async function getPlanProgress(plan: any | null, logs?: any[]): Promise<PlanProgress> {
+    if (!plan) return resolvePlanProgress(null, [])
+    const rows = logs ?? await getTrainingLogs(plan.id)
+    return resolvePlanProgress(plan, rows, getLocalDateStr())
+}
+
+/**
+ * Reinicia el plan desde cero: mismas 12 semanas, fechas nuevas.
+ *
+ * Es para cuando el plan quedó desfasado de la realidad y arrancar de nuevo es
+ * más honesto que arrastrar semanas que nunca hiciste. Por defecto borra las
+ * sesiones registradas de ese plan; con keepLogs las conserva.
+ */
+export async function restartTrainingPlan(
+    planId: string,
+    options?: { startFrom?: 'today' | 'next_monday'; keepLogs?: boolean }
+) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    const { data: plan, error: planError } = await supabase
+        .from('training_plans')
+        .select('id')
+        .eq('id', planId)
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+    if (planError) throw planError
+    if (!plan) throw new Error('Plan no encontrado')
+
     const today = getLocalDateStr()
-    const diffDays = Math.floor(
-        (new Date(`${today}T12:00:00`).getTime() - new Date(`${plan.start_date}T12:00:00`).getTime()) / 86400000
-    )
-    return Math.min(Math.max(Math.floor(diffDays / 7) + 1, 1), 12)
+    let startDate = today
+    if (options?.startFrom === 'next_monday') {
+        const dow = getLocalDayOfWeek()
+        const isoDay = dow === 0 ? 7 : dow
+        startDate = isoDay === 1 ? today : addDaysToDateStr(today, 8 - isoDay)
+    }
+
+    if (!options?.keepLogs) {
+        const { error } = await supabase
+            .from('training_logs')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('plan_id', planId)
+
+        if (error) throw error
+    }
+
+    const { error } = await supabase
+        .from('training_plans')
+        .update({
+            start_date: startDate,
+            end_date: addDaysToDateStr(startDate, 83),
+            status: 'active'
+        })
+        .eq('id', planId)
+        .eq('user_id', user.id)
+
+    if (error) throw error
+
+    revalidatePath('/entrenamiento')
+    revalidatePath('/')
+    return { startDate }
+}
+
+/** Cambia si el plan avanza con el calendario o con lo que realmente hiciste. */
+export async function setPlanProgressMode(planId: string, mode: ProgressMode) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    const { error } = await supabase
+        .from('training_plans')
+        .update({ progress_mode: mode })
+        .eq('id', planId)
+        .eq('user_id', user.id)
+
+    if (error) throw error
+    revalidatePath('/entrenamiento')
+    revalidatePath('/')
 }
 
 export async function generateTrainingPlan(options?: { startDate?: string; useAI?: boolean }) {
@@ -325,6 +404,14 @@ export async function archiveTrainingPlan(planId: string) {
 // REGISTRO DE SESIONES
 // ============================================================
 
+/**
+ * Marca una sesión como hecha.
+ *
+ * A propósito no escribe `skipped`: así esta acción sigue funcionando aunque
+ * todavía no se haya corrido la migración 020. Si el día venía salteado, la
+ * fila queda con completed=true y skipped=true, y en todos lados gana
+ * completed, así que no cambia ninguna cuenta.
+ */
 export async function logTrainingSession(input: {
     planId: string
     weekNumber: number
@@ -351,6 +438,35 @@ export async function logTrainingSession(input: {
             rpe: input.rpe || null,
             rope_minutes: input.ropeMinutes || null,
             notes: input.notes || null
+        }, { onConflict: 'user_id, plan_id, week_number, day_index' })
+
+    if (error) throw error
+    revalidatePath('/entrenamiento')
+    revalidatePath('/')
+}
+
+/**
+ * Saltear una sesión: la das por resuelta sin haberla hecho.
+ *
+ * Es la válvula de escape del modo adaptativo. Sin esto, un día que no vas a
+ * hacer nunca te deja trabado en esa semana para siempre. No cuenta como
+ * completada en ninguna estadística: solo destraba la progresión.
+ */
+export async function skipTrainingSession(planId: string, weekNumber: number, dayIndex: number) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    const { error } = await supabase
+        .from('training_logs')
+        .upsert({
+            user_id: user.id,
+            plan_id: planId,
+            week_number: weekNumber,
+            day_index: dayIndex,
+            date: getLocalDateStr(),
+            completed: false,
+            skipped: true
         }, { onConflict: 'user_id, plan_id, week_number, day_index' })
 
     if (error) throw error

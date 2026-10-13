@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient, hasAdminCredentials } from '@/lib/supabase/admin'
 import { sendPushToSubscriptions, isPushConfigured, type PushPayload } from '@/lib/push'
 import { getLocalDateStr, getLocalDayOfWeek, addDaysToDateStr } from '@/lib/utils'
+import { resolvePlanProgress } from '@/lib/trainingProgress'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -111,7 +112,7 @@ export async function GET(req: NextRequest) {
                 q('habits').eq('is_active', true),
                 q('habit_logs').gte('completed_at', `${today}T00:00:00-03:00`),
                 q('training_plans').eq('status', 'active').order('start_date', { ascending: false }).limit(1).maybeSingle(),
-                q('training_logs').gte('date', addDaysToDateStr(today, -7)),
+                q('training_logs').limit(200),
                 q('evening_ritual_logs').eq('date', today).maybeSingle()
             ])
 
@@ -131,21 +132,22 @@ export async function GET(req: NextRequest) {
         const pendingHabits = habits.filter((h: any) => !doneHabitIds.has(h.id))
 
         // ¿Toca entrenar hoy y todavía no lo registró?
+        // La semana la resuelve lib/trainingProgress, igual que la página y el
+        // copiloto: si el plan quedó trabado en la semana 1, el aviso tiene que
+        // ser de la semana 1 y no de la que diga el calendario.
         let trainingToday: { title: string; weekNumber: number; dayIndex: number } | null = null
         if (plan) {
             const weeks = plan.plan_data?.weeks || []
-            const diffDays = Math.floor(
-                (new Date(`${today}T12:00:00`).getTime() - new Date(`${plan.start_date}T12:00:00`).getTime()) / 86400000
-            )
-            const weekNumber = Math.floor(diffDays / 7) + 1
-            if (diffDays >= 0 && weekNumber >= 1 && weekNumber <= weeks.length) {
+            const progress = resolvePlanProgress(plan, trainLogs, today)
+            const weekNumber = progress.currentWeek
+            if (!progress.finished && today >= plan.start_date) {
                 const week = weeks.find((w: any) => w.week === weekNumber)
                 const day = week?.days?.find((d: any) => d.day_iso === isoDay)
                 if (day) {
-                    const logged = trainLogs.some(
-                        (l: any) => l.week_number === weekNumber && l.day_index === day.index && l.completed
+                    const resolved = trainLogs.some(
+                        (l: any) => l.week_number === weekNumber && l.day_index === day.index && (l.completed || l.skipped)
                     )
-                    if (!logged) trainingToday = { title: day.title, weekNumber, dayIndex: day.index }
+                    if (!resolved) trainingToday = { title: day.title, weekNumber, dayIndex: day.index }
                 }
             }
         }

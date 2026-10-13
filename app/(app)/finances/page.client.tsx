@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { DollarSign, Wallet, TrendingUp, TrendingDown, Landmark, Plus, Trash2, X, Target, PieChart, Sparkles, Compass, HandCoins } from 'lucide-react'
+import { DollarSign, Wallet, TrendingUp, TrendingDown, Landmark, Plus, Trash2, X, PieChart, Sparkles, Compass, HandCoins, Receipt, Scale } from 'lucide-react'
 import { FinancesChart } from '@/components/finances/FinancesChart'
 import { BudgetEnvelopes } from '@/components/finances/BudgetEnvelopes'
 import { BudgetProjections } from '@/components/finances/BudgetProjections'
@@ -14,7 +14,20 @@ import { DebtStrategyPanel } from '@/components/finances/DebtStrategy'
 import { IncomeSources } from '@/components/finances/IncomeSources'
 import type { DebtsOverview } from '@/lib/actions/debts'
 import type { IncomeSourceItem } from '@/lib/actions/income_sources'
-import { formatCurrency } from '@/lib/utils'
+import { DailySpending } from '@/components/finances/DailySpending'
+import { MoneyPlan } from '@/components/finances/MoneyPlan'
+import { QuickExpenseTrigger } from '@/components/finances/QuickExpenseButton'
+import type { ExpenseRecord } from '@/lib/spendingMath'
+import type { MoneyPlanRow, PlanContext } from '@/lib/actions/expenses'
+import { getCategory, getPaymentMethod } from '@/lib/expenseCategories'
+import { formatCurrency, formatDate } from '@/lib/utils'
+
+const TYPE_LABEL: Record<string, string> = {
+    Income: 'Ingreso',
+    Fixed_Expense: 'Fijo',
+    Variable: 'Variable',
+    Debt_Payment: 'Pago de deuda'
+}
 
 interface FinancesClientProps {
     transactions: any[]
@@ -28,6 +41,10 @@ interface FinancesClientProps {
     incomeRange: { floor: number; ceiling: number; sources: number }
     upcomingIncome: { date: string; name: string; amount: number; confidence: string; kind: string }[]
     allocations: any[]
+    expenseRecords: ExpenseRecord[]
+    moneyPlan: MoneyPlanRow | null
+    planContext: PlanContext | null
+    today: string
 }
 
 export function FinancesClient({
@@ -40,13 +57,17 @@ export function FinancesClient({
     incomeSources,
     incomeRange,
     upcomingIncome,
-    allocations
+    allocations,
+    expenseRecords,
+    moneyPlan,
+    planContext,
+    today
 }: FinancesClientProps) {
     const [transactions, setTransactions] = useState<any[]>(initialTransactions || [])
     const [envelopes, setEnvelopes] = useState<BudgetEnvelopeItem[]>(initialEnvelopes || [])
     const [activeTab, setActiveTab] = useState<
-        'overview' | 'estrategia' | 'debts' | 'income' | 'projections' | 'envelopes' | 'transactions'
-    >('overview')
+        'gastos' | 'plan' | 'overview' | 'estrategia' | 'debts' | 'income' | 'projections' | 'envelopes' | 'transactions'
+    >('gastos')
 
     // Modals
     const [isTxModalOpen, setIsTxModalOpen] = useState(false)
@@ -120,11 +141,11 @@ export function FinancesClient({
                         Finanzas & Presupuestos
                     </h1>
                     <p className="text-muted-foreground text-sm mt-0.5">
-                        Planificación financiera en ARS, presupuestos por categoría y control de deudas.
+                        Gasto diario, reparto del sueldo, inversión y control de deudas (ARS).
                     </p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                     <button
                         onClick={() => setIsEnvelopeModalOpen(true)}
                         className="px-3.5 py-2 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all"
@@ -133,10 +154,12 @@ export function FinancesClient({
                     </button>
                     <button
                         onClick={() => setIsTxModalOpen(true)}
-                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-lg shadow-indigo-600/20 transition-all"
+                        className="px-3.5 py-2 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all"
                     >
-                        <Plus className="w-4 h-4" /> Registrar Movimiento
+                        <Plus className="w-4 h-4" /> Movimiento
                     </button>
+                    <QuickExpenseTrigger kind="income" label="Ingreso" className="!bg-indigo-500/10 !text-indigo-300 !border-indigo-500/30" />
+                    <QuickExpenseTrigger />
                 </div>
             </div>
 
@@ -178,6 +201,8 @@ export function FinancesClient({
             {/* Navigation Tabs */}
             <div className="glass p-2 rounded-2xl border border-border/50 flex items-center gap-2 overflow-x-auto">
                 {[
+                    { id: 'gastos', label: 'Gasto diario', icon: Receipt },
+                    { id: 'plan', label: 'Reparto e inversión', icon: Scale },
                     { id: 'overview', label: 'Overview', icon: PieChart },
                     { id: 'estrategia', label: 'Estrategia', icon: Compass },
                     { id: 'debts', label: 'Deudas', icon: Landmark },
@@ -203,6 +228,14 @@ export function FinancesClient({
             </div>
 
             {/* Tab Contents */}
+            {activeTab === 'gastos' && (
+                <DailySpending records={expenseRecords} plan={moneyPlan} today={today} />
+            )}
+
+            {activeTab === 'plan' && (
+                <MoneyPlan plan={moneyPlan} context={planContext} records={expenseRecords} today={today} />
+            )}
+
             {activeTab === 'overview' && (
                 <FinancesChart
                     income={income}
@@ -246,9 +279,12 @@ export function FinancesClient({
                         ) : (
                             transactions.map(t => (
                                 <div key={t.id} className="flex items-center justify-between p-3.5 rounded-2xl bg-secondary/20 border border-border/50 text-xs">
-                                    <div>
-                                        <p className="font-bold text-white">{t.description}</p>
-                                        <span className="text-[10px] text-muted-foreground">{t.type} · {t.category}</span>
+                                    <div className="min-w-0">
+                                        <p className="font-bold text-white truncate">{getCategory(t.category).emoji} {t.description}</p>
+                                        <span className="text-[10px] text-muted-foreground">
+                                            {formatDate(t.occurred_on || t.created_at)} · {TYPE_LABEL[t.type] || t.type} · {t.category}
+                                            {getPaymentMethod(t.payment_method) && ` · ${getPaymentMethod(t.payment_method)!.label}`}
+                                        </span>
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <span className={`font-mono font-bold ${t.type === 'Income' ? 'text-emerald-400' : 'text-red-400'}`}>

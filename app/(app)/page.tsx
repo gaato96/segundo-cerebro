@@ -11,7 +11,7 @@ import { getEventsForDate } from '@/lib/actions/events'
 import { getRitualLog } from '@/lib/actions/morning_ritual'
 import Link from 'next/link'
 import { Sun, Moon } from 'lucide-react'
-import { QuickTransactionModal } from '@/components/dashboard/QuickTransactionModal'
+import { QuickExpenseTrigger } from '@/components/finances/QuickExpenseButton'
 import { getLocalDateStr, getLocalMonthYearStr, getLocalDayOfWeek, formatLocalDate, addDaysToDateStr } from '@/lib/utils'
 
 import { syncRecurringTasks } from '@/lib/actions/tasks'
@@ -37,14 +37,16 @@ export default async function DashboardPage() {
     const todayIsoDay = dayOfWeek === 0 ? 7 : dayOfWeek
 
     // Fetch profile, tasks, habits, events, ritual log in parallel
-    const [profileRes, todayTasksRes, habitsRes, todayLogsRes, financesRes, todayEvents, ritualLog] = await Promise.all([
+    const [profileRes, todayTasksRes, habitsRes, todayLogsRes, financesRes, todayEvents, ritualLog, todaySpendRes] = await Promise.all([
         supabase.from('profiles').select('ideal_routine_json').eq('id', user.id).single(),
         supabase.from('tasks').select('*').eq('user_id', user.id).in('status', ['Todo', 'InProgress']).or(`planned_date.eq.${todayStr},and(planned_date.is.null,due_date.lte.${todayStr})`).order('priority', { ascending: true }).order('due_date', { ascending: true, nullsFirst: false }).limit(8),
         supabase.from('habits').select('*').eq('user_id', user.id).eq('is_active', true),
         supabase.from('habit_logs').select('habit_id').eq('user_id', user.id).gte('completed_at', `${todayStr}T00:00:00-03:00`),
         supabase.from('finances').select('type, amount').eq('user_id', user.id).eq('month_year', monthYear),
         getEventsForDate(todayStr),
-        getRitualLog(todayStr)
+        getRitualLog(todayStr),
+        // Si la migración 021 no corrió, occurred_on no existe: el botón se muestra sin el total.
+        supabase.from('finances').select('amount').eq('user_id', user.id).eq('type', 'Variable').eq('occurred_on', todayStr)
     ])
 
     const profile = profileRes.data
@@ -52,6 +54,9 @@ export default async function DashboardPage() {
     const rawHabits = habitsRes.data || []
     const todayLogs = todayLogsRes.data || []
     const finances = financesRes.data || []
+    const todaySpend = todaySpendRes.error
+        ? undefined
+        : (todaySpendRes.data || []).reduce((sum: number, f: { amount: number }) => sum + Number(f.amount), 0)
 
     // Filter habits strictly for today based on frequency_type & frequency_days
     const habits = rawHabits.filter((h: any) => {
@@ -94,7 +99,7 @@ export default async function DashboardPage() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 shrink-0 self-start">
-                    <QuickTransactionModal />
+                    <QuickExpenseTrigger todayTotal={todaySpend} />
 
                     <Link
                         href="/ritual"

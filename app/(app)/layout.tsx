@@ -3,6 +3,7 @@ import { BottomBar } from '@/components/layout/BottomBar'
 import { QuickCaptureButton } from '@/components/shared/QuickCaptureButton'
 import { AssistantLauncher } from '@/components/assistant/AssistantLauncher'
 import { CommandPalette } from '@/components/shared/CommandPalette'
+import { QuickExpenseButton } from '@/components/finances/QuickExpenseButton'
 
 export default function AppLayout({
     children,
@@ -22,6 +23,7 @@ export default function AppLayout({
             <CommandPalette />
             <QuickCaptureButton />
             <AssistantLauncher />
+            <QuickExpenseButton />
 
             {/* Mobile Bottom Bar */}
             <BottomBar />
