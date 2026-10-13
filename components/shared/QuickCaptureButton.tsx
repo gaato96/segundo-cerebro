@@ -6,6 +6,10 @@ import { createMentalNote } from '@/lib/actions/mental_notes'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 
+/**
+ * Vaciado mental al Inbox. Se abre desde el botón flotante (FloatingActions),
+ * el command palette o Ctrl/Cmd + Shift + K, todos vía el evento `sc:quick-capture`.
+ */
 export function QuickCaptureButton() {
     const [isOpen, setIsOpen] = useState(false)
     const [loading, setLoading] = useState(false)
@@ -50,16 +54,6 @@ export function QuickCaptureButton() {
 
     return (
         <>
-            {/* Floating button */}
-            <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setIsOpen(true)}
-                className="fixed bottom-[88px] md:bottom-8 right-5 z-40 bg-indigo-600 text-white p-3.5 rounded-full shadow-[0_0_20px_rgba(99,102,241,0.4)] hover:bg-indigo-500 transition-colors flex items-center justify-center"
-            >
-                <Brain className="w-6 h-6" />
-            </motion.button>
-
             {/* Modal */}
             <AnimatePresence>
                 {isOpen && (

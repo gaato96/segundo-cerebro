@@ -12,8 +12,8 @@ const STORAGE_KEY = 'sc_assistant_persona'
 const SESSION_KEY = 'sc_assistant_session'
 
 /**
- * Botón flotante del Copiloto: está disponible en todas las páginas.
- * Atajo de teclado: Ctrl/Cmd + J.
+ * Panel del Copiloto, disponible en todas las páginas. Se abre desde el botón
+ * flotante (FloatingActions, evento `sc:assistant`) o con Ctrl/Cmd + J.
  */
 export function AssistantLauncher() {
     const [open, setOpen] = useState(false)
@@ -80,8 +80,13 @@ export function AssistantLauncher() {
             }
             if (e.key === 'Escape') setOpen(false)
         }
+        const onRequest = () => setOpen(true)
         window.addEventListener('keydown', onKey)
-        return () => window.removeEventListener('keydown', onKey)
+        window.addEventListener('sc:assistant', onRequest)
+        return () => {
+            window.removeEventListener('keydown', onKey)
+            window.removeEventListener('sc:assistant', onRequest)
+        }
     }, [])
 
     function changePersona(p: PersonaId) {
@@ -103,16 +108,6 @@ export function AssistantLauncher() {
 
     return (
         <>
-            <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setOpen(true)}
-                title="Copiloto personal (Ctrl+J)"
-                className="fixed bottom-[148px] md:bottom-24 right-5 z-40 bg-violet-600 text-white p-3.5 rounded-full shadow-[0_0_20px_rgba(139,92,246,0.45)] hover:bg-violet-500 transition-colors flex items-center justify-center"
-            >
-                <MessageCircleHeart className="w-6 h-6" />
-            </motion.button>
-
             <AnimatePresence>
                 {open && (
                     <div className="fixed inset-0 z-[60] flex justify-end">

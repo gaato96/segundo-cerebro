@@ -15,9 +15,9 @@ import {
 import { formatCurrency, getLocalDateStr, cn } from '@/lib/utils'
 
 /**
- * Registro rápido de gastos: botón flotante disponible en toda la app.
+ * Registro rápido de gastos, disponible en toda la app.
  * Atajo: Ctrl/Cmd + Shift + L. También se abre con el evento `sc:quick-expense`
- * (dashboard, command palette, cierre del día).
+ * (botón flotante, dashboard, command palette, cierre del día).
  *
  * Lo mínimo para guardar es monto + categoría. El resto tiene valor por defecto.
  */
@@ -191,16 +191,6 @@ export function QuickExpenseButton() {
 
     return (
         <>
-            <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => openSheet('expense')}
-                title="Registrar gasto (Ctrl+Shift+L)"
-                className="fixed bottom-[208px] md:bottom-40 right-5 z-40 bg-emerald-600 text-white p-3.5 rounded-full shadow-[0_0_20px_rgba(16,185,129,0.45)] hover:bg-emerald-500 transition-colors flex items-center justify-center"
-            >
-                <Receipt className="w-6 h-6" />
-            </motion.button>
-
             <AnimatePresence>
                 {open && (
                     <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center sm:p-4">
