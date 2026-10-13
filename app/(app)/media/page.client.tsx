@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     Library, Plus, Tv, Book, Gamepad, Clapperboard, Check, Trash2, X, Loader2, Play,
-    CircleDot, Search, Sparkles, Star, Award, Dices, ChevronRight, Settings, PlusCircle, MinusCircle, AlertCircle
+    CircleDot, Search, Sparkles, Star, Award, Dices, ChevronRight, Settings, PlusCircle, MinusCircle, AlertCircle, BookOpen
 } from 'lucide-react'
 import { createMediaItem, createDetailedMediaItem, updateMediaStatus, updateMediaProgress, updateMediaRating, deleteMediaItem, getAIMediaRecommendations } from '@/lib/actions/media'
 import { TMDBConfigCard } from '@/components/media/TMDBConfigCard'
@@ -27,7 +28,8 @@ interface MediaItem {
     created_at: string
 }
 
-export function MediaClient({ initialItems }: { initialItems: MediaItem[] }) {
+// readerLinks: media_id → id del libro en el lector, para los libros que tienen PDF.
+export function MediaClient({ initialItems, readerLinks = {} }: { initialItems: MediaItem[]; readerLinks?: Record<string, string> }) {
     const [items, setItems] = useState<MediaItem[]>(initialItems)
     const [activeTab, setActiveTab] = useState<'Movies' | 'Series' | 'Games' | 'Recommendations' | 'Books'>('Movies')
     const [gamesSubTab, setGamesSubTab] = useState<'Football' | 'Library'>('Football')
@@ -1041,6 +1043,14 @@ export function MediaClient({ initialItems }: { initialItems: MediaItem[] }) {
                                                         <span className="text-[10px] bg-pink-500/10 text-pink-400 px-2 py-0.5 rounded-full border border-pink-500/20 font-medium">
                                                             {isSeries ? 'Viendo' : isMovie ? 'Viendo' : isBook ? 'Leyendo' : 'Jugando'}
                                                         </span>
+                                                    )}
+                                                    {isBook && readerLinks[item.id] && (
+                                                        <Link
+                                                            href={`/leer/${readerLinks[item.id]}`}
+                                                            className="text-[10px] bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 px-2 py-0.5 rounded-full border border-amber-500/30 font-semibold flex items-center gap-1 transition-colors"
+                                                        >
+                                                            <BookOpen className="w-3 h-3" /> Leer
+                                                        </Link>
                                                     )}
                                                 </div>
                                             </div>

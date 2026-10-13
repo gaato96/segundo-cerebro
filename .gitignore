@@ -31,3 +31,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# assets de pdf.js (los copia scripts/copy-pdfjs-assets.mjs en el postinstall)
+/public/pdfjs

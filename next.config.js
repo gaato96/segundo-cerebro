@@ -6,7 +6,9 @@ const withPWA = require('next-pwa')({
     disable: process.env.NODE_ENV === 'development',
     runtimeCaching: [
         {
-            urlPattern: /^https:\/\/wekkywlshtufqsqeyiba\.supabase\.co\/.*/i,
+            // Los PDFs del lector (storage/v1/object) quedan afuera: se guardan en
+            // IndexedDB, y cachearlos acá también duplicaría decenas de MB.
+            urlPattern: /^https:\/\/wekkywlshtufqsqeyiba\.supabase\.co\/(?!storage\/v1\/object\/).*/i,
             handler: 'NetworkFirst',
             options: {
                 cacheName: 'supabase-cache',

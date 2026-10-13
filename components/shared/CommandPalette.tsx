@@ -8,7 +8,7 @@ import {
     Search, Loader2, Brain, CheckSquare, Utensils, Target, Calendar,
     Heart, Tv, BookOpen, LayoutDashboard, Sun, Moon, CalendarRange,
     Inbox, Flame, DollarSign, Baby, Sparkles, Dumbbell, MessageCircleHeart,
-    Bell, Plus, LineChart
+    Bell, Plus, LineChart, LibraryBig
 } from 'lucide-react'
 import { globalSearch, type SearchResult } from '@/lib/actions/search'
 import { cn } from '@/lib/utils'
@@ -40,6 +40,7 @@ const NAV_ITEMS = [
     { label: 'Objetivos', url: '/okrs', icon: Target, keywords: 'okr metas sueños' },
     { label: 'Journal', url: '/journal', icon: BookOpen, keywords: 'diario animo' },
     { label: 'Entretenimiento', url: '/media', icon: Tv, keywords: 'peliculas series juegos libros' },
+    { label: 'Biblioteca', url: '/lectura', icon: LibraryBig, keywords: 'leer libros pdf lector lectura' },
     { label: 'Wishlist', url: '/wishlist', icon: Heart, keywords: 'deseos comprar' },
     { label: 'Ajustes', url: '/ajustes', icon: Bell, keywords: 'notificaciones configuracion push' }
 ]

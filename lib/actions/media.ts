@@ -90,6 +90,19 @@ export async function updateMediaStatus(id: string, newStatus: string) {
         .eq('user_id', user.id)
 
     if (error) throw error
+
+    // Si el libro tiene PDF en el lector, terminarlo acá también lo archiva en la Biblioteca.
+    if (newStatus === 'Finished') {
+        const now = new Date().toISOString()
+        await supabase
+            .from('books')
+            .update({ status: 'finished', finished_at: now })
+            .eq('media_id', id)
+            .eq('user_id', user.id)
+            .eq('status', 'reading')
+        revalidatePath('/lectura')
+    }
+
     revalidatePath('/media')
 }
 

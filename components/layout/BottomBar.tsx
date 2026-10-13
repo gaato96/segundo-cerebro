@@ -7,7 +7,7 @@ import {
     LayoutDashboard, CheckSquare, Flame, DollarSign,
     Baby, Tv, Target, BookOpen, Heart, Utensils,
     Inbox, Sun, CalendarRange, Calendar, Sparkles,
-    MessageCircleHeart, Dumbbell, Moon, LineChart, Settings, Lightbulb
+    MessageCircleHeart, Dumbbell, Moon, LineChart, Settings, Lightbulb, LibraryBig
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -30,6 +30,7 @@ const bottomNavItems = [
     { href: '/okrs', icon: Target, label: 'OKRs' },
     { href: '/journal', icon: BookOpen, label: 'Journal' },
     { href: '/media', icon: Tv, label: 'Media' },
+    { href: '/lectura', icon: LibraryBig, label: 'Libros' },
     { href: '/wishlist', icon: Heart, label: 'Deseos' },
     { href: '/insights', icon: LineChart, label: 'Datos' },
     { href: '/ajustes', icon: Settings, label: 'Ajustes' },

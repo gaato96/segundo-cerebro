@@ -58,6 +58,7 @@ export const config = {
         // - push-sw.js: el service worker tiene que poder descargarse sin sesión,
         //   si no el navegador recibe el HTML del login y falla el register().
         // - api/notifications/cron: se autentica con CRON_SECRET, no con cookie de sesión.
-        '/((?!_next/static|_next/image|favicon.ico|icons|manifest.json|sw.js|push-sw.js|workbox-.*|api/notifications/cron|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+        // - pdfjs: worker y recursos estáticos del lector de libros.
+        '/((?!_next/static|_next/image|favicon.ico|icons|manifest.json|sw.js|push-sw.js|workbox-.*|pdfjs/|api/notifications/cron|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
     ],
 }

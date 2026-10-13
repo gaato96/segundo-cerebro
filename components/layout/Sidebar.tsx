@@ -8,7 +8,7 @@ import {
     DollarSign, Baby, Tv, Target, BookOpen,
     Heart, LogOut, ChevronLeft, ChevronRight,
     Utensils, Inbox, Sun, CalendarRange, Calendar,
-    Sparkles, MessageCircleHeart, Dumbbell, Moon, LineChart, Settings, Lightbulb
+    Sparkles, MessageCircleHeart, Dumbbell, Moon, LineChart, Settings, Lightbulb, LibraryBig
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useState } from 'react'
@@ -31,6 +31,7 @@ const navItems = [
     { href: '/finances', icon: DollarSign, label: 'Finanzas' },
     { href: '/julian', icon: Baby, label: 'Julian' },
     { href: '/media', icon: Tv, label: 'Entretenimiento' },
+    { href: '/lectura', icon: LibraryBig, label: 'Biblioteca' },
     { href: '/okrs', icon: Target, label: 'Objetivos' },
     { href: '/journal', icon: BookOpen, label: 'Journal' },
     { href: '/wishlist', icon: Heart, label: 'Wishlist' },
