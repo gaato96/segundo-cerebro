@@ -2,8 +2,9 @@ import { getReplanState } from '@/lib/actions/quarterly'
 import { ReplanClient } from './page.client'
 
 export const dynamic = 'force-dynamic'
-// La generación del plan con IA puede tardar más que el límite por defecto.
-export const maxDuration = 60
+// La generación del plan con IA puede pasar el minuto. Con Fluid compute
+// (activado en Vercel) el plan Hobby permite hasta 300 s.
+export const maxDuration = 300
 
 export default async function ReplanPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
     const { q } = await searchParams

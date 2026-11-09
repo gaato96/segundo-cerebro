@@ -549,7 +549,7 @@ export async function generateQuarterPlan(year: number, quarter: number): Promis
         const listOf = (type: string, status: string) => media.filter((m: any) => m.type === type && m.status === status).map((m: any) => m.title).join(', ') || 'nada'
         const liked = media.filter((m: any) => Number(m.rating) >= 8).map((m: any) => `${m.title} (${m.rating})`).join(', ') || 'sin calificaciones'
 
-        const prompt = `
+        const context = `
 <segundo_cerebro>
 ${snapshot}
 </segundo_cerebro>
@@ -566,29 +566,25 @@ Por qué se desconectó del sistema: ${reflection.desconexion || '(no escribió)
 Palabra para el trimestre: ${reflection.palabra || '(no eligió)'}
 </reflexion_del_usuario>
 
-<entretenimiento>
-Series pendientes: ${listOf('Series', 'Backlog')}
-Series en curso: ${listOf('Series', 'Active')}
-Películas pendientes: ${listOf('Movie', 'Backlog')}
-Libros en curso: ${listOf('Book', 'Active')}
-Lo que más le gustó: ${liked}
-</entretenimiento>
-
-Hoy es ${diagnosis.today}. Sos su estratega personal y vas a armar el plan de ${target.name}, que termina el ${target.end} (quedan ${target.daysLeft} días).
+Hoy es ${diagnosis.today}. Sos su estratega personal y estás armando el plan de ${target.name}, que termina el ${target.end} (quedan ${target.daysLeft} días).
 
 Contexto clave: el usuario viene de un período sin registrar nada. NO le armes el plan de alguien disciplinado; armá el plan de alguien que está volviendo. Poco, chico y que se pueda cumplir aunque tenga una semana mala.
+Español rioplatense con voseo. Directo, sin relleno.`.trim()
+
+        // El plan se arma en dos llamadas EN PARALELO: una sola respuesta con todo
+        // tardaba más de 60 segundos y Vercel la cortaba.
+        const promptCore = `
+${context}
+
+Esta parte del plan es la estructura: objetivos, hábitos, tareas recurrentes, horario y qué recortar.
 
 Reglas duras:
 - Máximo 3 objetivos SMART. Con ${target.daysLeft} días, si alguno no entra, no lo pongas. Cada uno con 2 o 3 resultados clave con NÚMERO y unidad, "target_date" YYYY-MM-DD antes del ${target.end}, y entre 2 y 4 tareas de una sola sesión con la semana del plan. "habits" de cada objetivo va VACÍO: los hábitos van aparte.
 - Hábitos: máximo 4, de 15 minutos o menos, que encajen en sus horarios reales. Preferí "x_per_week". Si ya tiene un hábito que sirve, no lo dupliques.
 - Tareas recurrentes: entre 2 y 4 (por ejemplo revisión semanal el domingo, pagar deudas, prospectar). recurrence_days en ISO (1 lunes ... 7 domingo).
 - Horario: un día tipo de bloques "HH:MM - HH:MM" que respete su trabajo y su vida con su hijo. Que entre el entrenamiento.
-- Entrenamiento: alineado con el plan que ya tiene activo (fuerza en casa y plan de parque). No inventes otro programa: decí cómo encajarlo en la semana.
-- Comidas: realista para su presupuesto y para cocinar también para un nene de 2 años.
-- Series, películas y libros: primero de lo que YA tiene pendiente, y como mucho 2 nuevos por categoría, basados en lo que calificó alto. Libros: que ayuden a sus objetivos.
 - "recortar": 2 o 3 cosas concretas para dejar de hacer o pausar (módulos, hábitos, proyectos).
 - "regla_regreso": una regla corta para la próxima vez que se desconecte (qué hacer el primer día que vuelve).
-- Español rioplatense con voseo. Directo, sin relleno.
 
 Respondé SOLO con este JSON:
 {
@@ -599,16 +595,44 @@ Respondé SOLO con este JSON:
   "habitos": [{ "title": "...", "frequency_type": "x_per_week", "frequency_times_per_week": 3, "estimated_minutes": 10, "time_of_day": "morning", "why": "..." }],
   "tareas_recurrentes": [{ "title": "...", "recurrence_type": "weekly", "recurrence_days": [7], "category": "Personal", "why": "..." }],
   "horario": [{ "time": "05:00 - 07:00", "activity": "...", "category": "Trabajo" }],
+  "recortar": ["..."]
+}`.trim()
+
+        const promptLife = `
+${context}
+
+<entretenimiento>
+Series pendientes: ${listOf('Series', 'Backlog')}
+Series en curso: ${listOf('Series', 'Active')}
+Películas pendientes: ${listOf('Movie', 'Backlog')}
+Libros en curso: ${listOf('Book', 'Active')}
+Lo que más le gustó: ${liked}
+</entretenimiento>
+
+Esta parte del plan es el día a día del cuerpo y el descanso: entrenamiento, comidas y qué ver o leer.
+
+Reglas duras:
+- Entrenamiento: alineado con el plan que ya tiene activo (fuerza en casa y plan de parque). No inventes otro programa: decí cómo encajarlo en la semana, día por día.
+- Comidas: realista para su presupuesto y para cocinar también para un nene de 2 años. Entre 5 y 8 ideas y una lista base de compras.
+- Series, películas y libros: primero de lo que YA tiene pendiente, y como mucho 2 nuevos por categoría, basados en lo que calificó alto. Libros: que ayuden a sus objetivos. Máximo 3 por categoría.
+
+Respondé SOLO con este JSON:
+{
   "entrenamiento": { "resumen": "...", "semana": [{ "dia": "Lunes", "que": "..." }] },
   "comidas": { "enfoque": "...", "ideas": ["..."], "compras": ["..."] },
   "series": [{ "title": "...", "why": "..." }],
   "peliculas": [{ "title": "...", "why": "..." }],
-  "libros": [{ "title": "...", "author": "...", "why": "..." }],
-  "recortar": ["..."]
+  "libros": [{ "title": "...", "author": "...", "why": "..." }]
 }`.trim()
 
-        const text = await generateText(prompt, { temperature: 0.6, maxOutputTokens: 7000, json: true })
-        const p = parseJSON<any>(text)
+        const [coreText, lifeText] = await Promise.all([
+            generateText(promptCore, { temperature: 0.6, maxOutputTokens: 4500, json: true }),
+            // Si la segunda parte falla, el plan igual sale con la estructura.
+            generateText(promptLife, { temperature: 0.7, maxOutputTokens: 3000, json: true }).catch(() => '{}')
+        ])
+        let life: any = {}
+        try { life = parseJSON<any>(lifeText) } catch { life = {} }
+        const p = { ...life, ...parseJSON<any>(coreText) }
 
         const media3 = (x: any): PlanMedia | null => {
             const title = str(x?.title, 160)
@@ -879,7 +903,9 @@ export async function getReplanNudge(): Promise<ReplanNudge | null> {
             supabase.from('evening_ritual_logs').select('date').eq('user_id', uid).order('date', { ascending: false }).limit(1),
             supabase.from('journal_entries').select('date').eq('user_id', uid).order('date', { ascending: false }).limit(1),
             supabase.from('finances').select('created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(1),
-            supabase.from('tasks').select('updated_at').eq('user_id', uid).eq('status', 'Done').order('updated_at', { ascending: false }).limit(1)
+            supabase.from('tasks').select('updated_at').eq('user_id', uid).eq('status', 'Done').order('updated_at', { ascending: false }).limit(1),
+            supabase.from('mental_notes').select('created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(1),
+            supabase.from('daily_commitments').select('date').eq('user_id', uid).order('date', { ascending: false }).limit(1)
         ])
 
         // Si la migración 024 no corrió, no mostramos nada.

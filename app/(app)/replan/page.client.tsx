@@ -610,7 +610,9 @@ function StepPlan({ target, initialPlan, applied, onFinished }: { target: Quarte
     async function generate() {
         setLoading(true)
         setError('')
-        const res = await generateQuarterPlan(target.year, target.quarter)
+        // Si la función se corta (timeout), la acción no devuelve nada y tira:
+        // sin este catch el botón quedaba girando para siempre.
+        const res = await generateQuarterPlan(target.year, target.quarter).catch(() => ({ ok: false as const, error: 'No pude hablar con el servidor (¿se cortó por tiempo?). Probá de nuevo en unos segundos.' }))
         setLoading(false)
         if (!res.ok) return setError(res.error)
         setPlan(res.data)
@@ -630,7 +632,7 @@ function StepPlan({ target, initialPlan, applied, onFinished }: { target: Quarte
     async function apply() {
         setApplying(true)
         setError('')
-        const res = await applyQuarterPlan(target.year, target.quarter, sel)
+        const res = await applyQuarterPlan(target.year, target.quarter, sel).catch(() => ({ ok: false as const, error: 'No pude hablar con el servidor (¿se cortó por tiempo?). Probá de nuevo en unos segundos.' }))
         setApplying(false)
         if (!res.ok) return setError(res.error)
         setResult(res.data)
@@ -638,7 +640,7 @@ function StepPlan({ target, initialPlan, applied, onFinished }: { target: Quarte
 
     async function finish() {
         setFinishing(true)
-        const res = await completeReplan(target.year, target.quarter)
+        const res = await completeReplan(target.year, target.quarter).catch(() => ({ ok: false as const, error: 'No pude hablar con el servidor (¿se cortó por tiempo?). Probá de nuevo en unos segundos.' }))
         setFinishing(false)
         if (!res.ok) return setError(res.error)
         onFinished()
