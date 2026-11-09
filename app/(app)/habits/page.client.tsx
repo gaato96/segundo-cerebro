@@ -60,6 +60,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
     const [frequencyDays, setFrequencyDays] = useState<number[]>([])
     const [frequencyTimesPerDay, setFrequencyTimesPerDay] = useState(1)
     const [frequencyTimesPerWeek, setFrequencyTimesPerWeek] = useState(3)
+    const [autoSource, setAutoSource] = useState<string>('')
     const [loading, setLoading] = useState(false)
 
     // --- Hábitos que propone la IA ---
@@ -138,6 +139,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
         setFrequencyDays([])
         setFrequencyTimesPerDay(1)
         setFrequencyTimesPerWeek(3)
+        setAutoSource('')
         setIsModalOpen(true)
     }
 
@@ -151,6 +153,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
         setFrequencyDays(h.frequency_days || [])
         setFrequencyTimesPerDay(h.frequency_times_per_day || 1)
         setFrequencyTimesPerWeek(h.frequency_times_per_week || 3)
+        setAutoSource((h as any).auto_source || '')
         setIsModalOpen(true)
     }
 
@@ -174,6 +177,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
         formData.append('frequency_days', frequencyDays.join(','))
         formData.append('frequency_times_per_day', frequencyTimesPerDay.toString())
         formData.append('frequency_times_per_week', frequencyTimesPerWeek.toString())
+        if (habitToEdit) formData.append('auto_source', autoSource)
 
         if (habitToEdit) {
             await updateHabit(habitToEdit.id, formData)
@@ -439,6 +443,11 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                             <RefreshCw className="w-2.5 h-2.5" />
                                             {frequencyLabel(h)}
                                         </span>
+                                        {(h as any).auto_source && (
+                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-600/10 border border-emerald-500/20 text-emerald-300 font-semibold" title="Se tilda solo al registrar lo relacionado">
+                                                ⚡ automático
+                                            </span>
+                                        )}
                                         {h.frequency_type === 'x_per_week' && (() => {
                                             const done = weeklyCount(h.id)
                                             const target = h.frequency_times_per_week || 3
@@ -528,6 +537,25 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                         className="w-full bg-black/20 border border-white/10 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                     />
                                 </div>
+
+                                {/* Se tilda solo */}
+                                {habitToEdit && (
+                                    <div>
+                                        <label className="text-xs font-semibold text-muted-foreground uppercase block mb-1">
+                                            Se tilda solo cuando…
+                                        </label>
+                                        <select
+                                            value={autoSource}
+                                            onChange={(e) => setAutoSource(e.target.value)}
+                                            className="w-full bg-black/20 border border-white/10 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                        >
+                                            <option value="">Nunca: lo tildo yo</option>
+                                            <option value="training">Registro entreno, parque o un partido</option>
+                                            <option value="reading">Avanzo páginas en la Biblioteca</option>
+                                            <option value="weight">Registro mi peso</option>
+                                        </select>
+                                    </div>
+                                )}
 
                                 {/* Frequency Type */}
                                 <div>

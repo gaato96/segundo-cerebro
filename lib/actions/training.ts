@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { autoLogHabit } from '@/lib/autoLinks'
 import { generateText, parseJSON } from '@/lib/ai'
 import { getLocalDateStr, getLocalDayOfWeek, addDaysToDateStr } from '@/lib/utils'
 import { poolFor, equipmentLabel, type EquipmentId, type Level } from '@/lib/trainingLibrary'
@@ -441,6 +442,8 @@ export async function logTrainingSession(input: {
         }, { onConflict: 'user_id, plan_id, week_number, day_index' })
 
     if (error) throw error
+    // La sesión registrada tilda sola el hábito de entrenar.
+    await autoLogHabit(supabase, user.id, 'training', getLocalDateStr())
     revalidatePath('/entrenamiento')
     revalidatePath('/')
 }

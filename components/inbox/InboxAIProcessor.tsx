@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     Sparkles, Loader2, CheckSquare, Calendar, BookOpen, Heart,
-    FileText, Trash2, Check, X, Lightbulb
+    FileText, Trash2, Check, X, Lightbulb, Wallet, Tv
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import {
@@ -12,6 +12,7 @@ import {
     type NoteSuggestion, type NoteDestination
 } from '@/lib/actions/inbox_ai'
 import { cn } from '@/lib/utils'
+import { EXPENSE_CATEGORIES } from '@/lib/expenseCategories'
 
 interface Props {
     notes: { id: string; content: string }[]
@@ -23,6 +24,8 @@ const DESTINATIONS: { id: NoteDestination; label: string; icon: any; color: stri
     { id: 'journal', label: 'Journal', icon: BookOpen, color: 'text-orange-400 border-orange-500/30 bg-orange-500/10' },
     { id: 'wishlist', label: 'Deseo', icon: Heart, color: 'text-rose-400 border-rose-500/30 bg-rose-500/10' },
     { id: 'idea', label: 'Banco de ideas', icon: Lightbulb, color: 'text-amber-400 border-amber-500/30 bg-amber-500/10' },
+    { id: 'expense', label: 'Gasto', icon: Wallet, color: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' },
+    { id: 'media', label: 'Ver / leer', icon: Tv, color: 'text-pink-400 border-pink-500/30 bg-pink-500/10' },
     { id: 'note', label: 'Solo archivar', icon: FileText, color: 'text-muted-foreground border-border bg-secondary/50' },
     { id: 'discard', label: 'Descartar', icon: Trash2, color: 'text-red-400 border-red-500/30 bg-red-500/10' }
 ]
@@ -250,6 +253,38 @@ export function InboxAIProcessor({ notes }: Props) {
                                                         className={selectCls}
                                                     />
                                                 </div>
+                                            )}
+
+                                            {s.destination === 'expense' && (
+                                                <>
+                                                    <input
+                                                        type="number"
+                                                        value={s.price ?? ''}
+                                                        placeholder="Monto"
+                                                        onChange={e => update(s.note_id, { price: e.target.value ? Number(e.target.value) : null })}
+                                                        className={selectCls}
+                                                    />
+                                                    <select
+                                                        value={s.expense_category || 'Otros'}
+                                                        onChange={e => update(s.note_id, { expense_category: e.target.value })}
+                                                        className={selectCls}
+                                                    >
+                                                        {EXPENSE_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.emoji} {c.id}</option>)}
+                                                    </select>
+                                                </>
+                                            )}
+
+                                            {s.destination === 'media' && (
+                                                <select
+                                                    value={s.media_type || 'Series'}
+                                                    onChange={e => update(s.note_id, { media_type: e.target.value as any })}
+                                                    className={selectCls}
+                                                >
+                                                    <option value="Series">Serie</option>
+                                                    <option value="Movie">Película</option>
+                                                    <option value="Book">Libro</option>
+                                                    <option value="Game">Juego</option>
+                                                </select>
                                             )}
 
                                             {s.destination === 'wishlist' && (

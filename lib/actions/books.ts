@@ -3,6 +3,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { runAction, type ActionResult } from '@/lib/actionResult'
+import { autoLogHabit } from '@/lib/autoLinks'
+import { getLocalDateStr } from '@/lib/utils'
 
 /**
  * Lector de libros PDF.
@@ -263,7 +265,7 @@ export async function saveReadingProgress(id: string, page: number): Promise<Act
 
         const { data: book, error: getError } = await supabase
             .from('books')
-            .select('page_count, media_id')
+            .select('page_count, media_id, current_page')
             .eq('id', id)
             .eq('user_id', user.id)
             .maybeSingle()
@@ -286,6 +288,11 @@ export async function saveReadingProgress(id: string, page: number): Promise<Act
                 .update({ progress: bookProgressLabel(current, book.page_count) })
                 .eq('id', book.media_id)
                 .eq('user_id', user.id)
+        }
+
+        // Avanzar páginas tilda solo el hábito de leer.
+        if (current > Number(book.current_page || 0)) {
+            await autoLogHabit(supabase, user.id, 'reading', getLocalDateStr())
         }
 
         return { progress_updated_at: now }

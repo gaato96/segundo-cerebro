@@ -22,6 +22,8 @@ export interface NotificationPrefs {
     overdue_tasks: boolean
     weekly_review: boolean
     weekly_review_time: string
+    /** Aviso para volver después de 3+ días sin registrar (migración 025). */
+    return_nudge?: boolean
 }
 
 export async function getPushStatus() {

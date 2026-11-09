@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { autoLogHabit, syncWeightKeyResults } from '@/lib/autoLinks'
 import { generateText, parseJSON } from '@/lib/ai'
 import { getLocalDateStr, getLocalDayOfWeek, addDaysToDateStr } from '@/lib/utils'
 
@@ -480,6 +481,12 @@ export async function addProgressEntry(data: {
         .from('nutrition_profiles')
         .update({ weight_kg: data.weight_kg })
         .eq('user_id', user.id)
+
+    // El peso actualiza solo los objetivos de peso y el hábito de pesarse.
+    await Promise.all([
+        syncWeightKeyResults(supabase, user.id, data.weight_kg),
+        autoLogHabit(supabase, user.id, 'weight', dateStr)
+    ])
 
     revalidatePath('/meals/nutrition')
 }

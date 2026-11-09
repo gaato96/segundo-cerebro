@@ -1,3 +1,4 @@
+import { ModuleTabs } from '@/components/layout/ModuleTabs'
 import { getTasks } from '@/lib/actions/tasks'
 import { getEventsByDateRange } from '@/lib/actions/events'
 import { getWeeklyPlan, getUnplannedTasks } from '@/lib/actions/weekly_plans'
@@ -23,6 +24,8 @@ export default async function PlannerPage() {
     ])
 
     return (
+        <>
+        <ModuleTabs module="agenda" />
         <PlannerClient
             initialTasks={allTasks || []}
             initialUnplanned={unplannedTasks || []}
@@ -30,5 +33,6 @@ export default async function PlannerPage() {
             initialPlan={weeklyPlan}
             initialMondayStr={mondayStr}
         />
+        </>
     )
 }

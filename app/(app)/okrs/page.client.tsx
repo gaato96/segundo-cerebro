@@ -6,6 +6,7 @@ import { Target, Sparkles, Plus, CheckCircle2, Circle, Clock, Flame, Calendar, T
 import { ObjectiveItem, KeyResult, createObjective, updateObjectiveProgress, deleteObjective, updateKeyResults } from '@/lib/actions/okrs'
 import { DreamItem, createDream, deleteDream } from '@/lib/actions/dreams'
 import { ObjectiveSuggester } from '@/components/okrs/ObjectiveSuggester'
+import { objectiveProgress, krRatio } from '@/lib/keyResults'
 
 interface OKRsClientProps {
     objectives: ObjectiveItem[]
@@ -49,10 +50,10 @@ export function OKRsClient({ objectives: initialObjectives, linkedTasks, dreams:
     async function handleKeyResultChange(obj: ObjectiveItem, index: number, current: number) {
         const krs = [...(obj.key_results || [])]
         if (!krs[index]) return
-        krs[index] = { ...krs[index], current }
+        const prevKr = krs[index]
+        krs[index] = { ...prevKr, start: prevKr.start ?? prevKr.current, current }
 
-        const ratios = krs.filter(k => k.target > 0).map(k => Math.min(k.current / k.target, 1))
-        const progress = ratios.length ? Math.round((ratios.reduce((a, b) => a + b, 0) / ratios.length) * 100) : obj.progress_pct
+        const progress = objectiveProgress(krs, obj.progress_pct)
 
         setObjectives(prev => prev.map(o =>
             o.id === obj.id
@@ -260,7 +261,7 @@ export function OKRsClient({ objectives: initialObjectives, linkedTasks, dreams:
                                     <div className="space-y-1">
                                         <div className="flex items-center gap-2">
                                             <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                                                {obj.timeframe}
+                                                {obj.timeframe}{obj.year && obj.timeframe !== 'Year' ? ` ${obj.year}` : ''}
                                             </span>
                                             <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-secondary text-muted-foreground border border-border">
                                                 {obj.type}
@@ -301,7 +302,7 @@ export function OKRsClient({ objectives: initialObjectives, linkedTasks, dreams:
                                             Resultados clave
                                         </span>
                                         {(obj.key_results || []).map((kr: KeyResult, i: number) => {
-                                            const pct = kr.target > 0 ? Math.min((kr.current / kr.target) * 100, 100) : 0
+                                            const pct = Math.round(krRatio(kr) * 100)
                                             return (
                                                 <div key={i} className="bg-secondary/30 border border-border/50 rounded-xl p-3 space-y-1.5">
                                                     <div className="flex items-center justify-between gap-2">

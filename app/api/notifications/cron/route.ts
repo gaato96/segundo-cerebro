@@ -49,6 +49,39 @@ function hhmm(time?: string | null): string {
     return String(time || '').slice(0, 5)
 }
 
+/** Días desde el último registro de cualquier cosa (null si nunca registró nada). */
+async function daysSinceLastActivity(supabase: any, userId: string, today: string): Promise<number | null> {
+    const last = (table: string, col: string, extra?: (q: any) => any) => {
+        let q = supabase.from(table).select(col).eq('user_id', userId)
+        if (extra) q = extra(q)
+        return q.order(col, { ascending: false }).limit(1)
+    }
+    const results = await Promise.all([
+        last('habit_logs', 'completed_at', q => q.eq('auto', false)),
+        last('morning_ritual_logs', 'date'),
+        last('evening_ritual_logs', 'date'),
+        last('journal_entries', 'date'),
+        last('finances', 'created_at'),
+        last('mental_notes', 'created_at'),
+        last('daily_commitments', 'updated_at'),
+        last('tasks', 'updated_at', q => q.eq('status', 'Done'))
+    ])
+    const dates = results
+        .map((r: any) => {
+            const row = r.data?.[0]
+            const v = row && Object.values(row)[0]
+            if (!v) return null
+            const s = String(v)
+            return s.length > 10 ? getLocalDateStr(new Date(s)) : s
+        })
+        .filter(Boolean) as string[]
+    if (!dates.length) return null
+    const lastDate = dates.sort().pop()!
+    const [y1, m1, d1] = lastDate.split('-').map(Number)
+    const [y2, m2, d2] = today.split('-').map(Number)
+    return Math.round((Date.UTC(y2, m2 - 1, d2) - Date.UTC(y1, m1 - 1, d1)) / 86_400_000)
+}
+
 export async function GET(req: NextRequest) {
     // --- Autenticación ---
     const secret = process.env.CRON_SECRET
@@ -240,6 +273,29 @@ export async function GET(req: NextRequest) {
                     tag: 'weekly'
                 }
             })
+        }
+
+        // ---------- 6. Regreso después de días sin registrar ----------
+        // A las 13:30, cuando termina el trabajo. A los 3, 5 y 7 días, y
+        // después una vez por semana: insistir todos los días es la forma
+        // más rápida de que silencies las notificaciones.
+        if (prefs.return_nudge !== false && isDue('13:30', now, windowMin)) {
+            const inactive = await daysSinceLastActivity(supabase, userId, today)
+            if (inactive !== null && inactive >= 3 && ([3, 5, 7].includes(inactive) || inactive % 7 === 0)) {
+                const long = inactive >= 7
+                due.push({
+                    kind: 'return',
+                    refId: String(inactive),
+                    payload: {
+                        title: long ? `Hace ${inactive} días que no pasás por acá` : 'Volvé con algo chico',
+                        body: long
+                            ? 'No hace falta ponerse al día. 20 minutos de replanificación y arrancás limpio.'
+                            : 'Hoy alcanza con una cosa: tildá un hábito o anotá lo que tenés en la cabeza en el Inbox.',
+                        url: long ? '/replan' : '/',
+                        tag: 'return'
+                    }
+                })
+            }
         }
 
         if (!due.length) continue

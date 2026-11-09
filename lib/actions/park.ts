@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { getLocalDateStr } from '@/lib/utils'
+import { autoLogHabit } from '@/lib/autoLinks'
 
 /** Postgres "relation does not exist": la migración 023 todavía no corrió. */
 function isMissingTable(error: any): boolean {
@@ -65,6 +66,7 @@ export async function logParkSession(input: {
         }, { onConflict: 'user_id,week_number,session_index' })
 
     if (error) throw new Error(isMissingTable(error) ? MIGRATION_MSG : error.message)
+    await autoLogHabit(supabase, user.id, 'training', getLocalDateStr())
     revalidate()
 }
 
@@ -168,6 +170,8 @@ export async function saveFootballMatch(input: MatchInput, id?: string) {
         : await supabase.from('football_matches').insert({ ...row, user_id: user.id })
 
     if (error) throw new Error(isMissingTable(error) ? MIGRATION_MSG : error.message)
+    // Un partido también es entrenar.
+    if (!id) await autoLogHabit(supabase, user.id, 'training', row.date)
     revalidate()
 }
 

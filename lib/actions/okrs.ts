@@ -6,6 +6,7 @@ import { generateText, parseJSON } from '@/lib/ai'
 import { buildBrainSnapshot } from '@/lib/actions/assistant'
 import { runAction, type ActionResult } from '@/lib/actionResult'
 import { getLocalDateStr } from '@/lib/utils'
+import { objectiveProgress, withStart } from '@/lib/keyResults'
 
 export interface KeyResult {
     title: string
@@ -13,6 +14,8 @@ export interface KeyResult {
     target: number
     current: number
     unit: string
+    /** Valor al crear el objetivo: permite medir metas que bajan (peso, deuda). */
+    start?: number
 }
 
 export interface ObjectiveItem {
@@ -21,6 +24,8 @@ export interface ObjectiveItem {
     title: string
     description?: string | null
     timeframe: 'Year' | 'Q1' | 'Q2' | 'Q3' | 'Q4'
+    /** Año del trimestre (migración 024). */
+    year?: number | null
     type: 'Professional' | 'Personal'
     status: 'Active' | 'Completed' | 'Cancelled'
     parent_id?: string | null
@@ -311,7 +316,7 @@ export async function createObjectiveFromSuggestion(
             status: 'Active',
             progress_pct: 0,
             target_date: suggestion.target_date,
-            key_results: suggestion.key_results,
+            key_results: withStart(suggestion.key_results),
             smart_notes: suggestion.smart_notes || null,
             ai_generated: true
         })
@@ -380,14 +385,15 @@ export async function updateKeyResults(objectiveId: string, keyResults: KeyResul
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: 'No autorizado' }
 
-    // El progreso del objetivo es el promedio del avance de sus resultados clave.
-    const ratios = keyResults
-        .filter(kr => kr.target > 0)
-        .map(kr => Math.min(kr.current / kr.target, 1))
+    // Los que no tienen punto de partida toman el valor que tenían antes de
+    // este cambio: sin eso, una meta que baja (peso) no se puede medir.
+    const { data: prev } = await supabase
+        .from('objectives').select('key_results').eq('id', objectiveId).eq('user_id', user.id).maybeSingle()
+    const prevKrs: KeyResult[] = Array.isArray(prev?.key_results) ? prev.key_results : []
+    keyResults = keyResults.map((kr, i) => kr.start !== undefined ? kr : { ...kr, start: Number(prevKrs[i]?.start ?? prevKrs[i]?.current ?? kr.current) })
 
-    const progress = ratios.length
-        ? Math.round((ratios.reduce((s, r) => s + r, 0) / ratios.length) * 100)
-        : 0
+    // El progreso del objetivo es el promedio del avance de sus resultados clave.
+    const progress = objectiveProgress(keyResults, 0)
 
     const { error } = await supabase
         .from('objectives')

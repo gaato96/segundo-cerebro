@@ -5,6 +5,8 @@ import { revalidatePath } from 'next/cache'
 import { generateText, parseJSON } from '@/lib/ai'
 import { getLocalDateStr, addDaysToDateStr, formatLocalDate } from '@/lib/utils'
 import { runAction, type ActionResult } from '@/lib/actionResult'
+import { EXPENSE_CATEGORIES } from '@/lib/expenseCategories'
+import { createQuickEntry } from '@/lib/actions/expenses'
 
 /**
  * Procesar el inbox con IA.
@@ -14,7 +16,7 @@ import { runAction, type ActionResult } from '@/lib/actionResult'
  * y vos confirmás. La IA nunca escribe sola en tus tablas.
  */
 
-export type NoteDestination = 'task' | 'event' | 'journal' | 'wishlist' | 'idea' | 'note' | 'discard'
+export type NoteDestination = 'task' | 'event' | 'journal' | 'wishlist' | 'idea' | 'expense' | 'media' | 'note' | 'discard'
 
 export interface NoteSuggestion {
     note_id: string
@@ -29,8 +31,12 @@ export interface NoteSuggestion {
     /** event */
     event_date?: string | null
     start_time?: string | null
-    /** wishlist */
+    /** wishlist / expense */
     price?: number | null
+    /** expense: categoría de lib/expenseCategories */
+    expense_category?: string | null
+    /** media: qué es */
+    media_type?: 'Series' | 'Movie' | 'Book' | 'Game' | null
     reason: string
 }
 
@@ -39,6 +45,8 @@ const DESTINATIONS_DOC = `
 - "event": hay una fecha y hora específicas (reunión, turno, cumpleaños).
 - "journal": es una reflexión, un estado de ánimo o algo que pasó. No hay acción.
 - "wishlist": es algo que quiere comprar.
+- "expense": es un gasto que YA hizo y tiene monto ("gasté 3500 en la verdulería"). El monto va en "price".
+- "media": es una serie, película, libro o juego para ver/leer/jugar. El título es el nombre de la obra.
 - "idea": es una idea, un proyecto posible, algo que se le ocurrió y podría hacer algún día. NO se descarta: va al Banco de Ideas para volver a mirarla.
 - "note": información de referencia que conviene guardar pero no es ninguna de las anteriores.
 - "discard": es ruido, quedó viejo o ya no aplica.
@@ -95,11 +103,13 @@ Reglas:
 - priority: 1 alta, 2 media, 3 baja. Solo para tareas.
 - category: "Work" si es del trabajo o de clientes, "Personal" si no.
 - Si es una idea o un proyecto posible, usá "idea", NUNCA "discard". Descartar es solo para ruido real o cosas que ya vencieron.
+- Para "expense", "expense_category" tiene que ser una de: ${EXPENSE_CATEGORIES.map(c => c.id).join(', ')}.
+- Para "media", "media_type" es "Series", "Movie", "Book" o "Game".
 - "reason" es una sola frase corta explicando por qué elegiste ese destino.
 - Español rioplatense.
 
 Respondé SOLO con este JSON:
-{ "items": [ { "index": 0, "destination": "task", "title": "...", "description": "...", "priority": 2, "category": "Personal", "due_date": null, "event_date": null, "start_time": null, "price": null, "reason": "..." } ] }`.trim()
+{ "items": [ { "index": 0, "destination": "task", "title": "...", "description": "...", "priority": 2, "category": "Personal", "due_date": null, "event_date": null, "start_time": null, "price": null, "expense_category": null, "media_type": null, "reason": "..." } ] }`.trim()
 
     const text = await generateText(prompt, { temperature: 0.3, maxOutputTokens: 2500, json: true })
     const parsed = parseJSON<{ items?: any[] }>(text)
@@ -118,6 +128,8 @@ Respondé SOLO con este JSON:
             event_date: item.event_date || null,
             start_time: item.start_time || null,
             price: typeof item.price === 'number' ? item.price : null,
+            expense_category: EXPENSE_CATEGORIES.some(c => c.id === item.expense_category) ? item.expense_category : 'Otros',
+            media_type: ['Series', 'Movie', 'Book', 'Game'].includes(item.media_type) ? item.media_type : 'Series',
             reason: item.reason || ''
         }))
 }
@@ -217,6 +229,32 @@ export async function applyInboxSuggestion(suggestion: NoteSuggestion) {
             break
         }
 
+        case 'expense': {
+            const res = await createQuickEntry({
+                kind: 'expense',
+                amount: Number(suggestion.price) || 0,
+                category: suggestion.expense_category || 'Otros',
+                description: suggestion.title,
+                date: String(note.created_at || '').slice(0, 10) || undefined
+            })
+            if (!res.ok) throw new Error(res.error)
+            break
+        }
+
+        case 'media': {
+            const type = suggestion.media_type || 'Series'
+            const { error } = await supabase.from('media_backlog').insert({
+                user_id: user.id,
+                type,
+                title: suggestion.title.slice(0, 200),
+                status: 'Backlog',
+                progress: type === 'Series' ? 'S1 Ep 1' : type === 'Book' ? 'Pág 1' : '',
+                notes: note.content
+            })
+            if (error) throw error
+            break
+        }
+
         case 'note':
         case 'discard':
         default:
@@ -242,6 +280,8 @@ export async function applyInboxSuggestion(suggestion: NoteSuggestion) {
     revalidatePath('/ideas')
     revalidatePath('/tasks')
     revalidatePath('/calendar')
+    revalidatePath('/media')
+    revalidatePath('/finances')
     revalidatePath('/')
     return { ok: true, destination: suggestion.destination }
 }

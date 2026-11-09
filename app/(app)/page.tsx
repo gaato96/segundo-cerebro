@@ -4,8 +4,9 @@ import { DailySnapshot } from '@/components/dashboard/DailySnapshot'
 import { PomodoroWidget } from '@/components/dashboard/PomodoroWidget'
 import { QuickStats } from '@/components/dashboard/QuickStats'
 import { TodayEventsWidget } from '@/components/dashboard/TodayEventsWidget'
-import { StickyNotesWidget } from '@/components/dashboard/StickyNotesWidget'
-import { getStickyNotes } from '@/lib/actions/sticky_notes'
+import { InboxCaptureWidget } from '@/components/dashboard/InboxCaptureWidget'
+import { MinimalModeToggle } from '@/components/dashboard/MinimalModeToggle'
+import { getMinimalMode } from '@/lib/actions/profile'
 import { IdealRoutineWidget } from '@/components/dashboard/IdealRoutineWidget'
 import { getEventsForDate } from '@/lib/actions/events'
 import { getRitualLog } from '@/lib/actions/morning_ritual'
@@ -20,6 +21,8 @@ import { getCommitment, getCommitmentStats } from '@/lib/actions/commitments'
 import { MonthForecastWidget } from '@/components/finances/MonthForecastWidget'
 import { getMonthForecast } from '@/lib/actions/forecast'
 import { getAppDay } from '@/lib/actions/day'
+import { getReplanNudge } from '@/lib/actions/quarterly'
+import { ReplanNudge } from '@/components/dashboard/ReplanNudge'
 
 export default async function DashboardPage() {
     const supabase = await createClient()
@@ -77,13 +80,16 @@ export default async function DashboardPage() {
     // el día que estás terminando, no uno nuevo.
     const appDay = await getAppDay()
 
-    const [stickyNotes, todayCommitment, tomorrowCommitment, commitmentStats, forecast] = await Promise.all([
-        getStickyNotes(),
+    const [pendingInboxRes, todayCommitment, tomorrowCommitment, commitmentStats, forecast, replanNudge, minimal] = await Promise.all([
+        supabase.from('mental_notes').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('is_processed', false),
         getCommitment(appDay.date).catch(() => null),
         getCommitment(addDaysToDateStr(appDay.date, 1)).catch(() => null),
         getCommitmentStats().catch(() => ({ done: 0, total: 0, successRate: 0, streak: 0, partial: 0, skipped: 0 })),
-        getMonthForecast().catch(() => null)
+        getMonthForecast().catch(() => null),
+        getReplanNudge(),
+        getMinimalMode()
     ])
+    const pendingInbox = pendingInboxRes.count ?? 0
 
     return (
         <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6 animate-fade-in pb-24">
@@ -94,14 +100,16 @@ export default async function DashboardPage() {
                         {todayFormatted}
                     </h1>
                     <p className="text-muted-foreground text-sm mt-0.5">
-                        Tu Resumen Diario y Centro de Control
+                        {minimal ? 'Lo mínimo de hoy: compromiso, hábitos y tareas.' : 'Tu Resumen Diario y Centro de Control'}
                     </p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 shrink-0 self-start">
+                    <MinimalModeToggle enabled={minimal} />
+
                     <QuickExpenseTrigger todayTotal={todaySpend} />
 
-                    <Link
+                    {!minimal && <Link
                         href="/ritual"
                         className={`px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 border shadow-lg transition-all whitespace-nowrap ${
                             ritualLog
@@ -111,7 +119,7 @@ export default async function DashboardPage() {
                     >
                         <Sun className="w-4 h-4 text-amber-400 shrink-0" />
                         <span>{ritualLog ? '✓ Ritual Completado' : 'Iniciar Ritual →'}</span>
-                    </Link>
+                    </Link>}
 
                     <Link
                         href="/cierre"
@@ -123,48 +131,77 @@ export default async function DashboardPage() {
                 </div>
             </div>
 
-            <IdealRoutineWidget routine={profile?.ideal_routine_json || null} />
+            {replanNudge && <ReplanNudge nudge={replanNudge} />}
 
-            <StickyNotesWidget initialNotes={stickyNotes} />
-
-            {/* Quick Stats (4 cards) */}
-            <QuickStats
-                totalTasks={todayTasks.length}
-                habitsDone={completedHabitIds.size}
-                habitsTotal={habits.length}
-                balance={income - expenses}
-                eventsTodayCount={todayEvents.length}
-            />
-
-            {/* Main Dashboard Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left: Daily Snapshot & Events */}
-                <div className="lg:col-span-2 space-y-6">
-                    <DailySnapshot
-                        tasks={todayTasks}
-                        habits={habits}
-                        completedHabitIds={completedHabitIds}
-                        userId={user.id}
-                    />
-                    <TodayEventsWidget events={todayEvents} />
+            {minimal ? (
+                /* Modo mínimo: solo lo obligatorio del día */
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2 space-y-6">
+                        <DailySnapshot
+                            tasks={todayTasks}
+                            habits={habits}
+                            completedHabitIds={completedHabitIds}
+                            userId={user.id}
+                        />
+                        {todayEvents.length > 0 && <TodayEventsWidget events={todayEvents} />}
+                    </div>
+                    <div className="space-y-6">
+                        <CommitmentWidget
+                            today={todayCommitment}
+                            tomorrow={tomorrowCommitment}
+                            stats={commitmentStats}
+                            date={appDay.date}
+                            isAfterMidnight={appDay.isAfterMidnight}
+                        />
+                        <InboxCaptureWidget pending={pendingInbox} />
+                    </div>
                 </div>
+            ) : (
+                <>
+                    <IdealRoutineWidget routine={profile?.ideal_routine_json || null} />
 
-                {/* Right: Compromiso + Pomodoro */}
-                <div className="space-y-6">
-                    <CommitmentWidget
-                        today={todayCommitment}
-                        tomorrow={tomorrowCommitment}
-                        stats={commitmentStats}
-                        date={appDay.date}
-                        isAfterMidnight={appDay.isAfterMidnight}
+                    <InboxCaptureWidget pending={pendingInbox} />
+
+                    {/* Quick Stats (4 cards) */}
+                    <QuickStats
+                        totalTasks={todayTasks.length}
+                        habitsDone={completedHabitIds.size}
+                        habitsTotal={habits.length}
+                        balance={income - expenses}
+                        eventsTodayCount={todayEvents.length}
                     />
-                    {forecast && <MonthForecastWidget forecast={forecast} compact />}
-                    <PomodoroWidget
-                        tasks={todayTasks}
-                        userId={user.id}
-                    />
-                </div>
-            </div>
+
+                    {/* Main Dashboard Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Left: Daily Snapshot & Events */}
+                        <div className="lg:col-span-2 space-y-6">
+                            <DailySnapshot
+                                tasks={todayTasks}
+                                habits={habits}
+                                completedHabitIds={completedHabitIds}
+                                userId={user.id}
+                            />
+                            <TodayEventsWidget events={todayEvents} />
+                        </div>
+
+                        {/* Right: Compromiso + Pomodoro */}
+                        <div className="space-y-6">
+                            <CommitmentWidget
+                                today={todayCommitment}
+                                tomorrow={tomorrowCommitment}
+                                stats={commitmentStats}
+                                date={appDay.date}
+                                isAfterMidnight={appDay.isAfterMidnight}
+                            />
+                            {forecast && <MonthForecastWidget forecast={forecast} compact />}
+                            <PomodoroWidget
+                                tasks={todayTasks}
+                                userId={user.id}
+                            />
+                        </div>
+                    </div>
+                </>
+            )}
         </div>
     )
 }

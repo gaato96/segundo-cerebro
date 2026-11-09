@@ -1,3 +1,4 @@
+import { ModuleTabs } from '@/components/layout/ModuleTabs'
 import { getNutritionProfile, getMonthlyPlan, getProgressHistory, getChatHistory } from '@/lib/actions/nutrition'
 import { NutritionPageClient } from './NutritionPageClient'
 import { format } from 'date-fns'
@@ -15,6 +16,8 @@ export default async function NutritionPage() {
     ])
 
     return (
+        <>
+        <ModuleTabs module="nutricion" />
         <NutritionPageClient
             initialProfile={profile}
             initialPlan={plan}
@@ -22,5 +25,6 @@ export default async function NutritionPage() {
             initialChat={chat || []}
             currentMonth={currentMonth}
         />
+        </>
     )
 }

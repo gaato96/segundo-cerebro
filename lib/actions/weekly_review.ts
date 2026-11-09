@@ -76,7 +76,14 @@ export async function buildWeekSummary(weekStart: string) {
 
     const habitStats = habits.map((h: any) => {
         const count = habitLogs.filter((l: any) => l.habit_id === h.id).length
-        return { title: h.title, count, target: h.frequency_type === 'custom_days' ? (h.frequency_days?.length || 7) : 7 }
+        // La meta semanal depende de la frecuencia: un hábito de "2 por semana"
+        // medido contra 7 siempre parece un fracaso.
+        const target =
+            h.frequency_type === 'custom_days' ? (h.frequency_days?.length || 7)
+                : h.frequency_type === 'x_per_week' ? (Number(h.frequency_times_per_week) || 3)
+                    : h.frequency_type === 'x_per_day' ? 7 * Math.max(Number(h.frequency_times_per_day) || 1, 1)
+                        : 7
+        return { title: h.title, count, target }
     })
 
     const commitmentsDone = commitments.filter((c: any) => c.status === 'done').length

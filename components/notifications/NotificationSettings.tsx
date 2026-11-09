@@ -59,6 +59,11 @@ const TOGGLES: { key: string; label: string; desc: string; timeKey?: string }[] 
         timeKey: 'weekly_review_time'
     },
     {
+        key: 'return_nudge',
+        label: 'Aviso de regreso',
+        desc: 'Si pasan 3 días sin que registres nada, te escribe a las 13:30 para volver con algo chico. Repite a los 5, 7 días y después una vez por semana.'
+    },
+    {
         key: 'overdue_tasks',
         label: 'Avisar tareas vencidas',
         desc: 'Se suma al briefing de la mañana cuando hay vencidas.'
@@ -81,7 +86,8 @@ export function NotificationSettings({ prefs, devices, vapidPublicKey, configure
         training_reminder: true,
         overdue_tasks: true,
         weekly_review: true,
-        weekly_review_time: '19:00'
+        weekly_review_time: '19:00',
+        return_nudge: true
     })
 
     useEffect(() => {

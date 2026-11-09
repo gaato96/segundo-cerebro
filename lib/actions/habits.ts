@@ -146,10 +146,14 @@ export async function updateHabit(id: string, formData: FormData) {
         : []
     const frequency_times_per_day = parseInt(formData.get('frequency_times_per_day') as string) || 1
     const frequency_times_per_week = parseInt(formData.get('frequency_times_per_week') as string) || 3
+    // Con qué se tilda solo (migración 025). Si el form no lo manda, no se toca.
+    const autoRaw = formData.get('auto_source') as string | null
+    const autoUpdate = autoRaw === null ? {} : { auto_source: ['training', 'reading', 'weight'].includes(autoRaw) ? autoRaw : null }
 
     const { error } = await supabase
         .from('habits')
         .update({
+            ...autoUpdate,
             title,
             color_hex,
             estimated_minutes,

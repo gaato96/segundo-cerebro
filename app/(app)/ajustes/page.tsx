@@ -2,19 +2,22 @@ import { getPushStatus } from '@/lib/actions/notifications'
 import { NotificationSettings } from '@/components/notifications/NotificationSettings'
 import { DayCutoffSettings } from '@/components/settings/DayCutoffSettings'
 import { getAppDay } from '@/lib/actions/day'
-import { Bell, Clock } from 'lucide-react'
+import { Bell, Clock, Feather } from 'lucide-react'
+import { MinimalModeToggle } from '@/components/dashboard/MinimalModeToggle'
+import { getMinimalMode } from '@/lib/actions/profile'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AjustesPage() {
-    const [status, appDay] = await Promise.all([
+    const [status, appDay, minimal] = await Promise.all([
         getPushStatus().catch(() => ({
             prefs: null,
             devices: [] as any[],
             vapidPublicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || null,
             configured: false
         })),
-        getAppDay()
+        getAppDay(),
+        getMinimalMode()
     ])
 
     return (
@@ -25,6 +28,13 @@ export default async function AjustesPage() {
                     Notificaciones y preferencias del Segundo Cerebro.
                 </p>
             </div>
+
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                <Feather className="w-3.5 h-3.5 text-teal-400" />
+                Cuánto registrar
+            </div>
+
+            <MinimalModeToggle enabled={minimal} variant="card" />
 
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 <Clock className="w-3.5 h-3.5 text-indigo-400" />

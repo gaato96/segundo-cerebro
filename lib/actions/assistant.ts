@@ -5,6 +5,8 @@ import { revalidatePath } from 'next/cache'
 import { generateText } from '@/lib/ai'
 import { buildSystemPrompt, getPersona } from '@/lib/assistantPersonas'
 import { resolvePlanProgress } from '@/lib/trainingProgress'
+import { resolveParkProgress, PARK_PLAN, PARK_TOTAL_WEEKS } from '@/lib/parkPlan'
+import { quarterOf, planningQuarter } from '@/lib/quarter'
 import { dailyRatePct, dailyInterestCost, dailyToMonthlyPct, rateSource } from '@/lib/debtMath'
 import {
     getLocalDateStr,
@@ -355,6 +357,44 @@ export async function buildBrainSnapshot(): Promise<string> {
             const avgRpe = trainLogs.filter((l: any) => l.rpe).reduce((s: number, l: any) => s + l.rpe, 0) / (trainLogs.filter((l: any) => l.rpe).length || 1)
             if (avgRpe) L.push(`- Esfuerzo percibido promedio (RPE): ${avgRpe.toFixed(1)}/10`)
         }
+    }
+
+    // ---------- Parque y fútbol ----------
+    // Tablas de la migración 023: si no existen, simplemente no aparecen.
+    const [parkRes, matchesRes, replanRes] = await Promise.all([
+        q('park_logs').order('date', { ascending: false }).limit(100),
+        q('football_matches').order('date', { ascending: false }).limit(6),
+        q('quarterly_reviews').order('year', { ascending: false }).order('quarter', { ascending: false }).limit(1).maybeSingle()
+    ])
+    const parkLogs = parkRes.error ? [] : (parkRes.data || [])
+    const matches = matchesRes.error ? [] : (matchesRes.data || [])
+    if (parkLogs.length || matches.length) {
+        L.push(`
+## PARQUE Y FÚTBOL`)
+        if (parkLogs.length) {
+            const park = resolveParkProgress(parkLogs as any)
+            const week = PARK_PLAN.find(w => w.week === park.currentWeek)
+            L.push(`- Plan de parque: semana ${park.currentWeek} de ${PARK_TOTAL_WEEKS}${week ? ` (${week.phase}: ${week.goal})` : ''} · ${park.totalDone} sesiones hechas · última ${parkLogs.find((l: any) => l.completed)?.date ?? 'ninguna'}`)
+        }
+        if (matches.length) {
+            L.push(`- Últimos partidos: ${matches.map((m: any) => `${m.date} general ${m.overall}/10, aire ${m.stamina}/10${m.gassed_at_min ? `, se fundió al min ${m.gassed_at_min}` : ''}`).join(' | ')}`)
+        }
+    }
+
+    // ---------- Trimestre ----------
+    const quarter = quarterOf(today)
+    const planQ = planningQuarter(today)
+    const lastReplan = replanRes.error ? null : replanRes.data
+    L.push(`
+## TRIMESTRE`)
+    L.push(`- Estamos en ${quarter.name}: quedan ${quarter.daysLeft} días (${quarter.elapsedPct}% transcurrido).`)
+    if (lastReplan) {
+        const tema = lastReplan.plan?.tema ? ` · tema "${lastReplan.plan.tema}"` : ''
+        L.push(`- Última replanificación: Q${lastReplan.quarter} ${lastReplan.year} (${lastReplan.status === 'done' ? 'cerrada' : 'a medias'})${tema}${lastReplan.reflection?.palabra ? ` · palabra "${lastReplan.reflection.palabra}"` : ''}`)
+        if (lastReplan.plan?.regla_regreso) L.push(`- Su regla para cuando se desconecta: ${trim(lastReplan.plan.regla_regreso, 300)}`)
+    }
+    if (!lastReplan || lastReplan.year !== planQ.year || lastReplan.quarter !== planQ.quarter || lastReplan.status !== 'done') {
+        L.push(`- Todavía no hizo la replanificación de ${planQ.name}. Si viene desordenado, sugerile hacerla en /replan.`)
     }
 
     // ---------- Journal y estado emocional ----------

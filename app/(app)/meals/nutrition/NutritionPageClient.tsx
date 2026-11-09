@@ -59,7 +59,7 @@ export function NutritionPageClient({
                         className="text-xs font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors"
                     >
                         <ArrowLeft className="w-4 h-4" />
-                        Volver a Comidas
+                        Volver a Nutrición
                     </Link>
                 </div>
                 <NutritionProfileForm
@@ -78,13 +78,6 @@ export function NutritionPageClient({
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <div className="flex items-center gap-2 mb-1">
-                        <Link href="/meals" className="text-xs font-medium text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
-                            <ArrowLeft className="w-3.5 h-3.5" /> Planificador de Comidas
-                        </Link>
-                        <span className="text-muted-foreground/40">•</span>
-                        <span className="text-xs font-semibold text-emerald-400">Nutrición IA</span>
-                    </div>
                     <h1 className="text-3xl font-heading font-bold gradient-text">Asistente Nutricionista</h1>
                     <p className="text-muted-foreground text-sm mt-0.5">
                         Tu plan mensual inteligente y seguimiento personalizado para Tucumán
