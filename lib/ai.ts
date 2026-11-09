@@ -4,8 +4,8 @@ import Groq from 'groq-sdk'
 /**
  * Capa única de IA para el Segundo Cerebro.
  *
- * Intenta Gemini con una cadena de modelos (por si alguno no está habilitado
- * en la cuenta) y cae a Groq/Llama si Gemini falla por completo.
+ * Prueba primero Groq y después Gemini (ver providerOrder), cada uno con su
+ * cadena de modelos y un tiempo máximo por intento.
  */
 
 // gemini-2.0-flash y gemini-1.5-flash fueron dados de baja por Google (404
@@ -95,6 +95,95 @@ function readGeminiText(response: any): { text: string; reason: string } {
 }
 
 /**
+ * Orden de proveedores. Por defecto Groq primero: en noviembre de 2026 medimos
+ * gemini-3.8-flash en 152 s y gemini-3.7-flash en 296 s para un JSON chico
+ * (3.6 y 3.5 daban error), mientras Groq respondía en 2-3 s. Gemini queda de
+ * respaldo. Se puede cambiar con AI_PROVIDER_ORDER=gemini,groq.
+ */
+function providerOrder(): ('groq' | 'gemini')[] {
+    const raw = (process.env.AI_PROVIDER_ORDER || 'groq,gemini').toLowerCase().split(',').map(s => s.trim())
+    const order = raw.filter((p): p is 'groq' | 'gemini' => p === 'groq' || p === 'gemini')
+    for (const p of ['groq', 'gemini'] as const) if (!order.includes(p)) order.push(p)
+    return order
+}
+
+async function tryGemini(prompt: string, options: GenerateOptions, errors: string[]): Promise<string | null> {
+    const {
+        system, temperature = 0.7, maxOutputTokens = 2048, json = false,
+        perModelTimeoutMs = 20_000, geminiBudgetMs = 30_000
+    } = options
+    const geminiKey = process.env.GEMINI_API_KEY
+    if (!geminiKey) {
+        errors.push('Gemini: falta GEMINI_API_KEY')
+        return null
+    }
+
+    const start = Date.now()
+    const genAI = new GoogleGenerativeAI(geminiKey)
+    for (const modelName of GEMINI_MODELS) {
+        const left = geminiBudgetMs - (Date.now() - start)
+        if (left < 3_000) {
+            errors.push(`${modelName}: salteado, se acabó el tiempo para Gemini`)
+            continue
+        }
+        try {
+            const model = genAI.getGenerativeModel({
+                model: modelName,
+                ...(system ? { systemInstruction: system } : {}),
+                generationConfig: {
+                    temperature,
+                    maxOutputTokens,
+                    // Los modelos "thinking" (gemini-3.x) gastan una cantidad
+                    // variable de maxOutputTokens "pensando" antes de escribir la
+                    // respuesta. Ninguno de los usos de este módulo necesita
+                    // razonamiento visible, así que se desactiva siempre.
+                    thinkingConfig: { thinkingBudget: 0 },
+                    ...(json ? { responseMimeType: 'application/json' } : {})
+                } as any
+            })
+            const result = await withTimeout(model.generateContent(prompt), Math.min(perModelTimeoutMs, left), modelName)
+            const { text, reason } = readGeminiText(result.response)
+            if (text) return text
+            errors.push(`${modelName}: ${reason}`)
+        } catch (e: any) {
+            errors.push(`${modelName}: ${sanitize(String(e?.message || e))}`)
+        }
+    }
+    return null
+}
+
+async function tryGroq(prompt: string, options: GenerateOptions, errors: string[]): Promise<string | null> {
+    const { system, temperature = 0.7, maxOutputTokens = 2048, json = false, perModelTimeoutMs = 20_000 } = options
+    const groqKey = process.env.GROQ_API_KEY
+    if (!groqKey) {
+        errors.push('Groq: falta GROQ_API_KEY')
+        return null
+    }
+
+    const groq = new Groq({ apiKey: groqKey })
+    for (const modelName of GROQ_MODELS) {
+        try {
+            const completion = await withTimeout(groq.chat.completions.create({
+                model: modelName,
+                temperature,
+                max_tokens: maxOutputTokens,
+                ...(json ? { response_format: { type: 'json_object' as const } } : {}),
+                messages: [
+                    ...(system ? [{ role: 'system' as const, content: system }] : []),
+                    { role: 'user' as const, content: prompt }
+                ]
+            }), perModelTimeoutMs * 2, modelName)
+            const text = completion.choices[0]?.message?.content?.trim()
+            if (text) return text
+            errors.push(`${modelName}: respuesta vacia`)
+        } catch (e: any) {
+            errors.push(`${modelName}: ${sanitize(String(e?.message || e))}`)
+        }
+    }
+    return null
+}
+
+/**
  * Genera texto con el primer proveedor que responda.
  * Lanza error solo si fallan TODOS los proveedores configurados.
  *
@@ -103,80 +192,12 @@ function readGeminiText(response: any): { text: string; reason: string } {
  * si falto una API key, si el modelo no existe o si se acabo la cuota.
  */
 export async function generateText(prompt: string, options: GenerateOptions = {}): Promise<string> {
-    const {
-        system, temperature = 0.7, maxOutputTokens = 2048, json = false,
-        perModelTimeoutMs = 20_000, geminiBudgetMs = 30_000
-    } = options
     const errors: string[] = []
-    const geminiStart = Date.now()
-
-    const geminiKey = process.env.GEMINI_API_KEY
-    if (geminiKey) {
-        const genAI = new GoogleGenerativeAI(geminiKey)
-        for (const modelName of GEMINI_MODELS) {
-            const left = geminiBudgetMs - (Date.now() - geminiStart)
-            if (left < 3_000) {
-                errors.push(`${modelName}: salteado, se acabó el tiempo para Gemini`)
-                continue
-            }
-            try {
-                const model = genAI.getGenerativeModel({
-                    model: modelName,
-                    ...(system ? { systemInstruction: system } : {}),
-                    generationConfig: {
-                        temperature,
-                        maxOutputTokens,
-                        // Los modelos "thinking" (gemini-3.x) gastan una cantidad
-                        // variable de maxOutputTokens "pensando" antes de escribir la
-                        // respuesta. Esto pasaba antes SOLO en llamadas con json:true,
-                        // pero el chat del copiloto (json:false) se quedaba sin tokens
-                        // de la misma forma y el usuario veía "no me pude conectar".
-                        // Ninguno de los usos de este módulo necesita razonamiento
-                        // visible, así que se desactiva siempre.
-                        thinkingConfig: { thinkingBudget: 0 },
-                        ...(json ? { responseMimeType: 'application/json' } : {})
-                    } as any
-                })
-                const result = await withTimeout(
-                    model.generateContent(prompt),
-                    Math.min(perModelTimeoutMs, left),
-                    modelName
-                )
-                const { text, reason } = readGeminiText(result.response)
-                if (text) return text
-                errors.push(`${modelName}: ${reason}`)
-            } catch (e: any) {
-                errors.push(`${modelName}: ${sanitize(String(e?.message || e))}`)
-            }
-        }
-    } else {
-        errors.push('Gemini: falta GEMINI_API_KEY')
-    }
-
-    const groqKey = process.env.GROQ_API_KEY
-    if (groqKey) {
-        const groq = new Groq({ apiKey: groqKey })
-        for (const modelName of GROQ_MODELS) {
-            try {
-                const completion = await groq.chat.completions.create({
-                    model: modelName,
-                    temperature,
-                    max_tokens: maxOutputTokens,
-                    ...(json ? { response_format: { type: 'json_object' as const } } : {}),
-                    messages: [
-                        ...(system ? [{ role: 'system' as const, content: system }] : []),
-                        { role: 'user' as const, content: prompt }
-                    ]
-                })
-                const text = completion.choices[0]?.message?.content?.trim()
-                if (text) return text
-                errors.push(`${modelName}: respuesta vacia`)
-            } catch (e: any) {
-                errors.push(`${modelName}: ${sanitize(String(e?.message || e))}`)
-            }
-        }
-    } else {
-        errors.push('Groq: falta GROQ_API_KEY')
+    for (const provider of providerOrder()) {
+        const text = provider === 'groq'
+            ? await tryGroq(prompt, options, errors)
+            : await tryGemini(prompt, options, errors)
+        if (text) return text
     }
 
     console.error('[ai] Todos los proveedores fallaron:', errors)
