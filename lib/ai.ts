@@ -36,6 +36,25 @@ export interface GenerateOptions {
     maxOutputTokens?: number
     /** Pedirle al modelo que devuelva JSON puro. */
     json?: boolean
+    /**
+     * Tiempo máximo que se le da a cada modelo de Gemini antes de pasar al
+     * siguiente. Algunos modelos tardan minutos en responder (gemini-3.8-flash
+     * llegó a 150 s para un JSON chico) y la función de Vercel se corta antes.
+     */
+    perModelTimeoutMs?: number
+    /** Tiempo total para todos los intentos de Gemini; después se va a Groq. */
+    geminiBudgetMs?: number
+}
+
+/** Rechaza si la promesa no termina a tiempo. */
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+    let timer: ReturnType<typeof setTimeout>
+    return Promise.race([
+        promise,
+        new Promise<T>((_, reject) => {
+            timer = setTimeout(() => reject(new Error(`${label}: tardó más de ${Math.round(ms / 1000)} s`)), ms)
+        })
+    ]).finally(() => clearTimeout(timer))
 }
 
 /**
@@ -84,13 +103,22 @@ function readGeminiText(response: any): { text: string; reason: string } {
  * si falto una API key, si el modelo no existe o si se acabo la cuota.
  */
 export async function generateText(prompt: string, options: GenerateOptions = {}): Promise<string> {
-    const { system, temperature = 0.7, maxOutputTokens = 2048, json = false } = options
+    const {
+        system, temperature = 0.7, maxOutputTokens = 2048, json = false,
+        perModelTimeoutMs = 20_000, geminiBudgetMs = 30_000
+    } = options
     const errors: string[] = []
+    const geminiStart = Date.now()
 
     const geminiKey = process.env.GEMINI_API_KEY
     if (geminiKey) {
         const genAI = new GoogleGenerativeAI(geminiKey)
         for (const modelName of GEMINI_MODELS) {
+            const left = geminiBudgetMs - (Date.now() - geminiStart)
+            if (left < 3_000) {
+                errors.push(`${modelName}: salteado, se acabó el tiempo para Gemini`)
+                continue
+            }
             try {
                 const model = genAI.getGenerativeModel({
                     model: modelName,
@@ -109,7 +137,11 @@ export async function generateText(prompt: string, options: GenerateOptions = {}
                         ...(json ? { responseMimeType: 'application/json' } : {})
                     } as any
                 })
-                const result = await model.generateContent(prompt)
+                const result = await withTimeout(
+                    model.generateContent(prompt),
+                    Math.min(perModelTimeoutMs, left),
+                    modelName
+                )
                 const { text, reason } = readGeminiText(result.response)
                 if (text) return text
                 errors.push(`${modelName}: ${reason}`)
