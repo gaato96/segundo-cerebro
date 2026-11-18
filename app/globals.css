@@ -67,22 +67,39 @@
     @apply font-heading;
   }
 
-  /* Custom scrollbar */
+  /* Barra de scroll fina pero agarrable con el mouse.
+     8px de ancho para poder arrastrarla; el borde transparente hace que se
+     vea de ~4px y se ensanche al pasar el mouse. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.35) transparent;
+  }
+
   ::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
+    width: 8px;
+    height: 8px;
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-transparent;
+    background: transparent;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-border rounded-full;
+    background-color: hsl(var(--muted-foreground) / 0.35);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    border-radius: 9999px;
+    min-height: 32px;
   }
 
-  ::-webkit-scrollbar-thumb:hover {
-    @apply bg-muted-foreground;
+  ::-webkit-scrollbar-thumb:hover,
+  ::-webkit-scrollbar-thumb:active {
+    background-color: hsl(var(--muted-foreground) / 0.7);
+    border-width: 1px;
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
   }
 }
 

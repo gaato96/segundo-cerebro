@@ -2,13 +2,14 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Repeat, Trash2, Calendar, Zap, Flag, Tag, Clock } from 'lucide-react'
+import { Repeat, Trash2, Calendar, Clock, Pencil, Bell } from 'lucide-react'
 import { deleteRecurringTask } from '@/lib/actions/tasks'
 import { getPriorityColor, getPriorityLabel, formatDate } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 
 interface RecurringTaskListProps {
     recurringTasks: any[]
+    onEdit?: (task: any) => void
 }
 
 const RECURRENCE_LABELS: Record<string, string> = {
@@ -22,7 +23,7 @@ const RECURRENCE_LABELS: Record<string, string> = {
 
 const DAY_NAMES = ['', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 
-export function RecurringTaskList({ recurringTasks }: RecurringTaskListProps) {
+export function RecurringTaskList({ recurringTasks, onEdit }: RecurringTaskListProps) {
     const [loadingId, setLoadingId] = useState<string | null>(null)
     const router = useRouter()
 
@@ -97,6 +98,13 @@ export function RecurringTaskList({ recurringTasks }: RecurringTaskListProps) {
                                         {task.category}
                                     </span>
 
+                                    {task.reminder_time && (
+                                        <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-amber-500/10 text-amber-300 border border-amber-500/20 flex items-center gap-1">
+                                            <Bell className="w-3 h-3" />
+                                            {String(task.reminder_time).slice(0, 5)}
+                                        </span>
+                                    )}
+
                                     {task.next_occurrence_date && (
                                         <span className="text-[10px] text-muted-foreground flex items-center gap-1 ml-auto">
                                             <Calendar className="w-3 h-3 text-indigo-400" />
@@ -106,13 +114,27 @@ export function RecurringTaskList({ recurringTasks }: RecurringTaskListProps) {
                                 </div>
                             </div>
 
-                            <button
-                                onClick={() => handleDelete(task.id)}
-                                disabled={loadingId === task.id}
-                                className="p-2 text-muted-foreground hover:text-red-400 rounded-lg hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                            </button>
+                            <div className="flex items-center gap-1 shrink-0">
+                                {onEdit && (
+                                    <button
+                                        onClick={() => onEdit(task)}
+                                        disabled={loadingId === task.id}
+                                        title="Editar (aplica de hoy en adelante)"
+                                        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-indigo-300 rounded-lg hover:bg-indigo-500/10 transition-colors"
+                                    >
+                                        <Pencil className="w-3.5 h-3.5" />
+                                        Editar
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => handleDelete(task.id)}
+                                    disabled={loadingId === task.id}
+                                    title="Eliminar"
+                                    className="p-2 text-muted-foreground hover:text-red-400 rounded-lg hover:bg-red-500/10 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </div>
                         </motion.div>
                     )
                 })}

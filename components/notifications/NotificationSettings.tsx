@@ -29,7 +29,13 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
     return output
 }
 
-const TOGGLES: { key: string; label: string; desc: string; timeKey?: string }[] = [
+const TOGGLES: { key: string; label: string; desc: string; timeKey?: string; defaultOn?: boolean }[] = [
+    {
+        key: 'item_reminders',
+        label: 'Recordatorios de tareas y hábitos',
+        desc: 'A la hora que le pusiste a cada tarea o hábito ("Recordatorio PC"). Con la app abierta en la compu llega siempre; con la app cerrada, solo si el cron cada 5 minutos está activo.',
+        defaultOn: true
+    },
     {
         key: 'commitment_reminder',
         label: 'Recordatorio del compromiso',
@@ -305,7 +311,7 @@ export function NotificationSettings({ prefs, devices, vapidPublicKey, configure
                         <div key={t.key} className="flex items-start gap-3 p-3 rounded-xl bg-secondary/40 border border-border/40">
                             <input
                                 type="checkbox"
-                                checked={Boolean(localPrefs[t.key])}
+                                checked={t.defaultOn ? localPrefs[t.key] !== false : Boolean(localPrefs[t.key])}
                                 onChange={e => updatePref({ [t.key]: e.target.checked })}
                                 className="w-4 h-4 accent-indigo-500 mt-0.5 shrink-0"
                             />

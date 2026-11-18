@@ -21,6 +21,8 @@ export interface HabitItem {
     objective_id?: string | null
     estimated_minutes: number
     time_of_day: 'morning' | 'afternoon' | 'evening' | 'anytime'
+    /** Hora del aviso en la PC (migración 026). */
+    reminder_time?: string | null
     order_index: number
     icon: string
     is_active: boolean
@@ -103,9 +105,8 @@ export async function createHabit(formData: FormData) {
 
     if (!title) return { error: 'El título es requerido' }
 
-    const { error } = await supabase
-        .from('habits')
-        .insert({
+    const reminder_time = parseReminder(formData)
+    const insertRow: Record<string, any> = {
             user_id: user.id,
             title,
             frequency: 'daily',
@@ -119,7 +120,12 @@ export async function createHabit(formData: FormData) {
             frequency_days,
             frequency_times_per_day,
             frequency_times_per_week
-        })
+        }
+    if (reminder_time !== undefined) insertRow.reminder_time = reminder_time
+
+    const { error } = await withoutMissingReminderColumn(insertRow, row =>
+        supabase.from('habits').insert(row)
+    )
 
     if (error) return { error: error.message }
 
@@ -127,6 +133,30 @@ export async function createHabit(formData: FormData) {
     revalidatePath('/ritual')
     revalidatePath('/')
     return { success: true }
+}
+
+/** undefined = el form no lo mandó; null = sin recordatorio; "HH:MM:00" = con hora. */
+function parseReminder(formData: FormData): string | null | undefined {
+    if (!formData.has('reminder_time')) return undefined
+    const v = String(formData.get('reminder_time') || '').trim()
+    if (!v) return null
+    return v.length === 5 ? `${v}:00` : v
+}
+
+/**
+ * Si la migración 026 todavía no se corrió, la columna reminder_time no existe
+ * y el guardado entero fallaría. En ese caso se reintenta sin ese campo.
+ */
+async function withoutMissingReminderColumn(
+    row: Record<string, any>,
+    run: (row: Record<string, any>) => PromiseLike<{ error: any }>
+): Promise<{ error: any }> {
+    const first = await run(row)
+    if (first.error && 'reminder_time' in row && /reminder_time/.test(first.error.message || '')) {
+        const { reminder_time, ...rest } = row
+        return run(rest)
+    }
+    return first
 }
 
 export async function updateHabit(id: string, formData: FormData) {
@@ -150,9 +180,8 @@ export async function updateHabit(id: string, formData: FormData) {
     const autoRaw = formData.get('auto_source') as string | null
     const autoUpdate = autoRaw === null ? {} : { auto_source: ['training', 'reading', 'weight'].includes(autoRaw) ? autoRaw : null }
 
-    const { error } = await supabase
-        .from('habits')
-        .update({
+    const reminder_time = parseReminder(formData)
+    const updateRow: Record<string, any> = {
             ...autoUpdate,
             title,
             color_hex,
@@ -163,9 +192,12 @@ export async function updateHabit(id: string, formData: FormData) {
             frequency_days,
             frequency_times_per_day,
             frequency_times_per_week
-        })
-        .eq('id', id)
-        .eq('user_id', user.id)
+        }
+    if (reminder_time !== undefined) updateRow.reminder_time = reminder_time
+
+    const { error } = await withoutMissingReminderColumn(updateRow, row =>
+        supabase.from('habits').update(row).eq('id', id).eq('user_id', user.id)
+    )
 
     if (error) return { error: error.message }
 

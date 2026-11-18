@@ -3,6 +3,7 @@ import { createAdminClient, hasAdminCredentials } from '@/lib/supabase/admin'
 import { sendPushToSubscriptions, isPushConfigured, type PushPayload } from '@/lib/push'
 import { getLocalDateStr, getLocalDayOfWeek, addDaysToDateStr } from '@/lib/utils'
 import { resolvePlanProgress } from '@/lib/trainingProgress'
+import { buildTodayReminders } from '@/lib/reminders'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -293,6 +294,30 @@ export async function GET(req: NextRequest) {
                             : 'Hoy alcanza con una cosa: tildá un hábito o anotá lo que tenés en la cabeza en el Inbox.',
                         url: long ? '/replan' : '/',
                         tag: 'return'
+                    }
+                })
+            }
+        }
+
+        // ---------- 7. Recordatorios con hora de tareas y hábitos ----------
+        // Para que lleguen a horario el cron tiene que correr seguido (cada 5
+        // minutos, ver migración 027). Con la app abierta en la PC, además,
+        // avisa components/notifications/PcReminders con el mismo tag.
+        if (prefs.item_reminders !== false) {
+            const items = buildTodayReminders(openTasks, habits, doneHabitIds, today)
+            for (const r of items) {
+                if (!isDue(r.time, now, windowMin)) continue
+                due.push({
+                    kind: r.kind === 'habit' ? 'habit_reminder' : 'task_reminder',
+                    refId: r.key,
+                    payload: {
+                        title: r.kind === 'habit' ? `Hábito: ${r.title}` : `Tarea: ${r.title}`,
+                        body: r.kind === 'habit'
+                            ? `Son las ${r.time}. Tocá para abrir y tildarlo.`
+                            : `Son las ${r.time}. Tocá para abrir tus tareas.`,
+                        url: r.url,
+                        tag: `rem-${r.id}`,
+                        requireInteraction: true
                     }
                 })
             }

@@ -275,7 +275,8 @@ export async function syncRecurringTasks(userId?: string, force = false) {
     if (!force && lastSyncByUser.get(currentUserId) === todayStr) return
     lastSyncByUser.set(currentUserId, todayStr)
 
-    // 1. Get all recurring templates for user
+    // Todo en lote: antes eran 3-4 consultas seguidas por cada plantilla, y con
+    // diez recurrentes la primera carga del día tardaba varios segundos.
     const { data: templates } = await supabase
         .from('tasks')
         .select('*')
@@ -283,69 +284,58 @@ export async function syncRecurringTasks(userId?: string, force = false) {
         .eq('is_recurring', true)
         .is('recurring_parent_id', null)
 
-    for (const template of templates || []) {
-        // 2. Mark overdue pending instances for this template as 'Missed'
+    if (templates?.length) {
+        const ids = templates.map((t: any) => t.id)
+
+        // 1. Las instancias pendientes que quedaron en el pasado pasan a 'Missed'
         await supabase
             .from('tasks')
             .update({ status: 'Missed', updated_at: new Date().toISOString() })
             .eq('user_id', currentUserId)
-            .eq('recurring_parent_id', template.id)
+            .in('recurring_parent_id', ids)
             .in('status', ['Todo', 'InProgress'])
             .lt('due_date', todayStr)
 
-        // 3. Check if an active instance (status Todo or InProgress) for due_date >= todayStr already exists
-        const { data: activeInstances } = await supabase
+        // 2. ¿Qué plantillas ya tienen una instancia activa de hoy en adelante?
+        const { data: active } = await supabase
             .from('tasks')
-            .select('*')
+            .select('recurring_parent_id')
             .eq('user_id', currentUserId)
-            .eq('recurring_parent_id', template.id)
+            .in('recurring_parent_id', ids)
             .in('status', ['Todo', 'InProgress'])
             .gte('due_date', todayStr)
+        const withActive = new Set((active || []).map((a: any) => a.recurring_parent_id))
 
-        if (!activeInstances || activeInstances.length === 0) {
-            // No active instance for today or future! Generate the next one!
-            const todayDate = new Date(`${todayStr}T00:00:00`)
-            const nextDate = calculateNextOccurrenceDate(
-                todayDate,
-                template.recurrence_type,
-                template.recurrence_days || [],
-                template.recurrence_interval || 1,
-                true
-            )
+        // 3. Para las que no, se calcula la próxima fecha
+        const todayDate = new Date(`${todayStr}T00:00:00`)
+        const candidates = templates
+            .filter((t: any) => !withActive.has(t.id))
+            .map((t: any) => ({
+                template: t,
+                date: formatDateStr(calculateNextOccurrenceDate(
+                    todayDate, t.recurrence_type, t.recurrence_days || [], t.recurrence_interval || 1, true
+                ))
+            }))
+            .filter(c => !c.template.recurrence_end_date || c.date <= c.template.recurrence_end_date)
 
-            const nextDateStr = formatDateStr(nextDate)
+        if (candidates.length) {
+            // Evita duplicar una instancia que ya existe para esa fecha (por ejemplo, hecha hoy)
+            const { data: sameDate } = await supabase
+                .from('tasks')
+                .select('recurring_parent_id, due_date')
+                .eq('user_id', currentUserId)
+                .in('recurring_parent_id', candidates.map(c => c.template.id))
+                .in('due_date', Array.from(new Set(candidates.map(c => c.date))))
+            const taken = new Set((sameDate || []).map((r: any) => `${r.recurring_parent_id}|${String(r.due_date).slice(0, 10)}`))
+            const toCreate = candidates.filter(c => !taken.has(`${c.template.id}|${c.date}`))
 
-            // Verify end date
-            if (!template.recurrence_end_date || nextDateStr <= template.recurrence_end_date) {
-                // Double check if any instance for this exact due_date already exists
-                const { data: existingSameDate } = await supabase
+            if (toCreate.length) {
+                await supabase
                     .from('tasks')
-                    .select('id')
-                    .eq('user_id', currentUserId)
-                    .eq('recurring_parent_id', template.id)
-                    .eq('due_date', nextDateStr)
-                    .limit(1)
-
-                if (!existingSameDate || existingSameDate.length === 0) {
-                    await supabase
-                        .from('tasks')
-                        .insert({
-                            user_id: currentUserId,
-                            title: template.title,
-                            description: template.description,
-                            priority: template.priority,
-                            category: template.category,
-                            energy_level: template.energy_level,
-                            due_date: nextDateStr,
-                            recurring_parent_id: template.id,
-                            status: 'Todo'
-                        })
-
-                    await supabase
-                        .from('tasks')
-                        .update({ next_occurrence_date: nextDateStr })
-                        .eq('id', template.id)
-                }
+                    .insert(toCreate.map(c => instanceFromTemplate(c.template, currentUserId!, c.date)))
+                await Promise.all(toCreate.map(c =>
+                    supabase.from('tasks').update({ next_occurrence_date: c.date }).eq('id', c.template.id)
+                ))
             }
         }
     }
@@ -424,6 +414,7 @@ export async function createRecurringTask(formData: FormData) {
     const recurrence_days = recurrence_days_str ? recurrence_days_str.split(',').map(Number) : []
     const recurrence_interval = parseInt(formData.get('recurrence_interval') as string) || 1
     const recurrence_end_date = formData.get('recurrence_end_date') as string || null
+    const reminder_time = normalizeTime(formData.get('reminder_time') as string)
 
     const now = new Date()
     const formatter = new Intl.DateTimeFormat('en-US', {
@@ -455,6 +446,7 @@ export async function createRecurringTask(formData: FormData) {
             recurrence_days,
             recurrence_interval,
             recurrence_end_date: recurrence_end_date ? recurrence_end_date : null,
+            reminder_time,
             next_occurrence_date: nextDateStr,
             status: 'Todo'
         })
@@ -466,17 +458,7 @@ export async function createRecurringTask(formData: FormData) {
     // 2. Create the first active task instance for this recurring task
     const { error: instanceError } = await supabase
         .from('tasks')
-        .insert({
-            user_id: user.id,
-            title,
-            description,
-            priority,
-            category,
-            energy_level,
-            due_date: nextDateStr,
-            recurring_parent_id: template.id,
-            status: 'Todo'
-        })
+        .insert(instanceFromTemplate(template, user.id, nextDateStr))
 
     if (instanceError) throw instanceError
 
@@ -528,17 +510,7 @@ export async function completeRecurringInstance(taskId: string) {
                 // Create next task instance
                 await supabase
                     .from('tasks')
-                    .insert({
-                        user_id: user.id,
-                        title: parent.title,
-                        description: parent.description,
-                        priority: parent.priority,
-                        category: parent.category,
-                        energy_level: parent.energy_level,
-                        due_date: nextDateStr,
-                        recurring_parent_id: parent.id,
-                        status: 'Todo'
-                    })
+                    .insert(instanceFromTemplate(parent, user.id, nextDateStr))
             }
         }
     }
@@ -562,6 +534,144 @@ export async function deleteRecurringTask(recurringParentId: string) {
     if (error) throw error
     revalidatePath('/tasks')
     revalidatePath('/')
+}
+
+/**
+ * Edita una tarea recurrente "de acá en adelante".
+ *
+ * Cambia la plantilla y las instancias pendientes de hoy o posteriores. Las
+ * instancias pasadas (hechas, perdidas o vencidas) quedan como estaban, así el
+ * historial no se reescribe.
+ */
+export async function updateRecurringTask(templateId: string, formData: FormData) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    const { data: template, error: fetchErr } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('id', templateId)
+        .eq('user_id', user.id)
+        .single()
+    if (fetchErr || !template) throw new Error('Tarea recurrente no encontrada')
+
+    const recurrence_days_str = formData.get('recurrence_days') as string
+    const fields = {
+        title: (formData.get('title') as string || '').trim() || template.title,
+        description: (formData.get('description') as string) || null,
+        priority: parseInt(formData.get('priority') as string) || template.priority,
+        category: (formData.get('category') as string) || template.category,
+        energy_level: (formData.get('energy_level') as string) || template.energy_level,
+        reminder_time: normalizeTime(formData.get('reminder_time') as string)
+    }
+    const schedule = {
+        recurrence_type: (formData.get('recurrence_type') as string) || template.recurrence_type,
+        recurrence_days: recurrence_days_str ? recurrence_days_str.split(',').map(Number) : [],
+        recurrence_interval: parseInt(formData.get('recurrence_interval') as string) || 1,
+        recurrence_end_date: (formData.get('recurrence_end_date') as string) || null
+    }
+
+    const todayStr = getTodayStr()
+    const scheduleChanged =
+        schedule.recurrence_type !== template.recurrence_type ||
+        (schedule.recurrence_interval || 1) !== (template.recurrence_interval || 1) ||
+        [...schedule.recurrence_days].sort().join(',') !== [...(template.recurrence_days || [])].sort().join(',')
+
+    const now = new Date().toISOString()
+
+    // 1. La plantilla
+    const { error: tplErr } = await supabase
+        .from('tasks')
+        .update({ ...fields, ...schedule, updated_at: now })
+        .eq('id', templateId)
+        .eq('user_id', user.id)
+    if (tplErr) throw tplErr
+
+    // 2. Instancias pendientes de hoy en adelante: heredan los cambios
+    const { data: pending } = await supabase
+        .from('tasks')
+        .select('id, due_date')
+        .eq('user_id', user.id)
+        .eq('recurring_parent_id', templateId)
+        .in('status', ['Todo', 'InProgress'])
+        .gte('due_date', todayStr)
+        .order('due_date', { ascending: true })
+
+    if (pending?.length) {
+        await supabase
+            .from('tasks')
+            .update({ ...fields, reminder_fired: false, updated_at: now })
+            .in('id', pending.map(p => p.id))
+            .eq('user_id', user.id)
+    }
+
+    // 3. Si cambió cuándo se repite, la próxima instancia se mueve a la nueva fecha
+    if (scheduleChanged) {
+        const nextStr = formatDateStr(calculateNextOccurrenceDate(
+            new Date(`${todayStr}T00:00:00`),
+            schedule.recurrence_type,
+            schedule.recurrence_days,
+            schedule.recurrence_interval,
+            true
+        ))
+        const withinEnd = !schedule.recurrence_end_date || nextStr <= schedule.recurrence_end_date
+
+        if (pending?.length) {
+            const [first, ...rest] = pending
+            if (rest.length) {
+                await supabase.from('tasks').delete().in('id', rest.map(p => p.id)).eq('user_id', user.id)
+            }
+            if (withinEnd) {
+                await supabase.from('tasks').update({ due_date: nextStr }).eq('id', first.id).eq('user_id', user.id)
+            } else {
+                await supabase.from('tasks').delete().eq('id', first.id).eq('user_id', user.id)
+            }
+        } else if (withinEnd) {
+            await supabase.from('tasks').insert(instanceFromTemplate({ ...template, ...fields, id: templateId }, user.id, nextStr))
+        }
+        await supabase
+            .from('tasks')
+            .update({ next_occurrence_date: withinEnd ? nextStr : null })
+            .eq('id', templateId)
+            .eq('user_id', user.id)
+    }
+
+    revalidatePath('/tasks')
+    revalidatePath('/')
+}
+
+/** "HH:MM" del input de hora -> "HH:MM:00" para la columna TIME (o null). */
+function normalizeTime(value?: string | null): string | null {
+    if (!value) return null
+    const v = value.trim()
+    if (!v) return null
+    return v.length === 5 ? `${v}:00` : v
+}
+
+function getTodayStr(): string {
+    const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Argentina/Buenos_Aires',
+        year: 'numeric', month: '2-digit', day: '2-digit'
+    }).formatToParts(new Date())
+    const get = (t: string) => parts.find(p => p.type === t)?.value
+    return `${get('year')}-${get('month')}-${get('day')}`
+}
+
+/** Los campos que una instancia hereda de su plantilla recurrente. */
+function instanceFromTemplate(template: any, userId: string, dueDate: string) {
+    return {
+        user_id: userId,
+        title: template.title,
+        description: template.description,
+        priority: template.priority,
+        category: template.category,
+        energy_level: template.energy_level,
+        reminder_time: template.reminder_time ?? null,
+        due_date: dueDate,
+        recurring_parent_id: template.id,
+        status: 'Todo'
+    }
 }
 
 function formatDateStr(date: Date): string {

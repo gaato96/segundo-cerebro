@@ -5,6 +5,7 @@ import { AssistantLauncher } from '@/components/assistant/AssistantLauncher'
 import { CommandPalette } from '@/components/shared/CommandPalette'
 import { QuickExpenseButton } from '@/components/finances/QuickExpenseButton'
 import { FloatingActions } from '@/components/shared/FloatingActions'
+import { PcReminders } from '@/components/notifications/PcReminders'
 
 export default function AppLayout({
     children,
@@ -22,6 +23,7 @@ export default function AppLayout({
             </main>
 
             <CommandPalette />
+            <PcReminders />
             <QuickCaptureButton />
             <AssistantLauncher />
             <QuickExpenseButton />

@@ -2,11 +2,13 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createRecurringTask } from '@/lib/actions/tasks'
-import { X, Loader2, Calendar as CalendarIcon, Flag, Tag, Zap, Repeat } from 'lucide-react'
+import { createRecurringTask, updateRecurringTask } from '@/lib/actions/tasks'
+import { X, Loader2, Flag, Tag, Zap, Repeat, Bell } from 'lucide-react'
 
 interface RecurringTaskFormProps {
     onClose: () => void
+    /** Si viene, el formulario edita esta plantilla en vez de crear una nueva. */
+    task?: any
 }
 
 const DAYS_OF_WEEK = [
@@ -19,11 +21,14 @@ const DAYS_OF_WEEK = [
     { label: 'Dom', value: 7 },
 ]
 
-export function RecurringTaskForm({ onClose }: RecurringTaskFormProps) {
+export function RecurringTaskForm({ onClose, task }: RecurringTaskFormProps) {
+    const isEdit = Boolean(task)
     const [loading, setLoading] = useState(false)
-    const [recurrenceType, setRecurrenceType] = useState('weekly')
-    const [selectedDays, setSelectedDays] = useState<number[]>([1]) // Default Monday
-    const [interval, setInterval] = useState(1)
+    const [recurrenceType, setRecurrenceType] = useState<string>(task?.recurrence_type || 'weekly')
+    const [selectedDays, setSelectedDays] = useState<number[]>(
+        task?.recurrence_days?.length ? [...task.recurrence_days].sort() : [1]
+    )
+    const [interval] = useState<number>(task?.recurrence_interval || 1)
     const router = useRouter()
 
     function toggleDay(val: number) {
@@ -45,12 +50,13 @@ export function RecurringTaskForm({ onClose }: RecurringTaskFormProps) {
         formData.set('recurrence_interval', interval.toString())
 
         try {
-            await createRecurringTask(formData)
+            if (isEdit) await updateRecurringTask(task.id, formData)
+            else await createRecurringTask(formData)
             router.refresh()
             onClose()
         } catch (error) {
             console.error('Failed to create recurring task:', error)
-            alert('Error al crear la tarea recurrente')
+            alert(isEdit ? 'Error al guardar los cambios' : 'Error al crear la tarea recurrente')
         } finally {
             setLoading(false)
         }
@@ -62,9 +68,13 @@ export function RecurringTaskForm({ onClose }: RecurringTaskFormProps) {
                 <div>
                     <h2 className="text-xl font-heading font-bold flex items-center gap-2">
                         <Repeat className="w-5 h-5 text-indigo-400" />
-                        Nueva Tarea Recurrente
+                        {isEdit ? 'Editar Tarea Recurrente' : 'Nueva Tarea Recurrente'}
                     </h2>
-                    <p className="text-sm text-muted-foreground mt-1">Se repetirá automáticamente</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                        {isEdit
+                            ? 'Los cambios valen para hoy y las próximas. Las pasadas no se tocan.'
+                            : 'Se repetirá automáticamente'}
+                    </p>
                 </div>
                 <button
                     onClick={onClose}
@@ -84,6 +94,7 @@ export function RecurringTaskForm({ onClose }: RecurringTaskFormProps) {
                             name="title"
                             type="text"
                             required
+                            defaultValue={task?.title || ''}
                             placeholder="Ej. Revisar presupuesto semanal..."
                             className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-base"
                         />
@@ -95,6 +106,7 @@ export function RecurringTaskForm({ onClose }: RecurringTaskFormProps) {
                         <textarea
                             name="description"
                             rows={2}
+                            defaultValue={task?.description || ''}
                             placeholder="Detalles o checklist..."
                             className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all resize-none text-sm"
                         />
@@ -151,8 +163,23 @@ export function RecurringTaskForm({ onClose }: RecurringTaskFormProps) {
                             <input
                                 name="recurrence_end_date"
                                 type="date"
+                                defaultValue={task?.recurrence_end_date || ''}
                                 className="w-full bg-secondary border border-border rounded-xl px-4 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50 [color-scheme:dark]"
                             />
+                        </div>
+
+                        {/* Recordatorio en la PC */}
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                                <Bell className="w-3.5 h-3.5 text-indigo-400" /> Recordatorio PC (opcional)
+                            </label>
+                            <input
+                                name="reminder_time"
+                                type="time"
+                                defaultValue={task?.reminder_time ? String(task.reminder_time).slice(0, 5) : ''}
+                                className="w-full bg-secondary border border-border rounded-xl px-4 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50 [color-scheme:dark]"
+                            />
+                            <p className="text-[11px] text-muted-foreground">Te avisa en la compu a esa hora cada día que toque.</p>
                         </div>
                     </div>
 
@@ -164,7 +191,7 @@ export function RecurringTaskForm({ onClose }: RecurringTaskFormProps) {
                             </label>
                             <select
                                 name="priority"
-                                defaultValue="2"
+                                defaultValue={String(task?.priority || 2)}
                                 className="w-full bg-secondary/50 border border-border rounded-xl px-3 py-2.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                             >
                                 <option value="1">Alta (Urgente)</option>
@@ -180,7 +207,7 @@ export function RecurringTaskForm({ onClose }: RecurringTaskFormProps) {
                             </label>
                             <select
                                 name="category"
-                                defaultValue="Personal"
+                                defaultValue={task?.category || 'Personal'}
                                 className="w-full bg-secondary/50 border border-border rounded-xl px-3 py-2.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                             >
                                 <option value="Work">Trabajo</option>
@@ -195,7 +222,7 @@ export function RecurringTaskForm({ onClose }: RecurringTaskFormProps) {
                             </label>
                             <select
                                 name="energy_level"
-                                defaultValue="Deep Work"
+                                defaultValue={task?.energy_level || 'Deep Work'}
                                 className="w-full bg-secondary/50 border border-border rounded-xl px-3 py-2.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                             >
                                 <option value="Deep Work">⚡ Deep Work (Alta Energía)</option>
@@ -219,7 +246,7 @@ export function RecurringTaskForm({ onClose }: RecurringTaskFormProps) {
                         disabled={loading}
                         className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-lg hover:shadow-indigo-500/25 flex items-center justify-center min-w-[120px]"
                     >
-                        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Guardar Recurrente'}
+                        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : isEdit ? 'Guardar cambios' : 'Guardar Recurrente'}
                     </button>
                 </div>
             </form>

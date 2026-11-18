@@ -223,7 +223,7 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
 
                             <div>
                                 <label className="text-[11px] font-medium text-muted-foreground mb-1 flex items-center gap-1">
-                                    <Bell className="w-3 h-3 text-indigo-400" /> Hora Recordatorio
+                                    <Bell className="w-3 h-3 text-indigo-400" /> Recordatorio PC
                                 </label>
                                 <input
                                     type="time"

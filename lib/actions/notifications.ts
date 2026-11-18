@@ -3,6 +3,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { sendPushToSubscriptions, isPushConfigured } from '@/lib/push'
+import { buildTodayReminders, type DueReminder } from '@/lib/reminders'
+import { getLocalDateStr } from '@/lib/utils'
 
 /**
  * Suscripciones y preferencias de notificaciones push.
@@ -24,6 +26,8 @@ export interface NotificationPrefs {
     weekly_review_time: string
     /** Aviso para volver después de 3+ días sin registrar (migración 025). */
     return_nudge?: boolean
+    /** Avisos a la hora puesta en tareas y hábitos (migración 026). */
+    item_reminders?: boolean
 }
 
 export async function getPushStatus() {
@@ -141,4 +145,44 @@ export async function sendTestNotification() {
 
     revalidatePath('/ajustes')
     return { delivered: result.delivered, removed: result.expired.length }
+}
+
+/**
+ * Recordatorios con hora de hoy (tareas y hábitos), para el vigilante de la
+ * app abierta en la PC. Consultas livianas: solo lo que tiene hora puesta.
+ */
+export async function getTodayReminders(): Promise<{ today: string; reminders: DueReminder[] }> {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const today = getLocalDateStr()
+    if (!user) return { today, reminders: [] }
+
+    const [prefsRes, tasksRes, habitsRes, logsRes] = await Promise.all([
+        supabase.from('notification_prefs').select('*').eq('user_id', user.id).maybeSingle(),
+        supabase.from('tasks')
+            .select('id, title, status, due_date, planned_date, reminder_time, is_recurring, recurring_parent_id, parent_task_id')
+            .eq('user_id', user.id)
+            .in('status', ['Todo', 'InProgress'])
+            .not('reminder_time', 'is', null),
+        // Si la migración 026 no corrió, esta consulta falla y simplemente no hay hábitos con aviso.
+        supabase.from('habits')
+            .select('id, title, is_active, reminder_time, frequency_type, frequency_days')
+            .eq('user_id', user.id)
+            .eq('is_active', true)
+            .not('reminder_time', 'is', null),
+        supabase.from('habit_logs')
+            .select('habit_id')
+            .eq('user_id', user.id)
+            .gte('completed_at', `${today}T00:00:00-03:00`)
+    ])
+
+    if (prefsRes.data && (prefsRes.data.enabled === false || prefsRes.data.item_reminders === false)) {
+        return { today, reminders: [] }
+    }
+
+    const done = new Set((logsRes.data || []).map((l: any) => l.habit_id))
+    return {
+        today,
+        reminders: buildTodayReminders(tasksRes.data || [], habitsRes.error ? [] : habitsRes.data || [], done, today)
+    }
 }

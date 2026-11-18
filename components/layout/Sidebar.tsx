@@ -46,7 +46,7 @@ export function Sidebar() {
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 p-2 overflow-y-auto no-scrollbar">
+            <nav className="flex-1 p-2 overflow-y-auto">
                 {NAV_GROUPS.map((group, gi) => (
                     <div key={group.label} className={cn(gi > 0 && 'mt-3')}>
                         {collapsed

@@ -163,7 +163,7 @@ export function TaskForm({ onClose, initialDate }: TaskFormProps) {
                             <div className="flex items-center justify-between">
                                 <label className="text-sm font-medium text-foreground flex items-center gap-1.5">
                                     <Bell className="w-3.5 h-3.5 text-indigo-400" />
-                                    Recordatorio
+                                    Recordatorio PC
                                 </label>
                                 <button
                                     type="button"
@@ -185,7 +185,7 @@ export function TaskForm({ onClose, initialDate }: TaskFormProps) {
                             {reminderEnabled && (
                                 <div className="space-y-2">
                                     <p className="text-xs text-muted-foreground">
-                                        Recibí una notificación a esta hora el día de la tarea
+                                        Te avisa en la compu a esta hora el día de la tarea
                                     </p>
                                     <input
                                         id="reminder_time"

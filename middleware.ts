@@ -27,9 +27,11 @@ export async function middleware(request: NextRequest) {
         }
     )
 
-    const {
-        data: { user },
-    } = await supabase.auth.getUser()
+    // getClaims verifica el JWT localmente cuando el proyecto usa claves
+    // asimétricas (sin viaje al servidor de Auth en cada navegación) y, si no,
+    // cae solo a getUser. También refresca la sesión vencida.
+    const { data } = await supabase.auth.getClaims()
+    const user = data?.claims?.sub ? data.claims : null
 
     // Protect all app routes
     if (

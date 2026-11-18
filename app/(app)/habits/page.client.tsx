@@ -54,6 +54,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
     // Form states
     const [title, setTitle] = useState('')
     const [estimatedMinutes, setEstimatedMinutes] = useState(15)
+    const [reminderTime, setReminderTime] = useState('')
     const [timeOfDay, setTimeOfDay] = useState<'morning' | 'afternoon' | 'evening' | 'anytime'>('morning')
     const [colorHex, setColorHex] = useState('#6366f1')
     const [frequencyType, setFrequencyType] = useState<'daily' | 'custom_days' | 'x_per_week' | 'x_per_day'>('daily')
@@ -133,6 +134,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
         setHabitToEdit(null)
         setTitle('')
         setEstimatedMinutes(15)
+        setReminderTime('')
         setTimeOfDay('morning')
         setColorHex('#6366f1')
         setFrequencyType('daily')
@@ -147,6 +149,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
         setHabitToEdit(h)
         setTitle(h.title)
         setEstimatedMinutes(h.estimated_minutes || 15)
+        setReminderTime(h.reminder_time ? String(h.reminder_time).slice(0, 5) : '')
         setTimeOfDay(h.time_of_day || 'morning')
         setColorHex(h.color_hex || '#6366f1')
         setFrequencyType(h.frequency_type || 'daily')
@@ -172,6 +175,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
         formData.append('title', title)
         formData.append('estimated_minutes', estimatedMinutes.toString())
         formData.append('time_of_day', timeOfDay)
+        formData.append('reminder_time', reminderTime)
         formData.append('color_hex', colorHex)
         formData.append('frequency_type', frequencyType)
         formData.append('frequency_days', frequencyDays.join(','))
@@ -439,6 +443,11 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                             <Clock className="w-3 h-3" />
                                             {h.estimated_minutes || 15} min
                                         </span>
+                                        {h.reminder_time && (
+                                            <span className="text-xs text-amber-300 font-mono flex items-center gap-1" title="Recordatorio en la PC">
+                                                🔔 {String(h.reminder_time).slice(0, 5)}
+                                            </span>
+                                        )}
                                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-600/10 border border-indigo-500/20 text-indigo-300 flex items-center gap-1 font-semibold">
                                             <RefreshCw className="w-2.5 h-2.5" />
                                             {frequencyLabel(h)}
@@ -682,6 +691,27 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                             <option value="anytime">⏰ Cualquier momento</option>
                                         </select>
                                     </div>
+                                </div>
+
+                                {/* Recordatorio en la PC */}
+                                <div>
+                                    <label className="text-xs font-semibold text-muted-foreground uppercase block mb-1">
+                                        Recordatorio PC (opcional)
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="time"
+                                            value={reminderTime}
+                                            onChange={(e) => setReminderTime(e.target.value)}
+                                            className="w-36 bg-black/20 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 [color-scheme:dark]"
+                                        />
+                                        {reminderTime && (
+                                            <button type="button" onClick={() => setReminderTime('')} className="text-xs text-muted-foreground hover:text-foreground">
+                                                Quitar
+                                            </button>
+                                        )}
+                                    </div>
+                                    <p className="text-[11px] text-muted-foreground mt-1">Te avisa en la compu a esa hora los días que toca, si todavía no lo tildaste.</p>
                                 </div>
 
                                 {/* Color */}
