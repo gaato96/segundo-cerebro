@@ -210,11 +210,11 @@ export function QuickExpenseButton() {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 40 }}
                             transition={{ type: 'spring', damping: 30, stiffness: 320 }}
-                            className="relative w-full sm:max-w-lg max-h-[92vh] overflow-y-auto bg-[#12141c] border border-emerald-500/25 shadow-2xl rounded-t-3xl sm:rounded-3xl"
+                            className="relative w-full sm:max-w-lg max-h-[92vh] overflow-y-auto bg-popover border border-emerald-500/25 shadow-2xl rounded-t-3xl sm:rounded-3xl"
                             style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
                         >
                             {/* Header */}
-                            <div className="sticky top-0 z-10 bg-[#12141c]/95 backdrop-blur px-5 pt-4 pb-3 border-b border-white/5 flex items-start justify-between gap-3">
+                            <div className="sticky top-0 z-10 bg-popover/95 backdrop-blur px-5 pt-4 pb-3 border-b border-white/5 flex items-start justify-between gap-3">
                                 <div className="min-w-0">
                                     <div className="flex items-center gap-1 bg-black/30 border border-white/10 rounded-xl p-0.5 w-fit">
                                         {(['expense', 'income'] as const).map(k => (
@@ -476,7 +476,7 @@ export function QuickExpenseButton() {
                                 </AnimatePresence>
 
                                 {/* Acciones: siempre a la vista, aunque el formulario no entre en la pantalla */}
-                                <div className="sticky bottom-0 -mx-5 px-5 py-3 bg-[#12141c]/95 backdrop-blur border-t border-white/5 flex items-center gap-2">
+                                <div className="sticky bottom-0 -mx-5 px-5 py-3 bg-popover/95 backdrop-blur border-t border-white/5 flex items-center gap-2">
                                     <button
                                         type="button"
                                         disabled={saving}

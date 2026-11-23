@@ -40,7 +40,7 @@ export function RecipeForm({ onClose }: { onClose: () => void }) {
 
     return (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-            <div className="bg-[#1a1b26] border border-white/10 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl p-8 relative">
+            <div className="bg-popover border border-white/10 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl p-8 relative">
                 <button
                     onClick={onClose}
                     className="absolute top-6 right-6 p-2 hover:bg-white/10 rounded-full"

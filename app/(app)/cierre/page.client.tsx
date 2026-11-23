@@ -9,6 +9,8 @@ import {
 import { useRouter } from 'next/navigation'
 import { saveEveningRitual } from '@/lib/actions/evening_ritual'
 import { generateWeeklyReview, saveWeeklyReflection } from '@/lib/actions/weekly_review'
+import { PageShell, PageHeader } from '@/components/ui/kit'
+import { MoodIcon } from '@/components/ui/MoodIcon'
 import { DayFocusWidget } from '@/components/plan/DayFocusWidget'
 import { QuickExpenseTrigger } from '@/components/finances/QuickExpenseButton'
 import { cn, formatCurrency } from '@/lib/utils'
@@ -106,28 +108,21 @@ export function CierrePageClient({
     }
 
     return (
-        <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-5 animate-fade-in pb-24">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-heading font-bold gradient-text">Cierre</h1>
-                    <p className="text-muted-foreground text-sm mt-0.5">
-                        El día no termina cuando te acostás: termina cuando lo cerrás.
-                    </p>
-                </div>
-                {ritualStats.streak > 0 && (
-                    <div className="flex items-center gap-1.5 text-indigo-400 shrink-0">
-                        <Flame className="w-4 h-4" />
-                        <span className="text-sm font-bold">{ritualStats.streak}</span>
-                        <span className="text-[11px] text-muted-foreground">
-                            {ritualStats.streak === 1 ? 'día seguido' : 'días seguidos'}
-                        </span>
-                    </div>
-                )}
-            </div>
+        <PageShell className="max-w-[760px] space-y-6">
+            <PageHeader
+                label={appDay.date.split('-').reverse().slice(0, 2).join('/')}
+                title="Cerrar el día"
+                subtitle="El día no termina cuando te acostás: termina cuando lo cerrás."
+                className="!mb-0"
+                actions={ritualStats.streak > 0 ? (
+                    <span className="font-mono text-xs text-muted-foreground">
+                        racha de cierres <span className="text-foreground">{ritualStats.streak}</span>
+                    </span>
+                ) : undefined}
+            />
 
             {/* Tabs */}
-            <div className="flex items-center p-1 bg-secondary/50 rounded-xl border border-border/50">
+            <div className="flex items-center p-1 bg-card rounded-xl border border-hairline">
                 {[
                     { id: 'dia', label: 'Cierre del día', icon: Moon },
                     { id: 'semana', label: 'Revisión semanal', icon: CalendarCheck }
@@ -140,7 +135,7 @@ export function CierrePageClient({
                             onClick={() => setTab(t.id as 'dia' | 'semana')}
                             className={cn(
                                 'flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-semibold transition-all flex-1',
-                                active ? 'bg-indigo-600 text-white shadow-md' : 'text-muted-foreground hover:text-foreground'
+                                active ? 'bg-raised text-amber-300' : 'text-muted-foreground hover:text-foreground'
                             )}
                         >
                             <Icon className="w-4 h-4" />
@@ -210,7 +205,7 @@ export function CierrePageClient({
                                             : 'bg-secondary/40 border-border/50 hover:border-border opacity-70 hover:opacity-100'
                                     )}
                                 >
-                                    <span className="text-xl leading-none">{r.emoji}</span>
+                                    <MoodIcon value={r.value} />
                                     <span className="text-[9px] text-muted-foreground">{r.label}</span>
                                 </button>
                             ))}
@@ -380,7 +375,7 @@ export function CierrePageClient({
                     </button>
                 </div>
             )}
-        </div>
+        </PageShell>
     )
 }
 
@@ -400,13 +395,13 @@ function Card({ icon: Icon, color, title, hint, children }: {
     icon: any; color: string; title: string; hint?: string; children: React.ReactNode
 }) {
     return (
-        <div className="glass p-4 rounded-2xl border border-border/50 space-y-2.5">
+        <div className="py-6 border-t border-hairline space-y-3">
             <div>
-                <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                    <Icon className={cn('w-3.5 h-3.5', COLORS[color])} />
+                <h3 className="text-base font-semibold flex items-center gap-2">
+                    <Icon className="w-4 h-4 text-muted-foreground" />
                     {title}
                 </h3>
-                {hint && <p className="text-[10px] text-muted-foreground mt-0.5">{hint}</p>}
+                {hint && <p className="text-sm text-muted-foreground mt-0.5">{hint}</p>}
             </div>
             {children}
         </div>

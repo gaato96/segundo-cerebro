@@ -21,7 +21,7 @@ export function EventFormModal({ isOpen, onClose, eventToEdit, defaultDate }: Ev
     const [endTime, setEndTime] = useState('10:00')
     const [eventType, setEventType] = useState<'meeting' | 'event' | 'appointment' | 'reminder' | 'birthday'>('event')
     const [location, setLocation] = useState('')
-    const [colorHex, setColorHex] = useState('#6366f1')
+    const [colorHex, setColorHex] = useState('#7C9CBF')
     const [isAllDay, setIsAllDay] = useState(false)
     const [loading, setLoading] = useState(false)
 
@@ -34,7 +34,7 @@ export function EventFormModal({ isOpen, onClose, eventToEdit, defaultDate }: Ev
             setEndTime(eventToEdit.end_time || '10:00')
             setEventType(eventToEdit.event_type)
             setLocation(eventToEdit.location || '')
-            setColorHex(eventToEdit.color_hex || '#6366f1')
+            setColorHex(eventToEdit.color_hex || '#7C9CBF')
             setIsAllDay(eventToEdit.is_all_day)
         } else {
             setTitle('')
@@ -44,7 +44,7 @@ export function EventFormModal({ isOpen, onClose, eventToEdit, defaultDate }: Ev
             setEndTime('10:00')
             setEventType('event')
             setLocation('')
-            setColorHex('#6366f1')
+            setColorHex('#7C9CBF')
             setIsAllDay(false)
         }
     }, [eventToEdit, defaultDate, isOpen])
@@ -173,7 +173,7 @@ export function EventFormModal({ isOpen, onClose, eventToEdit, defaultDate }: Ev
                                         Color
                                     </label>
                                     <div className="flex items-center gap-2">
-                                        {['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'].map((color) => (
+                                        {['#7C9CBF', '#6FAE8C', '#E0A54B', '#D9735F', '#A8A8B0', '#B8A07A'].map((color) => (
                                             <button
                                                 key={color}
                                                 type="button"

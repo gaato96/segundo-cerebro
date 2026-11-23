@@ -57,7 +57,7 @@ export function RatingModal({
 
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-            <div className="bg-[#1a1b26] border border-white/10 w-full max-w-sm flex flex-col rounded-3xl relative overflow-hidden shadow-2xl p-6 text-center space-y-6">
+            <div className="bg-popover border border-white/10 w-full max-w-sm flex flex-col rounded-3xl relative overflow-hidden shadow-2xl p-6 text-center space-y-6">
                 <button
                     onClick={onClose}
                     className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-full transition-colors"

@@ -74,7 +74,7 @@ export function GameRouletteModal({
 
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-            <div className="bg-[#181926] border border-indigo-500/20 w-full max-w-md flex flex-col rounded-3xl relative overflow-hidden shadow-2xl p-6 text-center space-y-6">
+            <div className="bg-popover border border-indigo-500/20 w-full max-w-md flex flex-col rounded-3xl relative overflow-hidden shadow-2xl p-6 text-center space-y-6">
                 <button
                     onClick={onClose}
                     className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-full transition-colors text-muted-foreground hover:text-white z-20"
@@ -97,7 +97,7 @@ export function GameRouletteModal({
 
                 {/* Spinning Area */}
                 <div className="h-60 flex items-center justify-center border border-white/10 bg-black/40 rounded-2xl p-4 overflow-hidden relative shadow-inner">
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#181926]/70 via-transparent to-[#181926]/70 pointer-events-none z-10" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-popover/70 via-transparent to-popover/70 pointer-events-none z-10" />
 
                     {games.length === 0 ? (
                         <div className="space-y-2 text-center p-4">

@@ -54,7 +54,7 @@ export function ManualMealSelectorModal({
 
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-            <div className="bg-[#1a1b26] border border-white/10 w-full max-w-lg max-h-[85vh] flex flex-col rounded-3xl relative overflow-hidden shadow-2xl">
+            <div className="bg-popover border border-white/10 w-full max-w-lg max-h-[85vh] flex flex-col rounded-3xl relative overflow-hidden shadow-2xl">
                 {/* Header */}
                 <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
                     <div>

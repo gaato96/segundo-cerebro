@@ -252,7 +252,7 @@ export default function MealsPageClient({ initialRecipes, initialMenu, startDate
                             initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
-                            className="bg-[#1a1b26] border border-white/10 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl p-8 relative flex flex-col"
+                            className="bg-popover border border-white/10 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl p-8 relative flex flex-col"
                         >
                             <button
                                 onClick={() => setSelectedDay(null)}

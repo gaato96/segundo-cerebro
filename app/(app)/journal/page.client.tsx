@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { MoodIcon } from '@/components/ui/MoodIcon'
 import { motion } from 'framer-motion'
 import { Calendar as CalendarIcon, Save, Loader2, Sparkles, PencilLine } from 'lucide-react'
 import { format, subDays, addDays, isFuture } from 'date-fns'
@@ -154,7 +155,7 @@ export function JournalClient() {
                                 )}
                                 title={m.label}
                             >
-                                {m.emoji}
+                                <MoodIcon value={m.value} />
                             </button>
                         ))}
                     </div>

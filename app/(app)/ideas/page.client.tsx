@@ -18,6 +18,7 @@ import { es } from 'date-fns/locale'
 interface Props {
     initialIdeas: IdeaItem[]
     archivedNotes: { id: string; content: string; created_at: string; processed_as: string | null }[]
+    initialTab?: 'banco' | 'archivo'
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -34,9 +35,9 @@ const STATUS_STYLE: Record<string, string> = {
     archived: 'text-muted-foreground bg-secondary/50 border-border'
 }
 
-export function IdeasClient({ initialIdeas, archivedNotes }: Props) {
+export function IdeasClient({ initialIdeas, archivedNotes, initialTab }: Props) {
     const router = useRouter()
-    const [tab, setTab] = useState<'banco' | 'archivo'>('banco')
+    const [tab, setTab] = useState<'banco' | 'archivo'>(initialTab || 'banco')
     const [ideas, setIdeas] = useState(initialIdeas)
     const [filter, setFilter] = useState<'all' | 'raw' | 'exploring' | 'promoted' | 'archived'>('all')
     const [sortBy, setSortBy] = useState<'recent' | 'leverage'>('recent')

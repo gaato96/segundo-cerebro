@@ -267,7 +267,7 @@ export function LibraryClient({ books, linkable, pending, initialTab }: Props) {
                                     {menuId === p.id && (
                                         <div
                                             onClick={e => e.stopPropagation()}
-                                            className="absolute top-10 right-2 z-20 w-52 bg-[#1a1b26] border border-white/10 rounded-xl shadow-2xl p-1 text-sm"
+                                            className="absolute top-10 right-2 z-20 w-52 bg-popover border border-white/10 rounded-xl shadow-2xl p-1 text-sm"
                                         >
                                             <MenuItem icon={FileUp} onClick={() => { setMenuId(null); setStartMediaId(p.id); setAdding(true) }}>
                                                 Empezar a leer
@@ -401,7 +401,7 @@ export function LibraryClient({ books, linkable, pending, initialTab }: Props) {
                                     {menuId === book.id && (
                                         <div
                                             onClick={e => e.stopPropagation()}
-                                            className="absolute top-10 right-2 z-20 w-56 bg-[#1a1b26] border border-white/10 rounded-xl shadow-2xl p-1 text-sm"
+                                            className="absolute top-10 right-2 z-20 w-56 bg-popover border border-white/10 rounded-xl shadow-2xl p-1 text-sm"
                                         >
                                             {!isFinished && (
                                                 <MenuItem icon={CheckCircle2} onClick={() => { setMenuId(null); setFinishing(book) }}>

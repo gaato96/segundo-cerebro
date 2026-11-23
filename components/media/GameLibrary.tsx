@@ -357,7 +357,7 @@ export function GameLibrary({
                             initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
-                            className="bg-[#161922] border border-white/10 w-full max-w-md rounded-3xl p-6 relative flex flex-col gap-4 shadow-2xl"
+                            className="bg-popover border border-white/10 w-full max-w-md rounded-3xl p-6 relative flex flex-col gap-4 shadow-2xl"
                         >
                             <h3 className="text-xl font-heading font-bold text-white">Agregar Videojuego</h3>
                             <form onSubmit={handleAddManualGame} className="space-y-3">

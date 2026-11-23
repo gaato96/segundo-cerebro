@@ -67,7 +67,7 @@ export function BudgetProjections({ projections: initialProjections, monthYear }
         if (!confirm(`¿Generar ${expenses.length} sobres de presupuesto basados en tus gastos proyectados de ${monthYear}?`)) return
 
         setGeneratingEnvelopes(true)
-        const colorPalette = ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#3b82f6', '#14b8a6']
+        const colorPalette = ['#7C9CBF', '#6FAE8C', '#E0A54B', '#D9735F', '#A8A8B0', '#B8A07A', '#8FC4A6']
 
         for (let i = 0; i < expenses.length; i++) {
             const exp = expenses[i]

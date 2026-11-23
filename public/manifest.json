@@ -1,11 +1,11 @@
 {
     "name": "Segundo Cerebro",
     "short_name": "S.Cerebro",
-    "description": "Tu Life OS personal — tareas, hábitos, finanzas y más en un solo lugar",
+    "description": "Tu sistema operativo personal: capturar, planificar, hacer y cerrar el día.",
     "start_url": "/",
     "display": "standalone",
-    "background_color": "#0a0f1e",
-    "theme_color": "#6366f1",
+    "background_color": "#111113",
+    "theme_color": "#111113",
     "orientation": "portrait-primary",
     "icons": [
         {
@@ -26,5 +26,31 @@
         "lifestyle"
     ],
     "screenshots": [],
-    "lang": "es-AR"
+    "lang": "es-AR",
+    "share_target": {
+        "action": "/compartir",
+        "method": "GET",
+        "params": {
+            "title": "title",
+            "text": "text",
+            "url": "url"
+        }
+    },
+    "shortcuts": [
+        {
+            "name": "Capturar",
+            "short_name": "Capturar",
+            "url": "/?capturar=1"
+        },
+        {
+            "name": "Planificar el día",
+            "short_name": "Plan",
+            "url": "/ritual"
+        },
+        {
+            "name": "Modo foco",
+            "short_name": "Foco",
+            "url": "/foco"
+        }
+    ]
 }

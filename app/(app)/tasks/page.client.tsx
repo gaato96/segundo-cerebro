@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Search, ListCheck, Repeat } from 'lucide-react'
+import { PageShell, PageHeader, Panel, SectionLabel } from '@/components/ui/kit'
 import { TaskList } from '@/components/tasks/TaskList'
 import { TaskForm } from '@/components/tasks/TaskForm'
 import { QuickTaskInput } from '@/components/tasks/QuickTaskInput'
@@ -78,116 +79,118 @@ export function TasksClient({ initialTasks, initialRecurringTasks }: TaskPagePro
     })
 
     return (
-        <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6 animate-fade-in relative">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-heading font-bold gradient-text">Gestión de Tareas</h1>
-                    <p className="text-muted-foreground text-sm mt-1">
-                        Organizá tus pendientes diarios y tareas recurrentes
-                    </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                    {activeTab === 'tasks' ? (
-                        <button
-                            onClick={() => setIsFormOpen(true)}
-                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2"
-                        >
-                            <Plus className="w-4 h-4" />
-                            Nueva Tarea
+        <PageShell wide>
+            <PageHeader
+                label="Planificar"
+                title="Tareas"
+                subtitle="El backlog por horizonte: lo vencido arriba, lo de algún día abajo."
+                actions={
+                    <>
+                        <button onClick={() => setIsRecurringFormOpen(true)} className="btn-secondary text-sm">
+                            <Repeat className="w-4 h-4" /> Recurrente
                         </button>
-                    ) : (
-                        <button
-                            onClick={() => setIsRecurringFormOpen(true)}
-                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2"
-                        >
-                            <Repeat className="w-4 h-4" />
-                            Nueva Recurrente
+                        <button onClick={() => setIsFormOpen(true)} className="btn-primary text-sm">
+                            <Plus className="w-4 h-4" /> Tarea
                         </button>
-                    )}
-                </div>
-            </div>
+                    </>
+                }
+            />
 
-            {/* Navigation Tabs */}
-            <div className="flex items-center p-1 bg-secondary/50 rounded-xl border border-border/50 max-w-md">
-                <button
-                    onClick={() => setActiveTab('tasks')}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all ${
-                        activeTab === 'tasks'
-                            ? 'bg-indigo-600 text-white shadow-md'
-                            : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                >
-                    <ListCheck className="w-4 h-4" />
-                    Tareas
-                </button>
-                <button
-                    onClick={() => setActiveTab('recurring')}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all ${
-                        activeTab === 'recurring'
-                            ? 'bg-indigo-600 text-white shadow-md'
-                            : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                >
-                    <Repeat className="w-4 h-4" />
-                    Recurrentes ({recurringTasks.length})
-                </button>
-            </div>
-
-            {activeTab === 'tasks' ? (
-                <>
-                    {/* Quick Task Input */}
-                    <QuickTaskInput />
-
-                    {/* Filters & Search */}
-                    <div className="flex flex-col sm:flex-row gap-3">
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                            <input
-                                type="text"
-                                placeholder="Buscar tareas..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="w-full bg-secondary border border-border rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
-                            />
-                        </div>
-                        <div className="flex gap-2">
-                            <select
-                                value={filterCategory || ''}
-                                onChange={(e) => setFilterCategory(e.target.value || null)}
-                                className="bg-secondary border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 appearance-none min-w-[140px]"
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div className="lg:col-span-8 space-y-5 min-w-0">
+                    <div className="flex items-center gap-1 p-1 rounded-xl bg-card border border-hairline w-fit">
+                        {[
+                            { id: 'tasks', label: 'Pendientes', icon: ListCheck, count: pendingTasks.length },
+                            { id: 'recurring', label: 'Recurrentes', icon: Repeat, count: recurringTasks.length }
+                        ].map(t => (
+                            <button
+                                key={t.id}
+                                onClick={() => setActiveTab(t.id as 'tasks' | 'recurring')}
+                                className={`h-9 px-3 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors ${activeTab === t.id ? 'bg-raised text-amber-300' : 'text-muted-foreground hover:text-foreground'}`}
                             >
-                                <option value="">Todas las áreas</option>
-                                <option value="Work">Trabajo</option>
-                                <option value="Personal">Personal</option>
-                            </select>
-                            <select
-                                value={filterEnergy || ''}
-                                onChange={(e) => setFilterEnergy(e.target.value || null)}
-                                className="bg-secondary border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 appearance-none min-w-[160px]"
-                            >
-                                <option value="">Cualquier energía</option>
-                                <option value="Deep Work">Deep Work</option>
-                                <option value="Low Energy">Low Energy</option>
-                                <option value="Phone-only">Phone-only</option>
-                            </select>
-                        </div>
+                                <t.icon className="w-4 h-4" /> {t.label} <span className="font-mono text-[10px] text-muted-foreground">{t.count}</span>
+                            </button>
+                        ))}
                     </div>
 
-                    {/* Task List */}
-                    <TaskList
-                        pendingTasks={pendingTasks}
-                        completedTasks={completedTasks}
-                    />
-                </>
-            ) : (
-                /* Recurring Tasks List */
-                <RecurringTaskList
-                    recurringTasks={recurringTasks}
-                    onEdit={(t) => { setEditingRecurring(t); setIsRecurringFormOpen(true) }}
-                />
-            )}
+                    {activeTab === 'tasks' ? (
+                        <>
+                            <QuickTaskInput />
+
+                            <div className="flex flex-col sm:flex-row gap-2">
+                                <div className="relative flex-1">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-faint" />
+                                    <input
+                                        type="text"
+                                        placeholder="Buscar"
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                        className="field !min-h-10 h-10 pl-9 text-sm"
+                                    />
+                                </div>
+                                <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+                                    {[
+                                        { v: null, l: 'Todas' }, { v: 'Work', l: 'Trabajo' }, { v: 'Personal', l: 'Personal' }
+                                    ].map(o => (
+                                        <button key={o.l} onClick={() => setFilterCategory(o.v)} className={`h-10 px-3 rounded-xl border text-xs shrink-0 ${filterCategory === o.v ? 'lamp text-amber-200' : 'border-hairline text-muted-foreground hover:text-foreground'}`}>
+                                            {o.l}
+                                        </button>
+                                    ))}
+                                    <select
+                                        value={filterEnergy || ''}
+                                        onChange={(e) => setFilterEnergy(e.target.value || null)}
+                                        className="h-10 bg-card border border-hairline rounded-xl px-3 text-xs text-muted-foreground focus:outline-none shrink-0"
+                                    >
+                                        <option value="">Cualquier energía</option>
+                                        <option value="Deep Work">Foco profundo</option>
+                                        <option value="Low Energy">Liviana</option>
+                                        <option value="Phone-only">Desde el celu</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <TaskList pendingTasks={pendingTasks} completedTasks={completedTasks} />
+                        </>
+                    ) : (
+                        <RecurringTaskList
+                            recurringTasks={recurringTasks}
+                            onEdit={(t) => { setEditingRecurring(t); setIsRecurringFormOpen(true) }}
+                        />
+                    )}
+                </div>
+
+                <aside className="lg:col-span-4 space-y-4 min-w-0">
+                    <Panel>
+                        <SectionLabel right={`${recurringTasks.length} activas`}>Recurrentes</SectionLabel>
+                        {recurringTasks.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">Ninguna. Las que se repiten (pagar, planificar la semana) van acá.</p>
+                        ) : (
+                            <div className="-mx-2">
+                                {recurringTasks.slice(0, 6).map((t: any) => (
+                                    <button key={t.id} onClick={() => { setEditingRecurring(t); setIsRecurringFormOpen(true) }} className="w-full flex items-center gap-2 px-2 min-h-[40px] rounded-lg hover:bg-raised/60 text-left">
+                                        <Repeat className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                        <span className="text-sm truncate">{t.title}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </Panel>
+                    <Panel>
+                        <SectionLabel>Escribí como pensás</SectionLabel>
+                        <p className="text-sm text-muted-foreground">La entrada de arriba entiende fechas y horas:</p>
+                        <ul className="mt-2 space-y-1.5 font-mono text-[12px] text-foreground/85">
+                            <li>llamar al contador el jueves 10hs</li>
+                            <li>pagar monotributo 25/11 urgente</li>
+                            <li>turno dentista 3 de diciembre 10:30</li>
+                            <li>mandar propuesta la semana que viene</li>
+                        </ul>
+                    </Panel>
+                    <Panel>
+                        <SectionLabel>Hechas hoy</SectionLabel>
+                        <p className="font-mono text-3xl">{completedTasks.length}</p>
+                    </Panel>
+                </aside>
+            </div>
 
             {/* Slide-over Form for Normal Task */}
             <AnimatePresence>
@@ -198,7 +201,7 @@ export function TasksClient({ initialTasks, initialRecurringTasks }: TaskPagePro
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setIsFormOpen(false)}
-                            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50"
+                            className="fixed inset-0 bg-black/60 z-50"
                         />
                         <motion.div
                             initial={{ x: '100%' }}
@@ -222,7 +225,7 @@ export function TasksClient({ initialTasks, initialRecurringTasks }: TaskPagePro
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={closeRecurringForm}
-                            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50"
+                            className="fixed inset-0 bg-black/60 z-50"
                         />
                         <motion.div
                             initial={{ x: '100%' }}
@@ -240,6 +243,6 @@ export function TasksClient({ initialTasks, initialRecurringTasks }: TaskPagePro
                     </>
                 )}
             </AnimatePresence>
-        </div>
+        </PageShell>
     )
 }

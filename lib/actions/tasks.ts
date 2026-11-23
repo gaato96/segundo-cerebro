@@ -62,7 +62,11 @@ export async function createTask(formData: FormData) {
     revalidatePath('/') // Dashboard
 }
 
-export async function createQuickTask(title: string, category: string = 'Personal') {
+export async function createQuickTask(
+    title: string,
+    category: string = 'Personal',
+    extras: { due_date?: string | null; reminder_time?: string | null; priority?: number | null; objective_id?: string | null } = {}
+) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
@@ -74,14 +78,19 @@ export async function createQuickTask(title: string, category: string = 'Persona
         .insert({
             user_id: user.id,
             title: title.trim(),
-            priority: 2,
+            priority: extras.priority || 2,
             category,
             energy_level: 'Deep Work',
-            status: 'Todo'
+            status: 'Todo',
+            due_date: extras.due_date || null,
+            reminder_time: extras.reminder_time ? `${extras.reminder_time}:00` : null,
+            reminder_fired: false,
+            objective_id: extras.objective_id || null
         })
 
     if (error) throw error
     revalidatePath('/tasks')
+    revalidatePath('/okrs')
     revalidatePath('/')
 }
 

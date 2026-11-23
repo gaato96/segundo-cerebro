@@ -100,7 +100,7 @@ export async function createEvent(formData: FormData) {
     const end_time = (formData.get('end_time') as string) || null
     const event_type = (formData.get('event_type') as string) || 'event'
     const location = (formData.get('location') as string) || null
-    const color_hex = (formData.get('color_hex') as string) || '#6366f1'
+    const color_hex = (formData.get('color_hex') as string) || '#7C9CBF'
     const is_all_day = formData.get('is_all_day') === 'true'
 
     if (!title || !event_date) {
@@ -145,7 +145,7 @@ export async function updateEvent(id: string, formData: FormData) {
     const end_time = (formData.get('end_time') as string) || null
     const event_type = (formData.get('event_type') as string) || 'event'
     const location = (formData.get('location') as string) || null
-    const color_hex = (formData.get('color_hex') as string) || '#6366f1'
+    const color_hex = (formData.get('color_hex') as string) || '#7C9CBF'
     const is_all_day = formData.get('is_all_day') === 'true'
 
     const { error } = await supabase

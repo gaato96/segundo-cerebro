@@ -7,8 +7,9 @@ import { AnimatePresence, motion } from 'framer-motion'
 import {
     ArrowLeft, ListTree, Type, Maximize, Minimize, CheckCircle2, ChevronLeft, ChevronRight,
     Loader2, X, RefreshCw, ZoomIn, ZoomOut, Columns2, Crop as CropIcon, MoveHorizontal,
-    RectangleVertical, SunDim, BookOpen
+    RectangleVertical, SunDim, BookOpen, Highlighter
 } from 'lucide-react'
+import { HighlightPanel } from '@/components/reader/HighlightPanel'
 import {
     type BookItem, saveReadingProgress, getReadingProgress, finishBook
 } from '@/lib/actions/books'
@@ -170,7 +171,7 @@ export function BookReader({ book }: { book: BookItem }) {
     const [overflow, setOverflow] = useState({ x: false, y: false })
 
     const [uiVisible, setUiVisible] = useState(true)
-    const [panel, setPanel] = useState<null | 'settings' | 'outline'>(null)
+    const [panel, setPanel] = useState<null | 'settings' | 'outline' | 'highlight'>(null)
     const [outline, setOutline] = useState<OutlineEntry[] | null>(null)
     const [sliderValue, setSliderValue] = useState<number | null>(null)
     const [gotoOpen, setGotoOpen] = useState(false)
@@ -806,6 +807,9 @@ export function BookReader({ book }: { book: BookItem }) {
                             <ToolbarButton label="Índice" active={panel === 'outline'} onClick={openOutline}>
                                 <ListTree className="w-5 h-5" />
                             </ToolbarButton>
+                            <ToolbarButton label="Resaltar en Notas" active={panel === 'highlight'} onClick={() => setPanel(p => p === 'highlight' ? null : 'highlight')}>
+                                <Highlighter className="w-5 h-5" />
+                            </ToolbarButton>
                             <ToolbarButton label="Apariencia" active={panel === 'settings'} onClick={() => setPanel(p => p === 'settings' ? null : 'settings')}>
                                 <Type className="w-5 h-5" />
                             </ToolbarButton>
@@ -962,6 +966,21 @@ export function BookReader({ book }: { book: BookItem }) {
                             </div>
                         </div>
                     </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Resaltados → Notas */}
+            <AnimatePresence>
+                {panel === 'highlight' && (
+                    <HighlightPanel
+                        bookId={book.id}
+                        page={page}
+                        doc={rendererRef.current?.doc || null}
+                        chromeClass={theme.chrome}
+                        mutedClass={theme.chromeMuted}
+                        dividerClass={theme.divider}
+                        onClose={() => setPanel(null)}
+                    />
                 )}
             </AnimatePresence>
 

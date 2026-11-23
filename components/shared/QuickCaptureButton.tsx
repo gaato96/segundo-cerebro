@@ -79,6 +79,14 @@ export function QuickCaptureButton() {
         }
     }, [open])
 
+    // Atajo del ícono de la app instalada: /?capturar=1 abre la captura directo.
+    useEffect(() => {
+        if (new URLSearchParams(window.location.search).get('capturar') === '1') {
+            setOpen(true)
+            window.history.replaceState(null, '', window.location.pathname)
+        }
+    }, [])
+
     useEffect(() => {
         if (open) setTimeout(() => inputRef.current?.focus(), 30)
         else {

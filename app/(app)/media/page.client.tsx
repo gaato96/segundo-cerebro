@@ -609,7 +609,7 @@ export function MediaClient({ initialItems, readerLinks = {} }: { initialItems: 
 
             {/* TMDB Live Search Results Dropdown */}
             {searchResults.length > 0 && searchQuery && (
-                <div className="glass rounded-2xl border border-border/50 bg-[#1a1b26] shadow-2xl p-4 max-h-[400px] overflow-y-auto max-w-2xl space-y-3 z-30 relative animate-slide-down">
+                <div className="glass rounded-2xl border border-border/50 bg-popover shadow-2xl p-4 max-h-[400px] overflow-y-auto max-w-2xl space-y-3 z-30 relative animate-slide-down">
                     <div className="flex justify-between items-center pb-2 border-b border-white/5">
                         <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Resultados de búsqueda ({searchResults.length})</span>
                         <button onClick={() => { setSearchQuery(''); setSearchResults([]); }} className="text-xs text-muted-foreground hover:text-white">Cerrar</button>
@@ -1247,7 +1247,7 @@ export function MediaClient({ initialItems, readerLinks = {} }: { initialItems: 
                             initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
-                            className="bg-[#1a1b26] border border-white/10 w-full max-w-md rounded-3xl p-6 relative flex flex-col gap-4 shadow-2xl overflow-y-auto max-h-[90vh]"
+                            className="bg-popover border border-white/10 w-full max-w-md rounded-3xl p-6 relative flex flex-col gap-4 shadow-2xl overflow-y-auto max-h-[90vh]"
                         >
                             <button onClick={() => setIsManualOpen(false)} className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-full text-muted-foreground"><X className="w-5 h-5" /></button>
                             <h2 className="text-xl font-bold font-heading">Carga Manual Completa</h2>

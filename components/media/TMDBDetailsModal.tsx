@@ -33,13 +33,13 @@ export function TMDBDetailsModal({
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="bg-[#1a1b26] border border-white/10 w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl relative z-10 flex flex-col max-h-[90vh]"
+                className="bg-popover border border-white/10 w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl relative z-10 flex flex-col max-h-[90vh]"
             >
                 {/* Backdrop Image Banner */}
                 {backdrop ? (
                     <div className="w-full h-48 relative shrink-0">
                         <img src={backdrop} alt={title} className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#1a1b26] via-[#1a1b26]/60 to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-popover via-popover/60 to-transparent" />
                     </div>
                 ) : (
                     <div className="w-full h-12 bg-pink-600/10 shrink-0" />

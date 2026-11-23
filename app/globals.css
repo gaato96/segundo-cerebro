@@ -392,3 +392,19 @@
     padding-top: env(safe-area-inset-top);
   }
 }
+/* Visor de notas (markdown) */
+@layer components {
+  .prose-note > * + * { margin-top: 0.85em; }
+  .prose-note h1 { font-size: 1.4em; font-weight: 600; letter-spacing: -0.02em; margin-top: 1.4em; }
+  .prose-note h2 { font-size: 1.2em; font-weight: 600; letter-spacing: -0.015em; margin-top: 1.4em; padding-bottom: 0.35em; border-bottom: 1px solid hsl(var(--hairline)); }
+  .prose-note h3 { font-size: 1.05em; font-weight: 600; margin-top: 1.2em; }
+  .prose-note ul { list-style: none; padding-left: 0; }
+  .prose-note ul > li { position: relative; padding-left: 1.2em; }
+  .prose-note ul > li::before { content: ''; position: absolute; left: 0.2em; top: 0.7em; width: 5px; height: 5px; border-radius: 999px; background: hsl(var(--lamp-400)); }
+  .prose-note ol { list-style: decimal; padding-left: 1.3em; }
+  .prose-note li + li { margin-top: 0.35em; }
+  .prose-note blockquote { border-left: 2px solid hsl(var(--hairline-strong)); padding-left: 1em; color: hsl(var(--muted-foreground)); font-style: italic; }
+  .prose-note code { font-family: var(--font-geist-mono); font-size: 0.88em; background: hsl(var(--raised)); padding: 0.1em 0.35em; border-radius: 6px; }
+  .prose-note strong { font-weight: 600; color: hsl(var(--foreground)); }
+  .prose-note hr { border-color: hsl(var(--hairline)); }
+}

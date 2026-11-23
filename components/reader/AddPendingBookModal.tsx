@@ -68,7 +68,7 @@ export function AddPendingBookModal({ onClose, onSaved, editing }: Props) {
             <motion.div
                 initial={{ opacity: 0, y: 24 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="w-full sm:max-w-xl bg-[#141625] border border-white/10 rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[92dvh] overflow-y-auto"
+                className="w-full sm:max-w-xl bg-popover border border-white/10 rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[92dvh] overflow-y-auto"
             >
                 <div className="flex items-center justify-between px-5 pt-5 pb-3">
                     <div>

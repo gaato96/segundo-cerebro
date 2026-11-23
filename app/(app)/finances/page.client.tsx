@@ -80,7 +80,7 @@ export function FinancesClient({
 
     const [envCategory, setEnvCategory] = useState('')
     const [envAllocated, setEnvAllocated] = useState('')
-    const [envColor, setEnvColor] = useState('#6366f1')
+    const [envColor, setEnvColor] = useState('#7C9CBF')
 
     // Financial calculations
     const income = transactions.filter(t => t.type === 'Income').reduce((sum, t) => sum + t.amount, 0)

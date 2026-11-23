@@ -91,7 +91,7 @@ export async function createHabit(formData: FormData) {
     if (!user) return { error: 'No autorizado' }
 
     const title = formData.get('title') as string
-    const color_hex = (formData.get('color_hex') as string) || '#6366f1'
+    const color_hex = (formData.get('color_hex') as string) || '#7C9CBF'
     const estimated_minutes = parseInt(formData.get('estimated_minutes') as string) || 15
     const time_of_day = (formData.get('time_of_day') as any) || 'morning'
     const icon = (formData.get('icon') as string) || 'flame'
@@ -165,7 +165,7 @@ export async function updateHabit(id: string, formData: FormData) {
     if (!user) return { error: 'No autorizado' }
 
     const title = formData.get('title') as string
-    const color_hex = (formData.get('color_hex') as string) || '#6366f1'
+    const color_hex = (formData.get('color_hex') as string) || '#7C9CBF'
     const estimated_minutes = parseInt(formData.get('estimated_minutes') as string) || 15
     const time_of_day = (formData.get('time_of_day') as any) || 'morning'
     const icon = (formData.get('icon') as string) || 'flame'
@@ -314,7 +314,7 @@ Respondé SOLO con este JSON:
         frequency_times_per_day: Math.min(Math.max(Number(h.frequency_times_per_day) || 1, 1), 10),
         estimated_minutes: Math.min(Math.max(Number(h.estimated_minutes) || 15, 1), 120),
         time_of_day: VALID_TOD.includes(h.time_of_day) ? h.time_of_day : 'anytime',
-        color_hex: /^#[0-9a-f]{6}$/i.test(h.color_hex || '') ? h.color_hex : '#6366f1',
+        color_hex: /^#[0-9a-f]{6}$/i.test(h.color_hex || '') ? h.color_hex : '#7C9CBF',
         minimum_version: h.minimum_version || '',
         anchor: h.anchor && String(h.anchor).toLowerCase() !== 'null' ? String(h.anchor) : null
     })).filter((h: HabitSuggestion) => h.title)

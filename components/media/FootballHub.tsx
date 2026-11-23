@@ -350,7 +350,7 @@ export function FootballHub() {
                             initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
-                            className="bg-[#161922] border border-white/10 w-full max-w-xl rounded-3xl p-6 relative flex flex-col gap-5 shadow-2xl overflow-y-auto max-h-[90vh]"
+                            className="bg-popover border border-white/10 w-full max-w-xl rounded-3xl p-6 relative flex flex-col gap-5 shadow-2xl overflow-y-auto max-h-[90vh]"
                         >
                             <button
                                 onClick={() => setIsCreateModalOpen(false)}
@@ -506,7 +506,7 @@ export function FootballHub() {
                             initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
-                            className="bg-[#161922] border border-white/10 w-full max-w-md rounded-3xl p-6 relative flex flex-col gap-4 shadow-2xl"
+                            className="bg-popover border border-white/10 w-full max-w-md rounded-3xl p-6 relative flex flex-col gap-4 shadow-2xl"
                         >
                             <button
                                 onClick={() => setIsCustomTeamModalOpen(false)}

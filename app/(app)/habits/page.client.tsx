@@ -1,5 +1,7 @@
 'use client'
 
+import { HabitMatrix } from '@/components/habits/HabitMatrix'
+import { PageShell, PageHeader } from '@/components/ui/kit'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -56,7 +58,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
     const [estimatedMinutes, setEstimatedMinutes] = useState(15)
     const [reminderTime, setReminderTime] = useState('')
     const [timeOfDay, setTimeOfDay] = useState<'morning' | 'afternoon' | 'evening' | 'anytime'>('morning')
-    const [colorHex, setColorHex] = useState('#6366f1')
+    const [colorHex, setColorHex] = useState('#7C9CBF')
     const [frequencyType, setFrequencyType] = useState<'daily' | 'custom_days' | 'x_per_week' | 'x_per_day'>('daily')
     const [frequencyDays, setFrequencyDays] = useState<number[]>([])
     const [frequencyTimesPerDay, setFrequencyTimesPerDay] = useState(1)
@@ -136,7 +138,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
         setEstimatedMinutes(15)
         setReminderTime('')
         setTimeOfDay('morning')
-        setColorHex('#6366f1')
+        setColorHex('#7C9CBF')
         setFrequencyType('daily')
         setFrequencyDays([])
         setFrequencyTimesPerDay(1)
@@ -151,7 +153,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
         setEstimatedMinutes(h.estimated_minutes || 15)
         setReminderTime(h.reminder_time ? String(h.reminder_time).slice(0, 5) : '')
         setTimeOfDay(h.time_of_day || 'morning')
-        setColorHex(h.color_hex || '#6366f1')
+        setColorHex(h.color_hex || '#7C9CBF')
         setFrequencyType(h.frequency_type || 'daily')
         setFrequencyDays(h.frequency_days || [])
         setFrequencyTimesPerDay(h.frequency_times_per_day || 1)
@@ -232,61 +234,34 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
     }
 
     return (
-        <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6 animate-fade-in pb-24">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-heading font-bold gradient-text">
-                        Panel de Hábitos
-                    </h1>
-                    <p className="text-muted-foreground text-sm mt-0.5">
-                        Medí tu consistencia, optimizá tu tiempo y construí rutinas sólidas.
-                    </p>
-                </div>
+        <PageShell wide className="space-y-6">
+            <PageHeader
+                label={new Intl.DateTimeFormat('es-AR', { month: 'long', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date())}
+                title="Hábitos"
+                subtitle="La matriz del mes: lo que hiciste, lo que tocaba y tu racha."
+                actions={
+                    <button onClick={openCreateModal} className="btn-primary text-sm">
+                        <Plus className="w-4 h-4" /> Nuevo hábito
+                    </button>
+                }
+            />
 
-                <button
-                    onClick={openCreateModal}
-                    className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-lg shadow-indigo-600/20 transition-all self-start sm:self-auto"
-                >
-                    <Plus className="w-4 h-4" />
-                    Nuevo Hábito
-                </button>
+            {/* Resumen en una tira, sin tarjetas */}
+            <div className="flex flex-wrap items-stretch rounded-2xl bg-card border border-hairline divide-x divide-hairline">
+                {[
+                    { label: 'Hoy', value: `${completedTodayIds.size}/${todayScheduledTotal}` },
+                    { label: 'Consistencia del mes', value: `${monthlyStats.completionRate}%` },
+                    { label: 'Registros del mes', value: String(monthlyStats.totalLogsMonth) },
+                    { label: 'Tiempo diario', value: `${totalEstMinutesDaily} min` }
+                ].map(k => (
+                    <div key={k.label} className="flex-1 min-w-[140px] px-5 py-4">
+                        <p className="label-caps !text-[10px]">{k.label}</p>
+                        <p className="font-mono text-2xl mt-1">{k.value}</p>
+                    </div>
+                ))}
             </div>
 
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="glass p-5 rounded-2xl border border-indigo-500/20">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Tasa del Mes</p>
-                    <h3 className="text-2xl font-bold font-heading text-white">{monthlyStats.completionRate}%</h3>
-                    <p className="text-[10px] text-emerald-400 mt-1 font-semibold flex items-center gap-1">
-                        <TrendingUp className="w-3 h-3" /> Consistencia mensual
-                    </p>
-                </div>
-
-                <div className="glass p-5 rounded-2xl border border-orange-500/20">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Completados Hoy</p>
-                    <h3 className="text-2xl font-bold font-heading text-white">{completedTodayIds.size} / {todayScheduledTotal}</h3>
-                    <p className="text-[10px] text-orange-400 mt-1 font-semibold flex items-center gap-1">
-                        <Flame className="w-3 h-3" /> Hábitos de hoy
-                    </p>
-                </div>
-
-                <div className="glass p-5 rounded-2xl border border-purple-500/20">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Tiempo Diario Est.</p>
-                    <h3 className="text-2xl font-bold font-heading text-white">{totalEstMinutesDaily} min</h3>
-                    <p className="text-[10px] text-purple-400 mt-1 font-semibold flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> ~{(totalEstMinutesDaily / 60).toFixed(1)} horas/día
-                    </p>
-                </div>
-
-                <div className="glass p-5 rounded-2xl border border-emerald-500/20">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Registros del Mes</p>
-                    <h3 className="text-2xl font-bold font-heading text-white">{monthlyStats.totalLogsMonth}</h3>
-                    <p className="text-[10px] text-emerald-400 mt-1 font-semibold flex items-center gap-1">
-                        <Sparkles className="w-3 h-3" /> Hábitos cumplidos
-                    </p>
-                </div>
-            </div>
+            <HabitMatrix habits={habits} logs={logs} todayStr={todayStr} onToggleToday={handleToggleHabit} />
 
             {/* Controls Bar */}
             <div className="glass p-4 rounded-2xl border border-border/50 flex flex-wrap items-center justify-between gap-4">
@@ -445,7 +420,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                         </span>
                                         {h.reminder_time && (
                                             <span className="text-xs text-amber-300 font-mono flex items-center gap-1" title="Recordatorio en la PC">
-                                                🔔 {String(h.reminder_time).slice(0, 5)}
+                                                {String(h.reminder_time).slice(0, 5)}
                                             </span>
                                         )}
                                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-600/10 border border-indigo-500/20 text-indigo-300 flex items-center gap-1 font-semibold">
@@ -454,7 +429,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                         </span>
                                         {(h as any).auto_source && (
                                             <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-600/10 border border-emerald-500/20 text-emerald-300 font-semibold" title="Se tilda solo al registrar lo relacionado">
-                                                ⚡ automático
+                                                automático
                                             </span>
                                         )}
                                         {h.frequency_type === 'x_per_week' && (() => {
@@ -573,10 +548,10 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                     </label>
                                     <div className="grid grid-cols-2 gap-2">
                                         {([
-                                            { value: 'daily', label: '🔁 Diario' },
-                                            { value: 'custom_days', label: '📅 Días específicos' },
-                                            { value: 'x_per_week', label: '📆 X veces/semana' },
-                                            { value: 'x_per_day', label: '🎯 X veces/día' },
+                                            { value: 'daily', label: 'Diario' },
+                                            { value: 'custom_days', label: 'Días específicos' },
+                                            { value: 'x_per_week', label: 'X veces/semana' },
+                                            { value: 'x_per_day', label: 'X veces/día' },
                                         ] as const).map(opt => (
                                             <button
                                                 key={opt.value}
@@ -685,9 +660,9 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                             onChange={(e: any) => setTimeOfDay(e.target.value)}
                                             className="w-full bg-black/20 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                         >
-                                            <option value="morning">🌅 Mañana</option>
-                                            <option value="afternoon">☀️ Tarde</option>
-                                            <option value="evening">🌙 Noche</option>
+                                            <option value="morning">Mañana</option>
+                                            <option value="afternoon">Tarde</option>
+                                            <option value="evening">Noche</option>
                                             <option value="anytime">⏰ Cualquier momento</option>
                                         </select>
                                     </div>
@@ -720,7 +695,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                         Color Identificador
                                     </label>
                                     <div className="flex items-center gap-2">
-                                        {['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#ef4444'].map((c) => (
+                                        {['#7C9CBF', '#6FAE8C', '#E0A54B', '#D9735F', '#A8A8B0', '#B8A07A'].map((c) => (
                                             <button
                                                 key={c}
                                                 type="button"
@@ -754,6 +729,6 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                     </div>
                 )}
             </AnimatePresence>
-        </div>
+        </PageShell>
     )
 }

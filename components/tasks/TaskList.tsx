@@ -53,7 +53,7 @@ export function TaskList({ pendingTasks, completedTasks }: TaskListProps) {
             particleCount: 100,
             spread: 70,
             origin: { y: 0.6 },
-            colors: ['#ef4444', '#f59e0b', '#3b82f6']
+            colors: ['#E0A54B', '#6FAE8C', '#EDEDEF']
         })
     }
 
@@ -66,12 +66,9 @@ export function TaskList({ pendingTasks, completedTasks }: TaskListProps) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            whileHover={{ scale: 1.005 }}
-            className={`group flex items-start gap-3 p-4 rounded-xl border transition-all cursor-pointer ${isCompleted
-                ? 'bg-secondary/20 border-border/30 opacity-60'
-                : overdue
-                    ? 'glass hover:bg-red-500/5 border-red-500/30 shadow-sm'
-                    : 'glass hover:bg-secondary/50 border-border/50 shadow-sm'
+            className={`group relative flex items-start gap-3 px-4 py-3 min-h-[56px] transition-colors cursor-pointer border-b border-hairline last:border-0 ${isCompleted
+                ? 'opacity-55'
+                : 'hover:bg-raised/50'
                 }`}
             onClick={(e) => {
                 const target = e.target as HTMLElement
@@ -136,7 +133,7 @@ export function TaskList({ pendingTasks, completedTasks }: TaskListProps) {
 
                     {task.energy_level && (
                         <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-secondary text-muted-foreground border border-border flex items-center gap-1">
-                            {task.energy_level === 'Deep Work' ? '⚡' : task.energy_level === 'Low Energy' ? '🔋' : '📱'} {task.energy_level}
+                            {task.energy_level === 'Deep Work' ? 'Foco profundo' : task.energy_level === 'Low Energy' ? 'Liviana' : 'Desde el celu'}
                         </span>
                     )}
 
@@ -175,37 +172,68 @@ export function TaskList({ pendingTasks, completedTasks }: TaskListProps) {
         )
     }
 
+    // Horizontes: lo vencido primero, después hoy, mañana, la semana y lo que no tiene fecha.
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date())
+    const plus = (n: number) => {
+        const [y, m, d] = today.split('-').map(Number)
+        const dt = new Date(y, m - 1, d + n)
+        return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
+    }
+    const tomorrow = plus(1)
+    const weekEnd = plus(6)
+    const dayOf = (t: any) => (t.planned_date ? String(t.planned_date).slice(0, 10) : null) || (t.due_date ? String(t.due_date).slice(0, 10) : null)
+    const groups: { id: string; label: string; tasks: any[]; tone?: string }[] = [
+        { id: 'overdue', label: 'Vencidas', tone: 'text-red-300', tasks: pendingTasks.filter(t => t.due_date && String(t.due_date).slice(0, 10) < today) },
+        { id: 'today', label: 'Hoy', tasks: [] },
+        { id: 'tomorrow', label: 'Mañana', tasks: [] },
+        { id: 'week', label: 'Esta semana', tasks: [] },
+        { id: 'later', label: 'Más adelante', tasks: [] },
+        { id: 'someday', label: 'Algún día', tasks: [] }
+    ]
+    const overdueIds = new Set(groups[0].tasks.map(t => t.id))
+    for (const t of pendingTasks) {
+        if (overdueIds.has(t.id)) continue
+        const d = dayOf(t)
+        if (!d) groups[5].tasks.push(t)
+        else if (d <= today) groups[1].tasks.push(t)
+        else if (d === tomorrow) groups[2].tasks.push(t)
+        else if (d <= weekEnd) groups[3].tasks.push(t)
+        else groups[4].tasks.push(t)
+    }
+
     return (
         <div className="space-y-8">
-            {/* Pending Tasks */}
-            <div className="space-y-3">
-                {pendingTasks.length === 0 ? (
-                    <div className="glass rounded-2xl p-12 text-center border border-dashed border-border flex flex-col items-center">
-                        <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mb-4">
-                            <Check className="w-8 h-8 text-green-500" />
-                        </div>
-                        <h3 className="text-lg font-heading font-medium text-foreground">¡Bandeja en cero!</h3>
-                        <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-                            No tenés tareas pendientes. Es un buen momento para vaciar tu cabeza (Brain Dump) o descansar.
-                        </p>
+            {pendingTasks.length === 0 ? (
+                <div className="rounded-2xl p-12 text-center border border-dashed border-hairline flex flex-col items-center">
+                    <Check className="w-7 h-7 text-emerald-400 mb-3" />
+                    <h3 className="text-base font-medium">Nada pendiente</h3>
+                    <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+                        Lo que se te cruce, anotalo con la tecla C y vaciá el Inbox a la mañana.
+                    </p>
+                </div>
+            ) : groups.filter(g => g.tasks.length).map(g => (
+                <section key={g.id}>
+                    <h3 className={`label-caps mb-2 flex items-center gap-2 ${g.tone || ''}`}>
+                        {g.id === 'overdue' && <span className="w-1.5 h-1.5 rounded-full bg-red-400" />}
+                        {g.label} <span className="font-mono text-ink-faint normal-case tracking-normal">{g.tasks.length}</span>
+                    </h3>
+                    <div className="rounded-2xl bg-card border border-hairline overflow-hidden">
+                        <AnimatePresence mode="popLayout">
+                            {g.tasks.map((task) => renderTask(task, false))}
+                        </AnimatePresence>
                     </div>
-                ) : (
-                    <AnimatePresence mode="popLayout">
-                        {pendingTasks.map((task) => renderTask(task, false))}
-                    </AnimatePresence>
-                )}
-            </div>
+                </section>
+            ))}
 
-            {/* Completed Tasks */}
             {completedTasks.length > 0 && (
-                <div className="pt-6 border-t border-border/50">
-                    <h3 className="text-sm font-medium text-muted-foreground mb-4 px-1">Completadas hoy</h3>
-                    <div className="space-y-2">
+                <section>
+                    <h3 className="label-caps mb-2">Hechas hoy <span className="font-mono text-ink-faint normal-case tracking-normal">{completedTasks.length}</span></h3>
+                    <div className="rounded-2xl bg-card border border-hairline overflow-hidden">
                         <AnimatePresence mode="popLayout">
                             {completedTasks.map((task) => renderTask(task, true))}
                         </AnimatePresence>
                     </div>
-                </div>
+                </section>
             )}
 
             {/* Task Edit Modal */}

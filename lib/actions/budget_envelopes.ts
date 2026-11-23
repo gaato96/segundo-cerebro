@@ -43,7 +43,7 @@ export async function createEnvelope(formData: FormData) {
     const month_year = formData.get('month_year') as string
     const category = formData.get('category') as string
     const allocated_amount = parseFloat(formData.get('allocated_amount') as string) || 0
-    const color_hex = (formData.get('color_hex') as string) || '#6366f1'
+    const color_hex = (formData.get('color_hex') as string) || '#7C9CBF'
 
     if (!month_year || !category) return { error: 'Mes y categoría son requeridos' }
 

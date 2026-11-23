@@ -171,9 +171,9 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
                                     onChange={(e) => setPriority(Number(e.target.value))}
                                     className="w-full bg-secondary/40 border border-border rounded-xl px-2.5 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                                 >
-                                    <option value={1}>🔴 Alta</option>
-                                    <option value={2}>🟡 Media</option>
-                                    <option value={3}>🔵 Baja</option>
+                                    <option value={1}>Alta</option>
+                                    <option value={2}>Media</option>
+                                    <option value={3}>Baja</option>
                                 </select>
                             </div>
 
@@ -200,9 +200,9 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
                                     onChange={(e) => setEnergyLevel(e.target.value)}
                                     className="w-full bg-secondary/40 border border-border rounded-xl px-2.5 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                                 >
-                                    <option value="Deep Work">⚡ Deep</option>
-                                    <option value="Low Energy">🔋 Low</option>
-                                    <option value="Phone-only">📱 Mobile</option>
+                                    <option value="Deep Work">Deep</option>
+                                    <option value="Low Energy">Low</option>
+                                    <option value="Phone-only">Mobile</option>
                                 </select>
                             </div>
                         </div>

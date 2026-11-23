@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { NextStepPrompt } from '@/components/okrs/NextStepPrompt'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Target, Sparkles, Plus, CheckCircle2, Circle, Clock, Flame, Calendar, Trash2, Edit2, X, ChevronRight, CheckSquare, Trophy } from 'lucide-react'
 import { ObjectiveItem, KeyResult, createObjective, updateObjectiveProgress, deleteObjective, updateKeyResults } from '@/lib/actions/okrs'
@@ -116,7 +117,7 @@ export function OKRsClient({ objectives: initialObjectives, linkedTasks, dreams:
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h1 className="text-2xl md:text-3xl font-heading font-bold gradient-text">
-                        Objetivos, Metas & Sueños
+                        Objetivos
                     </h1>
                     <p className="text-muted-foreground text-sm mt-0.5">
                         Transformá grandes aspiraciones en logros concretos paso a paso.
@@ -278,13 +279,16 @@ export function OKRsClient({ objectives: initialObjectives, linkedTasks, dreams:
                                         {obj.description && (
                                             <p className="text-xs text-muted-foreground">{obj.description}</p>
                                         )}
+                                        <p className="font-mono text-[11px] text-muted-foreground pt-1">
+                                            Tareas vinculadas {tasksForObj.filter(t => t.status !== 'Done').length} abiertas · {completedTasksCount} hechas
+                                        </p>
                                     </div>
 
                                     <div className="flex items-center gap-2 self-end sm:self-auto">
                                         <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
                                             obj.status === 'Completed' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                                         }`}>
-                                            {obj.status === 'Completed' ? '✅ Cumplido' : '⚡ En proceso'}
+                                            {obj.status === 'Completed' ? 'Cumplido' : 'En proceso'}
                                         </span>
                                         <button
                                             onClick={() => handleDeleteObj(obj.id)}
@@ -294,6 +298,10 @@ export function OKRsClient({ objectives: initialObjectives, linkedTasks, dreams:
                                         </button>
                                     </div>
                                 </div>
+
+                                {obj.status === 'Active' && !tasksForObj.some(t => t.status !== 'Done') && (
+                                    <NextStepPrompt objectiveId={obj.id} />
+                                )}
 
                                 {/* Resultados clave: de acá sale el progreso real */}
                                 {(obj.key_results?.length ?? 0) > 0 && (

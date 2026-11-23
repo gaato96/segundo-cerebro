@@ -130,9 +130,9 @@ export function TaskForm({ onClose, initialDate }: TaskFormProps) {
                                     defaultValue="Deep Work"
                                     className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 appearance-none text-foreground"
                                 >
-                                    <option value="Deep Work">⚡ Deep Work (Alta Energía)</option>
-                                    <option value="Low Energy">🔋 Low Energy (Baja Energía)</option>
-                                    <option value="Phone-only">📱 Phone-only (Solo Celular)</option>
+                                    <option value="Deep Work">Deep Work (Alta Energía)</option>
+                                    <option value="Low Energy">Low Energy (Baja Energía)</option>
+                                    <option value="Phone-only">Phone-only (Solo Celular)</option>
                                 </select>
                             </div>
                         </div>

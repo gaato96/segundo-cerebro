@@ -85,7 +85,7 @@ export function TeamRouletteModal({
 
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-            <div className="bg-[#161922] border border-emerald-500/20 w-full max-w-lg flex flex-col rounded-3xl relative overflow-hidden shadow-2xl p-6 text-center space-y-5">
+            <div className="bg-popover border border-emerald-500/20 w-full max-w-lg flex flex-col rounded-3xl relative overflow-hidden shadow-2xl p-6 text-center space-y-5">
                 {/* Close Button */}
                 <button
                     onClick={onClose}
@@ -153,7 +153,7 @@ export function TeamRouletteModal({
 
                 {/* Spinning Wheel Container */}
                 <div className="h-56 flex items-center justify-center border border-white/10 bg-gradient-to-b from-black/60 to-black/30 rounded-2xl p-4 overflow-hidden relative shadow-inner">
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#161922]/70 via-transparent to-[#161922]/70 pointer-events-none z-10" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-popover/70 via-transparent to-popover/70 pointer-events-none z-10" />
 
                     {filteredTeams.length === 0 ? (
                         <div className="space-y-2 text-center p-4">

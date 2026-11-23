@@ -143,14 +143,14 @@ export function DailySnapshot({ tasks: initialTasks, habits, completedHabitIds: 
                 angle: 60,
                 spread: 55,
                 origin: { x: 0 },
-                colors: ['#6366f1', '#a855f7', '#ec4899']
+                colors: ['#E0A54B', '#6FAE8C', '#EDEDEF']
             });
             confetti({
                 particleCount: 5,
                 angle: 120,
                 spread: 55,
                 origin: { x: 1 },
-                colors: ['#6366f1', '#a855f7', '#ec4899']
+                colors: ['#E0A54B', '#6FAE8C', '#EDEDEF']
             });
 
             if (Date.now() < end) {

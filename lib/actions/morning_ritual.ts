@@ -443,3 +443,42 @@ Respondé SOLO con este JSON:
         warning: parsed.warning && String(parsed.warning).toLowerCase() !== 'null' ? String(parsed.warning) : null
     }
 }
+
+// ============================================================
+// BLOQUES DE TIEMPO
+//
+// Elegir qué hacer no alcanza: el bloque en la agenda es lo que lo vuelve
+// real. Cada tarea del foco guarda a qué hora arranca y cuánto dura; la hora
+// también queda como recordatorio en la PC.
+// ============================================================
+
+export async function setTaskBlocks(blocks: { id: string; start: string | null; minutes: number | null }[]) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'No autorizado' }
+
+    for (const b of blocks) {
+        const start = b.start ? (b.start.length === 5 ? `${b.start}:00` : b.start) : null
+        const { error } = await supabase
+            .from('tasks')
+            .update({
+                block_start: start,
+                estimated_minutes: b.minutes,
+                reminder_time: start,
+                reminder_fired: false,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', b.id)
+            .eq('user_id', user.id)
+        if (error) {
+            if (String(error.message).includes('block_start') || String(error.message).includes('estimated_minutes')) {
+                return { error: 'Para guardar los horarios falta correr la migración 028 en Supabase.' }
+            }
+            return { error: error.message }
+        }
+    }
+
+    revalidatePath('/')
+    revalidatePath('/tasks')
+    return { success: true }
+}

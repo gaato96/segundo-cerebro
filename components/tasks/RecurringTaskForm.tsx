@@ -225,9 +225,9 @@ export function RecurringTaskForm({ onClose, task }: RecurringTaskFormProps) {
                                 defaultValue={task?.energy_level || 'Deep Work'}
                                 className="w-full bg-secondary/50 border border-border rounded-xl px-3 py-2.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                             >
-                                <option value="Deep Work">⚡ Deep Work (Alta Energía)</option>
-                                <option value="Low Energy">🔋 Low Energy (Baja Energía)</option>
-                                <option value="Phone-only">📱 Phone-only (Solo Celular)</option>
+                                <option value="Deep Work">Deep Work (Alta Energía)</option>
+                                <option value="Low Energy">Low Energy (Baja Energía)</option>
+                                <option value="Phone-only">Phone-only (Solo Celular)</option>
                             </select>
                         </div>
                     </div>
