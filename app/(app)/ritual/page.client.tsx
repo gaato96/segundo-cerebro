@@ -20,6 +20,8 @@ import { cn, getPriorityColor, getPriorityLabel } from '@/lib/utils'
 interface Props {
     existingLog: MorningRitualLog | null
     morningData: any
+    /** Las tareas del plan guardado, incluidas las ya hechas (para el resumen). */
+    planTasks: any[]
     todayStr: string
 }
 
@@ -38,16 +40,19 @@ const STEPS = [
  * 2. Elegir el foco entre las tareas abiertas, viendo objetivos y hábitos.
  * 3. Ver el día armado (eventos + foco + hábitos) y arrancar.
  */
-export function RitualClient({ existingLog, morningData, todayStr }: Props) {
+export function RitualClient({ existingLog, morningData, planTasks, todayStr }: Props) {
     const router = useRouter()
-    const isCompleted = !!existingLog?.completed_at
+    // Un plan sin foco ni tareas no cuenta como hecho: se vuelve a planificar.
+    const isCompleted = !!existingLog?.completed_at && (!!existingLog?.daily_objective || planTasks.length > 0)
+    const openIds = new Set((morningData?.tasks || []).map((t: any) => t.id))
     const inboxNotes: any[] = morningData?.inboxNotes || []
 
     const [editing, setEditing] = useState(!isCompleted)
     // Si el Inbox ya está vacío, se arranca directo en el foco.
     const [step, setStep] = useState(inboxNotes.length ? 0 : 1)
     const [focusText, setFocusText] = useState(existingLog?.daily_objective || '')
-    const [selected, setSelected] = useState<string[]>(existingLog?.mit_task_ids || [])
+    // Solo tareas que siguen abiertas: ids viejos o borrados no cuentan como elegidos.
+    const [selected, setSelected] = useState<string[]>((existingLog?.mit_task_ids || []).filter(id => openIds.has(id)))
     const [extraTasks, setExtraTasks] = useState<any[]>([])
     const [statusOverride, setStatusOverride] = useState<Record<string, string>>({})
     const [saving, setSaving] = useState(false)
@@ -59,11 +64,13 @@ export function RitualClient({ existingLog, morningData, todayStr }: Props) {
     const [plan, setPlan] = useState<any>(null)
 
     const tasks: any[] = useMemo(() => {
-        const base: any[] = morningData?.tasks || []
-        const ids = new Set(base.map(t => t.id))
-        return [...base, ...extraTasks.filter(t => !ids.has(t.id))]
+        const open: any[] = morningData?.tasks || []
+        const ids = new Set(open.map(t => t.id))
+        const fromPlan = planTasks.filter(t => !ids.has(t.id))
+        fromPlan.forEach(t => ids.add(t.id))
+        return [...open, ...fromPlan, ...extraTasks.filter(t => !ids.has(t.id))]
             .map(t => (statusOverride[t.id] ? { ...t, status: statusOverride[t.id] } : t))
-    }, [morningData?.tasks, extraTasks, statusOverride])
+    }, [morningData?.tasks, planTasks, extraTasks, statusOverride])
 
     const objectives: any[] = morningData?.objectives || []
     const habits: any[] = morningData?.habits || []
@@ -73,6 +80,7 @@ export function RitualClient({ existingLog, morningData, todayStr }: Props) {
     const taskById = useMemo(() => new Map(tasks.map(t => [t.id, t])), [tasks])
     const selectedTasks = selected.map(id => taskById.get(id)).filter(Boolean) as any[]
     const effectiveFocus = focusText.trim() || selectedTasks[0]?.title || ''
+    const summaryTasks = (log?.mit_task_ids || []).map(id => taskById.get(id)).filter(Boolean) as any[]
 
     function toggle(id: string) {
         setSelected(prev => {
@@ -108,9 +116,10 @@ export function RitualClient({ existingLog, morningData, todayStr }: Props) {
 
     async function handleFinish() {
         setSaving(true)
+        const ids = selectedTasks.map(t => t.id)
         const [res] = await Promise.all([
-            saveRitualLog(todayStr, effectiveFocus, undefined, selected),
-            planTasksForDay(selected, todayStr)
+            saveRitualLog(todayStr, effectiveFocus, undefined, ids),
+            planTasksForDay(ids, todayStr)
         ])
         setSaving(false)
         if (res.error) return alert(res.error)
@@ -149,10 +158,10 @@ export function RitualClient({ existingLog, morningData, todayStr }: Props) {
                 )}
             </div>
 
-            {!editing && log ? (
+            {!editing && log?.completed_at && (log.daily_objective || summaryTasks.length > 0) ? (
                 <DaySummary
                     focus={log.daily_objective || ''}
-                    tasks={selectedTasks}
+                    tasks={summaryTasks}
                     events={events}
                     habits={habits}
                     objTitle={objTitle}
@@ -267,7 +276,7 @@ export function RitualClient({ existingLog, morningData, todayStr }: Props) {
                             ) : (
                                 <button
                                     onClick={handleFinish}
-                                    disabled={saving || !selected.length}
+                                    disabled={saving || !selectedTasks.length}
                                     className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 disabled:opacity-50"
                                 >
                                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
