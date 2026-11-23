@@ -38,10 +38,10 @@ export function InsightsPageClient({ correlations, weeks, coverage }: Props) {
     }
 
     return (
-        <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-5 animate-fade-in pb-24">
+        <div className="px-4 md:px-8 py-6 md:py-8 max-w-4xl mx-auto space-y-5 animate-fade-in pb-24">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-heading font-bold gradient-text">Indicadores</h1>
+                    <h1 className="text-2xl md:text-[30px] font-semibold tracking-tight">Indicadores</h1>
                     <p className="text-muted-foreground text-sm mt-0.5">
                         Lo que solo puede responder tener todo en la misma base.
                     </p>

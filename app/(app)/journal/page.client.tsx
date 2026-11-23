@@ -101,11 +101,11 @@ export function JournalClient() {
     }
 
     return (
-        <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6 animate-fade-in pb-24">
+        <div className="px-4 md:px-8 py-6 md:py-8 max-w-4xl mx-auto space-y-6 animate-fade-in pb-24">
             {/* Header & Navigation */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-heading font-bold gradient-text flex items-center gap-2">
+                    <h1 className="text-2xl md:text-[30px] font-semibold tracking-tight flex items-center gap-2">
                         Brain Dump
                         <Sparkles className="w-6 h-6 text-indigo-400" />
                     </h1>

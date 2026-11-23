@@ -196,7 +196,7 @@ export function PlannerClient({
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl md:text-3xl font-heading font-bold gradient-text">
+                        <h1 className="text-2xl md:text-[30px] font-semibold tracking-tight">
                             Planificador Semanal
                         </h1>
                         <p className="text-muted-foreground text-sm mt-0.5">

@@ -66,7 +66,7 @@ export function JulianClient({ records: initialRecords }: JulianClientProps) {
     }
 
     return (
-        <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6 animate-fade-in pb-24">
+        <div className="px-4 md:px-8 py-6 md:py-8 max-w-6xl mx-auto space-y-6 animate-fade-in pb-24">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center gap-3">
@@ -74,7 +74,7 @@ export function JulianClient({ records: initialRecords }: JulianClientProps) {
                         <Baby className="w-6 h-6" />
                     </div>
                     <div>
-                        <h1 className="text-2xl md:text-3xl font-heading font-bold gradient-text">
+                        <h1 className="text-2xl md:text-[30px] font-semibold tracking-tight">
                             Panel de Julian
                         </h1>
                         <p className="text-muted-foreground text-sm mt-0.5">

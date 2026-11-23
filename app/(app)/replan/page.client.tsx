@@ -63,7 +63,7 @@ export function ReplanClient({ target, current, diagnosis, review, history, miss
 
     if (missingMigration) {
         return (
-            <div className="p-4 md:p-6 max-w-3xl mx-auto pb-24">
+            <div className="px-4 md:px-8 py-6 md:py-8 max-w-3xl mx-auto pb-24">
                 <div className="glass p-6 rounded-2xl border border-amber-500/30 space-y-2">
                     <h1 className="font-heading font-bold text-white flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-amber-400" /> Falta una migración</h1>
                     <p className="text-sm text-muted-foreground">
@@ -85,14 +85,14 @@ export function ReplanClient({ target, current, diagnosis, review, history, miss
     const isNextQuarter = target.year !== current.year || target.quarter !== current.quarter
 
     return (
-        <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6 animate-fade-in pb-24">
+        <div className="px-4 md:px-8 py-6 md:py-8 max-w-5xl mx-auto space-y-6 animate-fade-in pb-24">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
                 <div className="min-w-0">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-teal-300/80">
                         Replanificación trimestral · {target.name}
                     </p>
-                    <h1 className="text-2xl md:text-3xl font-heading font-bold gradient-text leading-tight mt-1">
+                    <h1 className="text-2xl md:text-[30px] font-semibold tracking-tight leading-tight mt-1">
                         {done && !showWizard ? (review?.plan?.tema || `Plan de ${target.name}`) : 'Volver a ordenar todo'}
                     </h1>
                     <p className="text-muted-foreground text-sm mt-1">

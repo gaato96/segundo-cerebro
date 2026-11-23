@@ -99,7 +99,7 @@ export function HabitMatrix({ habits, logs, todayStr, onToggleToday }: {
                                                     'mx-auto block w-[14px] h-[14px] rounded-[4px] transition-colors',
                                                     isDone ? 'bg-emerald-400'
                                                         : future ? 'bg-transparent'
-                                                            : scheduled ? 'bg-raised' : 'border border-hairline bg-transparent',
+                                                            : scheduled ? 'bg-[hsl(var(--hairline-strong))]' : 'border border-hairline bg-transparent',
                                                     isToday && !isDone && 'ring-1 ring-amber-400/70 cursor-pointer hover:bg-amber-400/30',
                                                     isToday && isDone && 'cursor-pointer'
                                                 )}

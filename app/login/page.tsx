@@ -92,7 +92,7 @@ export default function LoginPage() {
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 mb-4 glow-primary">
                         <Brain className="w-8 h-8 text-indigo-400" />
                     </div>
-                    <h1 className="text-3xl font-heading font-bold gradient-text">Segundo Cerebro</h1>
+                    <h1 className="text-2xl md:text-[30px] font-semibold tracking-tight">Segundo Cerebro</h1>
                     <p className="text-muted-foreground mt-1 text-sm">Tu Life OS personal</p>
                 </div>
 

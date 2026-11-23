@@ -96,11 +96,11 @@ export function WishlistClient({ items, lists }: { items: WishItem[]; lists: Wis
         ))
 
     return (
-        <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6 animate-fade-in pb-24">
+        <div className="px-4 md:px-8 py-6 md:py-8 max-w-5xl mx-auto space-y-6 animate-fade-in pb-24">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-heading font-bold gradient-text flex items-center gap-2">
+                    <h1 className="text-2xl md:text-[30px] font-semibold tracking-tight flex items-center gap-2">
                         Wishlist
                         <Heart className="w-6 h-6 text-rose-400" />
                     </h1>

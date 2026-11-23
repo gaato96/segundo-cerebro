@@ -52,7 +52,7 @@ export function NutritionPageClient({
 
     if (editingProfile || !profile) {
         return (
-            <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6 animate-fade-in">
+            <div className="px-4 md:px-8 py-6 md:py-8 max-w-5xl mx-auto space-y-6 animate-fade-in">
                 <div className="flex items-center justify-between">
                     <Link
                         href="/meals"
@@ -74,11 +74,11 @@ export function NutritionPageClient({
     }
 
     return (
-        <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6 animate-fade-in relative pb-20 md:pb-8">
+        <div className="px-4 md:px-8 py-6 md:py-8 max-w-5xl mx-auto space-y-6 animate-fade-in relative pb-20 md:pb-8">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-heading font-bold gradient-text">Asistente Nutricionista</h1>
+                    <h1 className="text-2xl md:text-[30px] font-semibold tracking-tight">Asistente Nutricionista</h1>
                     <p className="text-muted-foreground text-sm mt-0.5">
                         Tu plan mensual inteligente y seguimiento personalizado para Tucumán
                     </p>

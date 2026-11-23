@@ -55,7 +55,7 @@ export function EntrenamientoPageClient({ profile, plan, logs, progress, parkLog
     }
 
     return (
-        <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6 animate-fade-in pb-24">
+        <div className="px-4 md:px-8 py-6 md:py-8 max-w-4xl mx-auto space-y-6 animate-fade-in pb-24">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
@@ -64,7 +64,7 @@ export function EntrenamientoPageClient({ profile, plan, logs, progress, parkLog
                             <ArrowLeft className="w-3.5 h-3.5" /> Nutricionista IA
                         </Link>
                     </div>
-                    <h1 className="text-2xl md:text-3xl font-heading font-bold gradient-text">Entrenamiento</h1>
+                    <h1 className="text-2xl md:text-[30px] font-semibold tracking-tight">Entrenamiento</h1>
                     <p className="text-muted-foreground text-sm mt-0.5">
                         Fuerza en casa, aire y piques en el parque, y tus partidos para ver si mejorás.
                     </p>
