@@ -205,7 +205,7 @@ export function RitualClient({ existingLog, morningData, planTasks, todayStr }: 
                                 initial={{ opacity: 0, x: 10 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -10 }}
-                                className="flex-1 space-y-4"
+                                className="flex-1 min-w-0 space-y-4"
                             >
                                 {step === 0 && (
                                     <>
@@ -365,9 +365,9 @@ function FocusStep(props: {
 
             {/* Contexto: objetivos y hábitos */}
             {(objectives.length > 0 || habits.length > 0 || busyDay > 0) && (
-                <div className="grid sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0">
                     {objectives.length > 0 && (
-                        <div className="p-3 rounded-2xl bg-secondary/30 border border-border/50 space-y-2">
+                        <div className="min-w-0 p-3 rounded-2xl bg-secondary/30 border border-border/50 space-y-2">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-violet-300">Tus objetivos</span>
                             <div className="space-y-1.5">
                                 {objectives.slice(0, 4).map(o => (
@@ -382,15 +382,15 @@ function FocusStep(props: {
                         </div>
                     )}
                     {habits.length > 0 && (
-                        <div className="p-3 rounded-2xl bg-secondary/30 border border-border/50 space-y-2">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-orange-300 flex items-center gap-1">
+                        <div className="min-w-0 p-3 rounded-2xl bg-secondary/30 border border-border/50 space-y-2">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-orange-300 flex flex-wrap items-center gap-1">
                                 <Flame className="w-3 h-3" /> Hábitos de hoy
                                 {busyDay > 0 && <span className="ml-auto normal-case tracking-normal font-medium text-muted-foreground">{busyDay} {busyDay === 1 ? 'evento' : 'eventos'} con hora</span>}
                             </span>
                             <div className="flex flex-wrap gap-1.5">
                                 {habits.map(h => (
                                     <span key={h.id} className={cn(
-                                        'text-[10px] px-2 py-0.5 rounded-full border',
+                                        'text-[10px] px-2 py-0.5 rounded-full border max-w-full truncate',
                                         h.done_today ? 'border-emerald-500/30 text-emerald-300 bg-emerald-500/10 line-through' : 'border-border text-foreground/80'
                                     )}>
                                         {h.title}
@@ -556,7 +556,7 @@ function DayPreview({ focus, tasks, events, habits, objTitle, agendaOnly }: {
                 </div>
             )}
 
-            <div className={cn('grid gap-4', !agendaOnly && 'md:grid-cols-2')}>
+            <div className={cn('grid grid-cols-1 gap-4 min-w-0', !agendaOnly && 'md:grid-cols-2')}>
                 {!agendaOnly && <div className="space-y-2">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-300">Tareas</span>
                     {tasks.length === 0 ? <p className="text-xs text-muted-foreground italic">Sin tareas elegidas.</p> : tasks.map((t, i) => (
