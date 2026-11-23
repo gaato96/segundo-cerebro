@@ -16,7 +16,7 @@ import { createQuickEntry } from '@/lib/actions/expenses'
  * y vos confirmás. La IA nunca escribe sola en tus tablas.
  */
 
-export type NoteDestination = 'task' | 'event' | 'journal' | 'wishlist' | 'idea' | 'expense' | 'media' | 'note' | 'discard'
+export type NoteDestination = 'task' | 'event' | 'journal' | 'wishlist' | 'idea' | 'expense' | 'media' | 'note' | 'discard' | 'done'
 
 export interface NoteSuggestion {
     note_id: string
@@ -258,6 +258,8 @@ export async function applyInboxSuggestion(suggestion: NoteSuggestion) {
             break
         }
 
+        case 'done':
+            // Ya estaba hecho: no se crea nada, queda registrado como cumplido.
         case 'note':
         case 'discard':
         default:

@@ -84,7 +84,10 @@ export function RitualClient({ existingLog, morningData, todayStr }: Props) {
 
     function goTo(i: number) {
         saveRitualDraft(todayStr, focusText, undefined, selected)
+        // Lo que salió del Inbox como tarea tiene que aparecer para elegir.
+        if (step === 0 && i > 0) router.refresh()
         setStep(i)
+        window.scrollTo({ top: 0, behavior: 'smooth' })
     }
 
     async function handleSuggest() {
@@ -124,7 +127,7 @@ export function RitualClient({ existingLog, morningData, todayStr }: Props) {
     }
 
     return (
-        <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6 animate-fade-in pb-24">
+        <div className="px-3 py-4 md:p-6 max-w-4xl mx-auto space-y-5 animate-fade-in pb-28">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center gap-3">
@@ -168,23 +171,25 @@ export function RitualClient({ existingLog, morningData, todayStr }: Props) {
                                     key={s.id}
                                     onClick={() => goTo(i)}
                                     className={cn(
-                                        'flex items-center justify-center gap-2 py-2.5 px-2 rounded-xl border text-xs font-semibold transition-all',
+                                        'flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 sm:py-2.5 px-1 sm:px-2 rounded-xl border text-[11px] sm:text-xs font-semibold transition-all min-w-0',
                                         active ? 'bg-amber-500/15 border-amber-500/40 text-amber-200'
                                             : done ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-300'
                                                 : 'bg-secondary/30 border-border/50 text-muted-foreground hover:text-foreground'
                                     )}
                                 >
                                     {done ? <Check className="w-4 h-4" /> : <s.icon className="w-4 h-4" />}
-                                    <span className="truncate">{s.label}</span>
-                                    {s.id === 'inbox' && inboxNotes.length > 0 && (
-                                        <span className="text-[10px] px-1.5 rounded-full bg-indigo-500/30 text-indigo-200">{inboxNotes.length}</span>
-                                    )}
+                                    <span className="truncate max-w-full">
+                                        {s.label}
+                                        {s.id === 'inbox' && inboxNotes.length > 0 && (
+                                            <span className="ml-1 text-[10px] px-1.5 rounded-full bg-indigo-500/30 text-indigo-200">{inboxNotes.length}</span>
+                                        )}
+                                    </span>
                                 </button>
                             )
                         })}
                     </div>
 
-                    <div className="glass rounded-3xl p-5 md:p-7 border border-border/50 shadow-xl min-h-[380px] flex flex-col">
+                    <div className="glass rounded-3xl p-4 md:p-7 border border-border/50 shadow-xl flex flex-col">
                         <AnimatePresence mode="wait">
                             <motion.div
                                 key={step}
@@ -198,7 +203,6 @@ export function RitualClient({ existingLog, morningData, todayStr }: Props) {
                                         <StepTitle icon={Inbox} color="text-indigo-400" title="Vaciá el Inbox"
                                             hint="Todo lo que anotaste va a algún lado: a hoy, a tareas, a la agenda o a ideas. Lo que no sirve, se archiva." />
                                         <InboxTriage
-                                            key={inboxNotes.map(n => n.id).join(',')}
                                             notes={inboxNotes}
                                             dateStr={todayStr}
                                         />
@@ -244,7 +248,7 @@ export function RitualClient({ existingLog, morningData, todayStr }: Props) {
                             </motion.div>
                         </AnimatePresence>
 
-                        <div className="flex items-center justify-between pt-5 mt-5 border-t border-white/5">
+                        <div className="flex items-center justify-between gap-2 pt-4 mt-5 border-t border-white/5">
                             <button
                                 onClick={() => goTo(Math.max(0, step - 1))}
                                 disabled={step === 0}
@@ -404,7 +408,7 @@ function FocusStep(props: {
                                     i === 0 ? 'bg-amber-500 text-black' : 'bg-indigo-500/40 text-indigo-100')}>
                                     {i + 1}
                                 </span>
-                                <span className="flex-1 min-w-0 text-sm font-semibold text-white truncate">{t.title}</span>
+                                <span className="flex-1 min-w-0 text-sm font-semibold text-white leading-snug line-clamp-2">{t.title}</span>
                                 <button onClick={() => onToggle(id)} className="p-1 text-muted-foreground hover:text-foreground" aria-label="Quitar">
                                     <X className="w-4 h-4" />
                                 </button>
@@ -492,7 +496,7 @@ function TaskGroup({ title, tasks, selected, onToggle, objTitle, empty }: {
                         onClick={() => onToggle(t.id)}
                         disabled={full}
                         className={cn(
-                            'w-full text-left flex items-center gap-3 p-2.5 rounded-xl border transition-all',
+                            'w-full text-left flex items-center gap-3 p-3 rounded-xl border transition-all min-h-[48px]',
                             isSel ? 'bg-amber-500/10 border-amber-500/30' : 'bg-secondary/25 border-border/40 hover:bg-secondary/50',
                             full && 'opacity-40 cursor-not-allowed'
                         )}
@@ -502,16 +506,18 @@ function TaskGroup({ title, tasks, selected, onToggle, objTitle, empty }: {
                             {isSel ? idx + 1 : ''}
                         </span>
                         <span className="flex-1 min-w-0">
-                            <span className="block text-sm text-foreground truncate">{t.title}</span>
-                            {t.objective_id && objTitle.get(t.objective_id) && (
-                                <span className="block text-[10px] text-violet-300/80 truncate">→ {objTitle.get(t.objective_id)}</span>
-                            )}
-                        </span>
-                        {t.due_date && (
-                            <span className="text-[10px] text-muted-foreground shrink-0">{String(t.due_date).slice(5, 10).split('-').reverse().join('/')}</span>
-                        )}
-                        <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0', getPriorityColor(t.priority))}>
-                            {getPriorityLabel(t.priority)}
+                            <span className="block text-sm text-foreground leading-snug line-clamp-2">{t.title}</span>
+                            <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+                                {t.objective_id && objTitle.get(t.objective_id) && (
+                                    <span className="text-[10px] text-violet-300/80 truncate max-w-full">→ {objTitle.get(t.objective_id)}</span>
+                                )}
+                                {t.due_date && (
+                                    <span className="text-[10px] text-muted-foreground font-mono">{String(t.due_date).slice(5, 10).split('-').reverse().join('/')}</span>
+                                )}
+                                <span className={cn('text-[10px] px-1.5 rounded-full font-medium', getPriorityColor(t.priority))}>
+                                    {getPriorityLabel(t.priority)}
+                                </span>
+                            </span>
                         </span>
                     </button>
                 )
@@ -639,7 +645,7 @@ function DaySummary({ focus, tasks, events, habits, objTitle, pendingInbox, onTo
                                     {isDone ? <CheckCircle2 className="w-4 h-4" /> : <span className="text-[10px] font-bold text-muted-foreground">{i + 1}</span>}
                                 </span>
                                 <span className="flex-1 min-w-0">
-                                    <span className={cn('block text-sm font-semibold truncate', isDone ? 'line-through text-muted-foreground' : 'text-white')}>{t.title}</span>
+                                    <span className={cn('block text-sm font-semibold leading-snug line-clamp-2', isDone ? 'line-through text-muted-foreground' : 'text-white')}>{t.title}</span>
                                     {t.objective_id && objTitle.get(t.objective_id) && (
                                         <span className="block text-[10px] text-violet-300/80 truncate">→ {objTitle.get(t.objective_id)}</span>
                                     )}
