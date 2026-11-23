@@ -1,23 +1,24 @@
-import type { Metadata } from 'next'
-import { Inter, Outfit } from 'next/font/google'
+import type { Metadata, Viewport } from 'next'
+import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
 
-const inter = Inter({
+const geist = Geist({
     subsets: ['latin'],
-    variable: '--font-inter',
+    variable: '--font-geist',
     display: 'swap',
 })
 
-const outfit = Outfit({
+const geistMono = Geist_Mono({
     subsets: ['latin'],
-    variable: '--font-outfit',
+    variable: '--font-geist-mono',
     display: 'swap',
 })
-
-import type { Viewport } from 'next'
 
 export const viewport: Viewport = {
-    themeColor: '#6366f1',
+    themeColor: [
+        { media: '(prefers-color-scheme: dark)', color: '#111113' },
+        { media: '(prefers-color-scheme: light)', color: '#F7F5F0' },
+    ],
     width: 'device-width',
     initialScale: 1,
     maximumScale: 1,
@@ -26,7 +27,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
     title: 'Segundo Cerebro',
-    description: 'Tu Life OS personal — tareas, hábitos, finanzas y más en un solo lugar',
+    description: 'Tu sistema operativo personal: capturar, planificar, hacer y cerrar el día.',
     manifest: '/manifest.json',
     appleWebApp: {
         capable: true,
@@ -39,14 +40,24 @@ export const metadata: Metadata = {
     },
 }
 
+/**
+ * Tema antes del primer pintado (sin parpadeo): "graphite" (oscuro),
+ * "paper" (claro) o "auto" (sigue al sistema). Se elige en Ajustes y
+ * vive en este dispositivo.
+ */
+const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem('sc-theme')||'graphite';var p=t==='paper'||(t==='auto'&&window.matchMedia('(prefers-color-scheme: light)').matches);var r=document.documentElement;if(p){r.setAttribute('data-theme','paper');r.classList.remove('dark')}else{r.removeAttribute('data-theme');r.classList.add('dark')}}catch(e){}})()`
+
 export default function RootLayout({
     children,
 }: {
     children: React.ReactNode
 }) {
     return (
-        <html lang="es" className="dark">
-            <body className={`${inter.variable} ${outfit.variable} antialiased`}>
+        <html lang="es" className="dark" suppressHydrationWarning>
+            <head>
+                <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+            </head>
+            <body className={`${geist.variable} ${geistMono.variable} antialiased`}>
                 {children}
             </body>
         </html>

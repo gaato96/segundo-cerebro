@@ -78,6 +78,9 @@ export function QuickExpenseButton() {
         const onRequest = (e: Event) => {
             const detail = (e as CustomEvent).detail
             openSheet(detail?.kind === 'income' ? 'income' : 'expense')
+            // Desde la captura universal ("café 3500") llega el monto y la descripción.
+            if (detail?.amount) setAmountRaw(String(detail.amount))
+            if (detail?.description) setDescription(String(detail.description))
         }
         window.addEventListener('keydown', onKey)
         window.addEventListener('sc:quick-expense', onRequest)

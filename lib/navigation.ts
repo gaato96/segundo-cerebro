@@ -1,7 +1,8 @@
 import {
-    LayoutDashboard, CheckSquare, Flame, DollarSign, Baby, Tv, Target, BookOpen,
+    CheckSquare, Flame, DollarSign, Baby, Tv, Target, BookOpen,
     Heart, Utensils, Inbox, Sun, CalendarRange, Calendar, Sparkles,
     MessageCircleHeart, Dumbbell, Moon, LineChart, Settings, Lightbulb, LibraryBig, Compass,
+    NotebookPen, CalendarCheck2,
     type LucideIcon
 } from 'lucide-react'
 
@@ -32,28 +33,29 @@ export const NAV_GROUPS: NavGroup[] = [
     {
         label: 'Hoy',
         items: [
-            { href: '/', icon: LayoutDashboard, label: 'Dashboard', short: 'Inicio' },
-            { href: '/ritual', icon: Sun, label: 'Planificar el día', short: 'Plan' },
-            { href: '/cierre', icon: Moon, label: 'Cierre del Día', short: 'Cierre' },
+            { href: '/', icon: Sun, label: 'Hoy', short: 'Hoy' },
+            { href: '/ritual', icon: CalendarCheck2, label: 'Planificar el día', short: 'Plan' },
+            { href: '/cierre', icon: Moon, label: 'Cierre del día', short: 'Cierre' },
             { href: '/asistente', icon: MessageCircleHeart, label: 'Copiloto' }
         ]
     },
     {
         label: 'Planificar',
         items: [
-            { href: '/replan', icon: Compass, label: 'Replanificar', short: 'Replan' },
             { href: '/okrs', icon: Target, label: 'Objetivos' },
             { href: '/planner', icon: CalendarRange, label: 'Agenda', match: ['/calendar'] },
             { href: '/tasks', icon: CheckSquare, label: 'Tareas' },
-            { href: '/habits', icon: Flame, label: 'Hábitos' }
+            { href: '/habits', icon: Flame, label: 'Hábitos' },
+            { href: '/replan', icon: Compass, label: 'Replanificar', short: 'Replan' }
         ]
     },
     {
         label: 'Capturar',
         items: [
             { href: '/inbox', icon: Inbox, label: 'Inbox' },
-            { href: '/ideas', icon: Lightbulb, label: 'Banco de Ideas', short: 'Ideas' },
-            { href: '/journal', icon: BookOpen, label: 'Journal' }
+            { href: '/ideas', icon: Lightbulb, label: 'Ideas' },
+            { href: '/journal', icon: BookOpen, label: 'Journal' },
+            { href: '/notas', icon: NotebookPen, label: 'Notas' }
         ]
     },
     {
@@ -67,10 +69,10 @@ export const NAV_GROUPS: NavGroup[] = [
         label: 'Vida',
         items: [
             { href: '/finances', icon: DollarSign, label: 'Finanzas' },
-            { href: '/julian', icon: Baby, label: 'Julian' },
+            { href: '/julian', icon: Baby, label: 'Julián' },
             { href: '/lectura', icon: LibraryBig, label: 'Biblioteca', short: 'Libros' },
             { href: '/media', icon: Tv, label: 'Entretenimiento', short: 'Media' },
-            { href: '/wishlist', icon: Heart, label: 'Wishlist', short: 'Deseos' }
+            { href: '/wishlist', icon: Heart, label: 'Deseos' }
         ]
     },
     {
@@ -82,7 +84,10 @@ export const NAV_GROUPS: NavGroup[] = [
     }
 ]
 
-/** Los 4 fijos de la barra del celular. El resto vive en "Más". */
+/**
+ * Barra del celular: 2 accesos, el botón de captura en el centro, 2 accesos.
+ * El resto vive en "Más" (el avatar arriba a la derecha).
+ */
 export const MOBILE_PRIMARY = ['/', '/ritual', '/tasks', '/asistente']
 
 // ------------------------------------------------------------

@@ -2,91 +2,93 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { motion } from 'framer-motion'
-import { Brain, LogOut, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { LogOut, PanelLeftClose, PanelLeftOpen, Lamp } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { NAV_GROUPS, ALL_HREFS, isNavActive } from '@/lib/navigation'
+import { getInboxCount } from '@/lib/actions/capture'
 
+/**
+ * Riel izquierdo de 240px (design system): grupos con etiqueta chica en
+ * mayúsculas, ítem activo con barra ámbar de 2px a la izquierda.
+ */
 export function Sidebar() {
     const pathname = usePathname()
     const [collapsed, setCollapsed] = useState(false)
-    const supabase = createClient()
+    const [inbox, setInbox] = useState(0)
+
+    useEffect(() => {
+        try { setCollapsed(localStorage.getItem('sc-sidebar') === 'collapsed') } catch { }
+    }, [])
+
+    useEffect(() => {
+        let alive = true
+        getInboxCount().then(n => { if (alive) setInbox(n) }).catch(() => { })
+        const onCapture = () => getInboxCount().then(n => alive && setInbox(n)).catch(() => { })
+        window.addEventListener('sc:captured', onCapture)
+        return () => { alive = false; window.removeEventListener('sc:captured', onCapture) }
+    }, [pathname])
+
+    function toggle() {
+        setCollapsed(v => {
+            try { localStorage.setItem('sc-sidebar', v ? 'open' : 'collapsed') } catch { }
+            return !v
+        })
+    }
 
     async function signOut() {
-        await supabase.auth.signOut()
+        await createClient().auth.signOut()
         window.location.href = '/login'
     }
 
     return (
-        <motion.aside
-            animate={{ width: collapsed ? 72 : 240 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
-            className="hidden md:flex flex-col h-screen bg-sidebar border-r border-sidebar-border sticky top-0 overflow-hidden z-40"
+        <aside
+            className={cn(
+                'hidden md:flex flex-col h-[100dvh] bg-sidebar border-r border-sidebar-border sticky top-0 z-40 shrink-0 transition-[width] duration-300',
+                collapsed ? 'w-[68px]' : 'w-[240px]'
+            )}
         >
-            {/* Logo */}
-            <div className={cn(
-                'flex items-center gap-3 p-4 border-b border-sidebar-border',
-                collapsed && 'justify-center'
-            )}>
-                <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center">
-                    <Brain className="w-4 h-4 text-indigo-400" />
+            <div className={cn('flex items-center gap-3 h-16 px-4 border-b border-sidebar-border', collapsed && 'justify-center px-0')}>
+                <div className="w-8 h-8 rounded-lg bg-amber-400/10 border border-amber-400/25 flex items-center justify-center shrink-0">
+                    <Lamp className="w-4 h-4 text-amber-400" />
                 </div>
                 {!collapsed && (
-                    <motion.span
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="font-heading font-bold text-sm gradient-text whitespace-nowrap"
-                    >
-                        Segundo Cerebro
-                    </motion.span>
+                    <div className="min-w-0">
+                        <p className="text-sm font-semibold leading-tight truncate">Segundo Cerebro</p>
+                        <p className="font-mono text-[10px] text-ink-faint uppercase tracking-wider">sistema personal</p>
+                    </div>
                 )}
             </div>
 
-            {/* Navigation */}
-            <nav className="flex-1 p-2 overflow-y-auto">
-                {NAV_GROUPS.map((group, gi) => (
-                    <div key={group.label} className={cn(gi > 0 && 'mt-3')}>
-                        {collapsed
-                            ? gi > 0 && <div className="mx-3 mb-2 border-t border-sidebar-border" />
-                            : <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/35">{group.label}</p>}
+            <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-4">
+                {NAV_GROUPS.map(group => (
+                    <div key={group.label}>
+                        {!collapsed && <p className="label-caps px-3 pb-1.5 !text-[10px]">{group.label}</p>}
                         <div className="space-y-0.5">
-                            {group.items.map((item) => {
-                                const isActive = isNavActive(pathname, item.href, ALL_HREFS)
-
+                            {group.items.map(item => {
+                                const active = isNavActive(pathname, item.href, ALL_HREFS)
+                                const badge = item.href === '/inbox' && inbox > 0 ? inbox : null
                                 return (
                                     <Link
                                         key={item.href}
                                         href={item.href}
+                                        title={collapsed ? item.label : undefined}
                                         className={cn(
-                                            'flex items-center gap-3 px-3 py-2 rounded-xl transition-all group relative',
-                                            collapsed && 'justify-center',
-                                            isActive
-                                                ? 'text-indigo-300'
-                                                : 'text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent'
+                                            'relative flex items-center gap-3 h-9 rounded-lg text-[13px] transition-colors',
+                                            collapsed ? 'justify-center' : 'px-3',
+                                            active
+                                                ? 'bg-sidebar-accent text-foreground font-medium'
+                                                : 'text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/60'
                                         )}
                                     >
-                                        {isActive && (
-                                            <motion.div
-                                                layoutId="sidebar-active"
-                                                className="absolute inset-0 bg-indigo-600/20 rounded-xl border border-indigo-500/20"
-                                                transition={{ duration: 0.2 }}
-                                            />
+                                        {active && <span className="absolute left-0 top-1.5 bottom-1.5 w-[2px] rounded-full bg-amber-400" />}
+                                        <item.icon className={cn('w-4 h-4 shrink-0', active && 'text-amber-400')} />
+                                        {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
+                                        {badge && !collapsed && (
+                                            <span className="font-mono text-[10px] px-1.5 rounded-md bg-raised border border-hairline text-muted-foreground">{badge}</span>
                                         )}
-                                        <item.icon className={cn(
-                                            'w-4 h-4 flex-shrink-0 relative z-10',
-                                            isActive ? 'text-indigo-400' : 'text-current'
-                                        )} />
-                                        {!collapsed && (
-                                            <span className="text-sm font-medium relative z-10 whitespace-nowrap">{item.label}</span>
-                                        )}
-                                        {collapsed && (
-                                            <div className="absolute left-full ml-2 px-2 py-1 bg-popover border border-border rounded-lg text-xs text-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                                                {item.label}
-                                            </div>
-                                        )}
+                                        {badge && collapsed && <span className="absolute top-1.5 right-3 w-1.5 h-1.5 rounded-full bg-amber-400" />}
                                     </Link>
                                 )
                             })}
@@ -95,33 +97,23 @@ export function Sidebar() {
                 ))}
             </nav>
 
-            {/* Bottom actions */}
-            <div className="p-2 border-t border-sidebar-border space-y-1">
+            <div className={cn('border-t border-sidebar-border p-2 flex gap-1', collapsed ? 'flex-col items-center' : 'items-center')}>
                 <button
                     onClick={signOut}
-                    className={cn(
-                        'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-red-400/70 hover:text-red-400 hover:bg-red-500/10',
-                        collapsed && 'justify-center'
-                    )}
+                    title="Salir"
+                    className={cn('flex items-center gap-3 h-9 rounded-lg text-[13px] text-muted-foreground hover:text-red-400 hover:bg-sidebar-accent/60 transition-colors', collapsed ? 'w-9 justify-center' : 'flex-1 px-3')}
                 >
-                    <LogOut className="w-4 h-4 flex-shrink-0" />
-                    {!collapsed && <span className="text-sm">Salir</span>}
+                    <LogOut className="w-4 h-4 shrink-0" />
+                    {!collapsed && 'Salir'}
                 </button>
                 <button
-                    onClick={() => setCollapsed(!collapsed)}
-                    className={cn(
-                        'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent',
-                        collapsed && 'justify-center'
-                    )}
+                    onClick={toggle}
+                    title={collapsed ? 'Expandir' : 'Colapsar'}
+                    className="w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/60"
                 >
-                    {collapsed ? <ChevronRight className="w-4 h-4" /> : (
-                        <>
-                            <ChevronLeft className="w-4 h-4" />
-                            <span className="text-xs">Colapsar</span>
-                        </>
-                    )}
+                    {collapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
                 </button>
             </div>
-        </motion.aside>
+        </aside>
     )
 }

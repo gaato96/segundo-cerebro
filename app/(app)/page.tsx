@@ -1,201 +1,27 @@
-import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { DailySnapshot } from '@/components/dashboard/DailySnapshot'
-import { PomodoroWidget } from '@/components/dashboard/PomodoroWidget'
-import { QuickStats } from '@/components/dashboard/QuickStats'
-import { TodayEventsWidget } from '@/components/dashboard/TodayEventsWidget'
-import { InboxCaptureWidget } from '@/components/dashboard/InboxCaptureWidget'
-import { MinimalModeToggle } from '@/components/dashboard/MinimalModeToggle'
-import { getMinimalMode } from '@/lib/actions/profile'
-import { IdealRoutineWidget } from '@/components/dashboard/IdealRoutineWidget'
-import { getEventsForDate } from '@/lib/actions/events'
-import { getRitualLog } from '@/lib/actions/morning_ritual'
-import Link from 'next/link'
-import { Sun, Moon } from 'lucide-react'
-import { QuickExpenseTrigger } from '@/components/finances/QuickExpenseButton'
-import { getLocalDateStr, getLocalMonthYearStr, getLocalDayOfWeek, formatLocalDate } from '@/lib/utils'
-
-import { syncRecurringTasks } from '@/lib/actions/tasks'
-import { DayFocusWidget } from '@/components/plan/DayFocusWidget'
-import { getDayPlan } from '@/lib/actions/morning_ritual'
-import { MonthForecastWidget } from '@/components/finances/MonthForecastWidget'
-import { getMonthForecast } from '@/lib/actions/forecast'
-import { getAppDay } from '@/lib/actions/day'
+import { getTodayData } from '@/lib/actions/today'
 import { getReplanNudge } from '@/lib/actions/quarterly'
 import { ReplanNudge } from '@/components/dashboard/ReplanNudge'
+import { TodayView } from '@/components/today/TodayView'
+import { PageShell } from '@/components/ui/kit'
 
-export default async function DashboardPage() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) redirect('/login')
+export const dynamic = 'force-dynamic'
 
-    await syncRecurringTasks(user.id)
-
-    const now = new Date()
-    const todayStr = getLocalDateStr(now)
-    const monthYear = getLocalMonthYearStr(now)
-
-    // Calculate today's ISO day of week (1 = Mon ... 7 = Sun)
-    const dayOfWeek = getLocalDayOfWeek(now)
-    const todayIsoDay = dayOfWeek === 0 ? 7 : dayOfWeek
-
-    // Fetch profile, tasks, habits, events, ritual log in parallel
-    const [profileRes, todayTasksRes, habitsRes, todayLogsRes, financesRes, todayEvents, ritualLog, todaySpendRes] = await Promise.all([
-        supabase.from('profiles').select('ideal_routine_json').eq('id', user.id).single(),
-        supabase.from('tasks').select('*').eq('user_id', user.id).in('status', ['Todo', 'InProgress']).or(`planned_date.eq.${todayStr},and(planned_date.is.null,due_date.lte.${todayStr})`).order('priority', { ascending: true }).order('due_date', { ascending: true, nullsFirst: false }).limit(8),
-        supabase.from('habits').select('*').eq('user_id', user.id).eq('is_active', true),
-        supabase.from('habit_logs').select('habit_id').eq('user_id', user.id).gte('completed_at', `${todayStr}T00:00:00-03:00`),
-        supabase.from('finances').select('type, amount').eq('user_id', user.id).eq('month_year', monthYear),
-        getEventsForDate(todayStr),
-        getRitualLog(todayStr),
-        // Si la migración 021 no corrió, occurred_on no existe: el botón se muestra sin el total.
-        supabase.from('finances').select('amount').eq('user_id', user.id).eq('type', 'Variable').eq('occurred_on', todayStr)
+/**
+ * Hoy: una cosa a la vez. El foco iluminado, la línea del día y lo demás en
+ * silencio. El indicador de arriba dice en qué parte del ciclo estás.
+ */
+export default async function TodayPage() {
+    const [data, replanNudge] = await Promise.all([
+        getTodayData(),
+        getReplanNudge().catch(() => null)
     ])
-
-    const profile = profileRes.data
-    const todayTasks = todayTasksRes.data || []
-    const rawHabits = habitsRes.data || []
-    const todayLogs = todayLogsRes.data || []
-    const finances = financesRes.data || []
-    const todaySpend = todaySpendRes.error
-        ? undefined
-        : (todaySpendRes.data || []).reduce((sum: number, f: { amount: number }) => sum + Number(f.amount), 0)
-
-    // Filter habits strictly for today based on frequency_type & frequency_days
-    const habits = rawHabits.filter((h: any) => {
-        if (h.frequency_type === 'custom_days' && Array.isArray(h.frequency_days) && h.frequency_days.length > 0) {
-            return h.frequency_days.includes(todayIsoDay)
-        }
-        return true // 'daily' or default
-    })
-
-    const completedHabitIds = new Set((todayLogs || []).map((l: { habit_id: string }) => l.habit_id))
-
-    const income = finances.filter((f: { type: string }) => f.type === 'Income').reduce((sum: number, f: { amount: number }) => sum + f.amount, 0)
-    const expenses = finances.filter((f: { type: string }) => f.type !== 'Income').reduce((sum: number, f: { amount: number }) => sum + f.amount, 0)
-
-    const todayFormatted = formatLocalDate(now)
-
-    // El foco vive en el día lógico: pasada la medianoche sigue siendo
-    // el día que estás terminando, no uno nuevo.
-    const appDay = await getAppDay()
-
-    const [pendingInboxRes, dayPlan, forecast, replanNudge, minimal] = await Promise.all([
-        supabase.from('mental_notes').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('is_processed', false),
-        getDayPlan(appDay.date).catch(() => ({ log: null, tasks: [] as any[] })),
-        getMonthForecast().catch(() => null),
-        getReplanNudge(),
-        getMinimalMode()
-    ])
-    const pendingInbox = pendingInboxRes.count ?? 0
+    if (!data) redirect('/login')
 
     return (
-        <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6 animate-fade-in pb-24">
-            {/* Header & Quick Action Launchers */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0">
-                    <h1 className="text-xl md:text-3xl font-heading font-bold gradient-text capitalize leading-tight">
-                        {todayFormatted}
-                    </h1>
-                    <p className="text-muted-foreground text-sm mt-0.5">
-                        {minimal ? 'Lo mínimo de hoy: foco, hábitos y tareas.' : 'Tu Resumen Diario y Centro de Control'}
-                    </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2 shrink-0 self-start">
-                    <MinimalModeToggle enabled={minimal} />
-
-                    <QuickExpenseTrigger todayTotal={todaySpend} />
-
-                    {!minimal && <Link
-                        href="/ritual"
-                        className={`px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 border shadow-lg transition-all whitespace-nowrap ${
-                            ritualLog?.completed_at
-                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
-                                : 'bg-amber-500/10 text-amber-300 border-amber-500/30 hover:bg-amber-500/20 animate-pulse'
-                        }`}
-                    >
-                        <Sun className="w-4 h-4 text-amber-400 shrink-0" />
-                        <span>{ritualLog?.completed_at ? '✓ Día planificado' : 'Planificar el día →'}</span>
-                    </Link>}
-
-                    <Link
-                        href="/cierre"
-                        className="px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 border shadow-lg transition-all whitespace-nowrap bg-indigo-500/10 text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/20"
-                    >
-                        <Moon className="w-4 h-4 text-indigo-400 shrink-0" />
-                        <span>Cerrar el día</span>
-                    </Link>
-                </div>
-            </div>
-
-            {replanNudge && <ReplanNudge nudge={replanNudge} />}
-
-            {minimal ? (
-                /* Modo mínimo: solo lo obligatorio del día */
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2 space-y-6">
-                        <DailySnapshot
-                            tasks={todayTasks}
-                            habits={habits}
-                            completedHabitIds={completedHabitIds}
-                            userId={user.id}
-                        />
-                        {todayEvents.length > 0 && <TodayEventsWidget events={todayEvents} />}
-                    </div>
-                    <div className="space-y-6">
-                        <DayFocusWidget
-                            date={appDay.date}
-                            focus={dayPlan.log?.completed_at ? dayPlan.log?.daily_objective || null : null}
-                            tasks={dayPlan.log?.completed_at ? dayPlan.tasks : []}
-                        />
-                        <InboxCaptureWidget pending={pendingInbox} />
-                    </div>
-                </div>
-            ) : (
-                <>
-                    <IdealRoutineWidget routine={profile?.ideal_routine_json || null} />
-
-                    <InboxCaptureWidget pending={pendingInbox} />
-
-                    {/* Quick Stats (4 cards) */}
-                    <QuickStats
-                        totalTasks={todayTasks.length}
-                        habitsDone={completedHabitIds.size}
-                        habitsTotal={habits.length}
-                        balance={income - expenses}
-                        eventsTodayCount={todayEvents.length}
-                    />
-
-                    {/* Main Dashboard Grid */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Left: Daily Snapshot & Events */}
-                        <div className="lg:col-span-2 space-y-6">
-                            <DailySnapshot
-                                tasks={todayTasks}
-                                habits={habits}
-                                completedHabitIds={completedHabitIds}
-                                userId={user.id}
-                            />
-                            <TodayEventsWidget events={todayEvents} />
-                        </div>
-
-                        {/* Right: Foco + Pomodoro */}
-                        <div className="space-y-6">
-                            <DayFocusWidget
-                            date={appDay.date}
-                            focus={dayPlan.log?.completed_at ? dayPlan.log?.daily_objective || null : null}
-                            tasks={dayPlan.log?.completed_at ? dayPlan.tasks : []}
-                        />
-                            {forecast && <MonthForecastWidget forecast={forecast} compact />}
-                            <PomodoroWidget
-                                tasks={todayTasks}
-                                userId={user.id}
-                            />
-                        </div>
-                    </div>
-                </>
-            )}
-        </div>
+        <PageShell wide>
+            {replanNudge && <div className="mb-6"><ReplanNudge nudge={replanNudge} /></div>}
+            <TodayView data={data} />
+        </PageShell>
     )
 }

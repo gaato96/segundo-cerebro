@@ -5,46 +5,18 @@ import { Command } from 'cmdk'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import {
-    Search, Loader2, Brain, CheckSquare, Utensils, Target, Calendar,
-    Heart, Tv, BookOpen, LayoutDashboard, Sun, Moon, CalendarRange,
-    Inbox, Flame, DollarSign, Baby, Sparkles, Dumbbell, MessageCircleHeart,
-    Bell, Plus, LineChart, Receipt, LibraryBig
+    Search, Loader2, Brain, CheckSquare, Utensils, Target, Calendar, Heart, Tv, BookOpen,
+    Moon, Inbox, Receipt, Plus, MessageCircleHeart, Sparkles, NotebookPen, Lightbulb,
+    Focus, ArrowLeft, CornerDownLeft
 } from 'lucide-react'
-import { globalSearch, type SearchResult } from '@/lib/actions/search'
+import { globalSearch, askBrain, type SearchResult, type BrainAnswer } from '@/lib/actions/search'
+import { NAV_GROUPS } from '@/lib/navigation'
 import { cn } from '@/lib/utils'
 
 /**
- * Command palette (Ctrl/Cmd + K).
- *
- * cmdk ya estaba instalado en el proyecto y sin usar. Con 15 módulos, navegar
- * por la sidebar es el cuello de botella real.
+ * Command palette (Ctrl/Cmd + K): ir a cualquier lado, hacer algo, buscar en
+ * todo, o preguntarle al cerebro ("¿qué decidí sobre Vivomenú?").
  */
-
-const NAV_ITEMS = [
-    { label: 'Dashboard', url: '/', icon: LayoutDashboard, keywords: 'inicio home resumen' },
-    { label: 'Copiloto', url: '/asistente', icon: MessageCircleHeart, keywords: 'asistente terapeuta coach amigo chat' },
-    { label: 'Ritual matutino', url: '/ritual', icon: Sun, keywords: 'mañana manana objetivo' },
-    { label: 'Cierre del día', url: '/cierre', icon: Moon, keywords: 'noche ritual nocturno victoria' },
-    { label: 'Revisión semanal', url: '/cierre?tab=semana', icon: CalendarRange, keywords: 'semana review domingo' },
-    { label: 'Agenda · semana', url: '/planner', icon: CalendarRange, keywords: 'planner planificador semana' },
-    { label: 'Agenda · mes', url: '/calendar', icon: Calendar, keywords: 'calendario eventos mes' },
-    { label: 'Replanificar', url: '/replan', icon: Target, keywords: 'trimestre trimestral revision volver ordenar q1 q2 q3 q4 plan' },
-    { label: 'Inbox', url: '/inbox', icon: Inbox, keywords: 'capturas vaciado mental' },
-    { label: 'Tareas', url: '/tasks', icon: CheckSquare, keywords: 'todo pendientes' },
-    { label: 'Hábitos', url: '/habits', icon: Flame, keywords: 'habitos rachas' },
-    { label: 'Entrenamiento', url: '/entrenamiento', icon: Dumbbell, keywords: 'gimnasio rutina soga plan' },
-    { label: 'Nutrición · plan', url: '/meals/nutrition', icon: Sparkles, keywords: 'nutricionista dieta calorias peso' },
-    { label: 'Nutrición · menú y recetas', url: '/meals', icon: Utensils, keywords: 'comidas recetas menu compras' },
-    { label: 'Finanzas', url: '/finances', icon: DollarSign, keywords: 'plata gastos ingresos deudas inversion ahorro reparto' },
-    { label: 'Indicadores', url: '/insights', icon: LineChart, keywords: 'correlaciones patrones datos animo' },
-    { label: 'Julián', url: '/julian', icon: Baby, keywords: 'hijo salud vacunas' },
-    { label: 'Objetivos', url: '/okrs', icon: Target, keywords: 'okr metas sueños' },
-    { label: 'Journal', url: '/journal', icon: BookOpen, keywords: 'diario animo' },
-    { label: 'Entretenimiento', url: '/media', icon: Tv, keywords: 'peliculas series juegos libros' },
-    { label: 'Biblioteca', url: '/lectura', icon: LibraryBig, keywords: 'leer libros pdf lector lectura' },
-    { label: 'Wishlist', url: '/wishlist', icon: Heart, keywords: 'deseos comprar' },
-    { label: 'Ajustes', url: '/ajustes', icon: Bell, keywords: 'notificaciones configuracion push' }
-]
 
 const TYPE_META: Record<SearchResult['type'], { label: string; icon: any }> = {
     task: { label: 'Tarea', icon: CheckSquare },
@@ -54,8 +26,12 @@ const TYPE_META: Record<SearchResult['type'], { label: string; icon: any }> = {
     event: { label: 'Evento', icon: Calendar },
     wishlist: { label: 'Deseo', icon: Heart },
     media: { label: 'Media', icon: Tv },
-    journal: { label: 'Journal', icon: BookOpen }
+    journal: { label: 'Journal', icon: BookOpen },
+    knowledge: { label: 'Nota', icon: NotebookPen },
+    idea: { label: 'Idea', icon: Lightbulb }
 }
+
+const NAV_ITEMS = NAV_GROUPS.flatMap(g => g.items.map(i => ({ ...i, group: g.label })))
 
 export function CommandPalette() {
     const router = useRouter()
@@ -63,6 +39,9 @@ export function CommandPalette() {
     const [query, setQuery] = useState('')
     const [results, setResults] = useState<SearchResult[]>([])
     const [searching, setSearching] = useState(false)
+    const [asking, setAsking] = useState(false)
+    const [answer, setAnswer] = useState<BrainAnswer | null>(null)
+    const [askError, setAskError] = useState('')
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
     useEffect(() => {
@@ -73,12 +52,27 @@ export function CommandPalette() {
             }
             if (e.key === 'Escape') setOpen(false)
         }
+        const onRequest = () => setOpen(true)
         window.addEventListener('keydown', onKey)
-        return () => window.removeEventListener('keydown', onKey)
+        window.addEventListener('sc:palette', onRequest)
+        return () => {
+            window.removeEventListener('keydown', onKey)
+            window.removeEventListener('sc:palette', onRequest)
+        }
     }, [])
 
     useEffect(() => {
+        if (!open) {
+            setQuery('')
+            setAnswer(null)
+            setAskError('')
+        }
+    }, [open])
+
+    useEffect(() => {
         if (debounceRef.current) clearTimeout(debounceRef.current)
+        setAnswer(null)
+        setAskError('')
         if (query.trim().length < 2) {
             setResults([])
             setSearching(false)
@@ -101,113 +95,164 @@ export function CommandPalette() {
 
     function go(url: string) {
         setOpen(false)
-        setQuery('')
         router.push(url)
     }
+
+    function fire(event: string, detail?: unknown) {
+        setOpen(false)
+        setTimeout(() => window.dispatchEvent(new CustomEvent(event, { detail })), 60)
+    }
+
+    async function ask() {
+        setAsking(true)
+        setAskError('')
+        const res = await askBrain(query)
+        setAsking(false)
+        if (!res.ok) return setAskError(res.error)
+        setAnswer(res.data)
+    }
+
+    const q = query.trim().toLowerCase()
+    const looksLikeQuestion = q.length >= 4
 
     return (
         <AnimatePresence>
             {open && (
-                <div className="fixed inset-0 z-[80] flex items-start justify-center pt-[12vh] px-4">
+                <div className="fixed inset-0 z-[80] flex items-start justify-center pt-[10vh] px-3" role="dialog" aria-label="Buscar o hacer algo">
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={() => setOpen(false)}
-                        className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+                        className="absolute inset-0 bg-black/60"
                     />
 
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.97, y: -8 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.97, y: -8 }}
-                        className="relative w-full max-w-xl"
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ type: 'spring', stiffness: 360, damping: 32 }}
+                        className="relative w-full max-w-[640px]"
                     >
-                        <Command
-                            shouldFilter={false}
-                            loop
-                            className="bg-secondary/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl overflow-hidden"
-                        >
-                            <div className="flex items-center gap-2 px-4 border-b border-border">
-                                {searching
-                                    ? <Loader2 className="w-4 h-4 text-indigo-400 animate-spin shrink-0" />
-                                    : <Search className="w-4 h-4 text-muted-foreground shrink-0" />}
+                        <Command shouldFilter={false} loop className="bg-card border border-hairline rounded-2xl shadow-2xl overflow-hidden">
+                            <div className="flex items-center gap-3 px-4 border-b border-hairline">
+                                {searching || asking
+                                    ? <Loader2 className="w-4 h-4 text-amber-400 animate-spin shrink-0" />
+                                    : <Search className="w-4 h-4 text-amber-400 shrink-0" />}
                                 <Command.Input
                                     autoFocus
                                     value={query}
                                     onValueChange={setQuery}
-                                    placeholder="Buscar o ir a…"
-                                    className="flex-1 bg-transparent py-3.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+                                    placeholder="Buscar, preguntar o ir a…"
+                                    className="flex-1 bg-transparent h-14 text-[15px] text-foreground placeholder:text-ink-faint focus:outline-none"
                                 />
-                                <kbd className="text-[10px] text-muted-foreground border border-border rounded px-1.5 py-0.5 shrink-0">
-                                    esc
-                                </kbd>
+                                <kbd className="kbd">Esc</kbd>
                             </div>
 
-                            <Command.List className="max-h-[55vh] overflow-y-auto p-2">
-                                <Command.Empty className="py-8 text-center text-xs text-muted-foreground">
-                                    {query.trim().length < 2 ? 'Escribí para buscar' : 'Nada que coincida'}
-                                </Command.Empty>
-
-                                {/* Acciones rápidas */}
-                                {query.trim().length < 2 && (
-                                    <Command.Group heading={<GroupTitle>Acciones</GroupTitle>}>
-                                        <Item
-                                            icon={Brain}
-                                            label="Vaciado mental"
-                                            hint="Ctrl+Shift+K"
-                                            onSelect={() => { setOpen(false); window.dispatchEvent(new CustomEvent('sc:quick-capture')) }}
-                                        />
-                                        <Item
-                                            icon={Receipt}
-                                            label="Registrar gasto"
-                                            hint="Ctrl+Shift+L"
-                                            onSelect={() => { setOpen(false); window.dispatchEvent(new CustomEvent('sc:quick-expense')) }}
-                                        />
-                                        <Item icon={Plus} label="Nueva tarea" onSelect={() => go('/tasks')} />
-                                        <Item icon={Moon} label="Cerrar el día" onSelect={() => go('/cierre')} />
-                                        <Item icon={MessageCircleHeart} label="Hablar con el Copiloto" hint="Ctrl+J" onSelect={() => go('/asistente')} />
-                                    </Command.Group>
-                                )}
-
-                                {/* Resultados */}
-                                {results.length > 0 && (
-                                    <Command.Group heading={<GroupTitle>Resultados</GroupTitle>}>
-                                        {results.map(r => {
-                                            const meta = TYPE_META[r.type]
-                                            return (
-                                                <Item
-                                                    key={`${r.type}-${r.id}`}
-                                                    icon={meta.icon}
-                                                    label={r.title}
-                                                    badge={meta.label}
-                                                    hint={r.subtitle}
-                                                    onSelect={() => go(r.url)}
-                                                />
-                                            )
-                                        })}
-                                    </Command.Group>
-                                )}
-
-                                {/* Navegación */}
-                                <Command.Group heading={<GroupTitle>Ir a</GroupTitle>}>
-                                    {NAV_ITEMS
-                                        .filter(n => {
-                                            const q = query.trim().toLowerCase()
-                                            if (!q) return true
-                                            return `${n.label} ${n.keywords}`.toLowerCase().includes(q)
-                                        })
-                                        .slice(0, query.trim() ? 6 : NAV_ITEMS.length)
-                                        .map(n => (
+                            {answer || askError ? (
+                                <div className="p-5 space-y-4 max-h-[60vh] overflow-y-auto">
+                                    <button onClick={() => { setAnswer(null); setAskError('') }} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5">
+                                        <ArrowLeft className="w-3.5 h-3.5" /> Volver a los resultados
+                                    </button>
+                                    {askError ? (
+                                        <p className="text-sm text-red-300">{askError}</p>
+                                    ) : answer && (
+                                        <>
+                                            <div className="flex gap-3">
+                                                <Sparkles className="w-4 h-4 text-amber-400 shrink-0 mt-1" />
+                                                <p className="text-[15px] leading-relaxed max-w-[60ch]">{answer.answer}</p>
+                                            </div>
+                                            {answer.sources.length > 0 && (
+                                                <div className="space-y-1">
+                                                    <p className="label-caps !text-[10px]">De dónde lo saqué</p>
+                                                    {answer.sources.map((s, i) => {
+                                                        const meta = TYPE_META[s.type]
+                                                        return (
+                                                            <button key={`${s.type}-${s.id}`} onClick={() => go(s.url)} className="w-full flex items-center gap-3 h-10 px-2 rounded-lg hover:bg-raised text-left text-sm">
+                                                                <span className="font-mono text-[10px] text-ink-faint w-5">[{i + 1}]</span>
+                                                                <meta.icon className="w-4 h-4 text-muted-foreground shrink-0" />
+                                                                <span className="flex-1 truncate">{s.title}</span>
+                                                                <span className="font-mono text-[10px] text-muted-foreground">{meta.label}</span>
+                                                            </button>
+                                                        )
+                                                    })}
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            ) : (
+                                <Command.List className="max-h-[60vh] overflow-y-auto p-2">
+                                    {looksLikeQuestion && (
+                                        <Command.Group heading={<GroupTitle>Preguntar</GroupTitle>}>
                                             <Item
-                                                key={n.url}
-                                                icon={n.icon}
-                                                label={n.label}
-                                                onSelect={() => go(n.url)}
+                                                icon={Sparkles}
+                                                accent
+                                                label={`Preguntarle al cerebro: “${query.trim()}”`}
+                                                hint="IA sobre tus notas"
+                                                onSelect={ask}
                                             />
-                                        ))}
-                                </Command.Group>
-                            </Command.List>
+                                        </Command.Group>
+                                    )}
+
+                                    {q.length < 2 && (
+                                        <Command.Group heading={<GroupTitle>Acciones</GroupTitle>}>
+                                            <Item icon={Brain} label="Capturar" hint="C" onSelect={() => fire('sc:quick-capture')} />
+                                            <Item icon={CheckSquare} label="Crear tarea" hint="lenguaje natural" onSelect={() => fire('sc:quick-capture', { kind: 'task' })} />
+                                            <Item icon={Receipt} label="Registrar gasto" hint="Ctrl Shift L" onSelect={() => fire('sc:quick-expense', { kind: 'expense' })} />
+                                            <Item icon={NotebookPen} label="Nueva nota" onSelect={() => go('/notas?new=1')} />
+                                            <Item icon={Focus} label="Entrar en modo foco" onSelect={() => go('/foco')} />
+                                            <Item icon={Inbox} label="Vaciar el Inbox" onSelect={() => go('/inbox')} />
+                                            <Item icon={Moon} label="Cerrar el día" onSelect={() => go('/cierre')} />
+                                            <Item icon={MessageCircleHeart} label="Hablar con el Copiloto" hint="Ctrl J" onSelect={() => fire('sc:assistant')} />
+                                        </Command.Group>
+                                    )}
+
+                                    {q.length >= 2 && (
+                                        <Command.Group heading={<GroupTitle>Acciones</GroupTitle>}>
+                                            <Item icon={Plus} label={`Crear tarea “${query.trim()}”`} onSelect={() => fire('sc:quick-capture', { kind: 'task', text: query.trim() })} />
+                                            <Item icon={Brain} label={`Anotar en el Inbox “${query.trim()}”`} onSelect={() => fire('sc:quick-capture', { text: query.trim() })} />
+                                        </Command.Group>
+                                    )}
+
+                                    {results.length > 0 && (
+                                        <Command.Group heading={<GroupTitle>Resultados</GroupTitle>}>
+                                            {results.map(r => {
+                                                const meta = TYPE_META[r.type]
+                                                return (
+                                                    <Item
+                                                        key={`${r.type}-${r.id}`}
+                                                        icon={meta.icon}
+                                                        label={r.title}
+                                                        badge={meta.label}
+                                                        hint={r.subtitle}
+                                                        onSelect={() => go(r.url)}
+                                                    />
+                                                )
+                                            })}
+                                        </Command.Group>
+                                    )}
+
+                                    <Command.Group heading={<GroupTitle>Ir a</GroupTitle>}>
+                                        {NAV_ITEMS
+                                            .filter(n => !q || `${n.label} ${n.group}`.toLowerCase().includes(q))
+                                            .slice(0, q ? 6 : NAV_ITEMS.length)
+                                            .map(n => (
+                                                <Item key={n.href} icon={n.icon} label={n.label} hint={n.group} onSelect={() => go(n.href)} />
+                                            ))}
+                                    </Command.Group>
+
+                                    <Command.Empty className="py-8 text-center text-xs text-muted-foreground">
+                                        Nada que coincida.
+                                    </Command.Empty>
+                                </Command.List>
+                            )}
+
+                            <div className="hidden sm:flex items-center gap-4 px-4 h-10 border-t border-hairline font-mono text-[10px] text-ink-faint">
+                                <span>↑↓ moverte</span>
+                                <span className="flex items-center gap-1"><CornerDownLeft className="w-3 h-3" /> ejecutar</span>
+                                <span className="ml-auto">{results.length ? `${results.length} resultados` : ''}</span>
+                            </div>
                         </Command>
                     </motion.div>
                 </div>
@@ -217,33 +262,25 @@ export function CommandPalette() {
 }
 
 function GroupTitle({ children }: { children: React.ReactNode }) {
-    return (
-        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2 py-1.5 block">
-            {children}
-        </span>
-    )
+    return <span className="label-caps !text-[10px] px-2 pt-2 pb-1 block">{children}</span>
 }
 
-function Item({ icon: Icon, label, badge, hint, onSelect }: {
-    icon: any; label: string; badge?: string; hint?: string; onSelect: () => void
+function Item({ icon: Icon, label, badge, hint, onSelect, accent }: {
+    icon: any; label: string; badge?: string; hint?: string; onSelect: () => void; accent?: boolean
 }) {
     return (
         <Command.Item
             value={`${label} ${badge || ''} ${hint || ''}`}
             onSelect={onSelect}
             className={cn(
-                'flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer text-xs text-foreground',
-                'data-[selected=true]:bg-indigo-500/15 data-[selected=true]:text-indigo-200'
+                'flex items-center gap-3 px-2.5 h-10 rounded-lg cursor-pointer text-sm text-foreground',
+                'data-[selected=true]:bg-raised'
             )}
         >
-            <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
+            <Icon className={cn('w-4 h-4 shrink-0', accent ? 'text-amber-400' : 'text-muted-foreground')} />
             <span className="flex-1 truncate">{label}</span>
-            {badge && (
-                <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground bg-background/60 px-1.5 py-0.5 rounded shrink-0">
-                    {badge}
-                </span>
-            )}
-            {hint && <span className="text-[10px] text-muted-foreground shrink-0 truncate max-w-[120px]">{hint}</span>}
+            {badge && <span className="font-mono text-[10px] text-muted-foreground shrink-0">{badge}</span>}
+            {hint && <span className="font-mono text-[10px] text-ink-faint shrink-0 truncate max-w-[140px]">{hint}</span>}
         </Command.Item>
     )
 }

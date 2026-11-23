@@ -1,38 +1,192 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  /* ============================================================
+     Design system "Graphite" (docs/stitch/DESIGN.md)
+     Un escritorio a las 7 de la mañana con una lámpara: grafito cálido
+     y un solo ámbar que marca lo que importa ahora.
+     ============================================================ */
   :root {
-    --background: 222 47% 7%;
-    --foreground: 213 31% 91%;
-    --card: 222 47% 9%;
-    --card-foreground: 213 31% 91%;
-    --popover: 222 47% 9%;
-    --popover-foreground: 213 31% 91%;
-    --primary: 239 84% 67%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 222 47% 13%;
-    --secondary-foreground: 213 31% 91%;
-    --muted: 222 47% 13%;
-    --muted-foreground: 215 20% 55%;
-    --accent: 239 84% 67%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 222 33% 15%;
-    --input: 222 33% 15%;
-    --ring: 239 84% 67%;
+    --background: 240 6% 7%;
+    --foreground: 240 6% 93%;
+    --card: 240 6% 10%;
+    --card-foreground: 240 6% 93%;
+    --raised: 240 6% 13%;
+    --popover: 240 5% 12%;
+    --popover-foreground: 240 6% 93%;
+    --primary: 36 71% 59%;
+    --primary-foreground: 240 6% 7%;
+    --secondary: 240 6% 13%;
+    --secondary-foreground: 240 6% 93%;
+    --muted: 240 6% 13%;
+    --muted-foreground: 240 4% 56%;
+    --faint: 240 4% 37%;
+    --accent: 36 71% 59%;
+    --accent-foreground: 240 6% 7%;
+    --destructive: 10 62% 61%;
+    --destructive-foreground: 240 6% 7%;
+    --border: 240 4% 17%;
+    --hairline: 0 0% 100% / 0.07;
+    --hairline-strong: 0 0% 100% / 0.12;
+    --input: 240 6% 13%;
+    --ring: 36 71% 59%;
     --radius: 0.75rem;
-    --sidebar-background: 222 47% 6%;
-    --sidebar-foreground: 213 31% 91%;
-    --sidebar-accent: 222 47% 12%;
-    --sidebar-accent-foreground: 213 31% 91%;
-    --sidebar-border: 222 33% 12%;
-    /* Bottom bar height */
+    --white: 240 6% 93%;
+    --black: 0 0% 0%;
+    --sidebar-background: 240 5% 8%;
+    --sidebar-foreground: 240 6% 93%;
+    --sidebar-accent: 240 6% 13%;
+    --sidebar-accent-foreground: 240 6% 93%;
+    --sidebar-border: 240 4% 15%;
     --bottombar-height: 68px;
+    color-scheme: dark;
+    --graphite-50: 240 5% 96%;
+    --graphite-100: 240 6% 90%;
+    --graphite-200: 240 5% 80%;
+    --graphite-300: 240 5% 67%;
+    --graphite-400: 240 4% 56%;
+    --graphite-500: 240 4% 36%;
+    --graphite-600: 240 5% 24%;
+    --graphite-700: 240 5% 18%;
+    --graphite-800: 240 6% 14%;
+    --graphite-900: 240 5% 11%;
+    --graphite-950: 240 5% 8%;
+    --sage-50: 142 31% 95%;
+    --sage-100: 146 34% 88%;
+    --sage-200: 145 33% 78%;
+    --sage-300: 146 31% 66%;
+    --sage-400: 148 28% 56%;
+    --sage-500: 148 26% 47%;
+    --sage-600: 149 26% 39%;
+    --sage-700: 150 26% 31%;
+    --sage-800: 150 26% 24%;
+    --sage-900: 150 26% 17%;
+    --sage-950: 141 26% 11%;
+    --clay-50: 12 65% 95%;
+    --clay-100: 12 67% 89%;
+    --clay-200: 12 65% 80%;
+    --clay-300: 11 63% 70%;
+    --clay-400: 10 62% 61%;
+    --clay-500: 10 51% 53%;
+    --clay-600: 10 47% 44%;
+    --clay-700: 9 47% 35%;
+    --clay-800: 9 46% 26%;
+    --clay-900: 9 46% 18%;
+    --clay-950: 7 45% 11%;
+    --slateblue-50: 213 36% 95%;
+    --slateblue-100: 211 36% 88%;
+    --slateblue-200: 211 35% 79%;
+    --slateblue-300: 211 35% 71%;
+    --slateblue-400: 211 34% 62%;
+    --slateblue-500: 212 28% 53%;
+    --slateblue-600: 212 26% 44%;
+    --slateblue-700: 213 26% 35%;
+    --slateblue-800: 212 26% 26%;
+    --slateblue-900: 212 26% 18%;
+    --slateblue-950: 212 25% 12%;
+    --lamp-50: 38 76% 95%;
+    --lamp-100: 38 75% 88%;
+    --lamp-200: 38 75% 77%;
+    --lamp-300: 37 73% 67%;
+    --lamp-400: 36 71% 59%;
+    --lamp-500: 35 64% 53%;
+    --lamp-600: 35 60% 45%;
+    --lamp-700: 34 59% 37%;
+    --lamp-800: 33 56% 28%;
+    --lamp-900: 32 54% 19%;
+    --lamp-950: 32 53% 12%;
+  }
+
+  /* Tema claro "Paper": mismas estructuras, papel cálido y tinta. */
+  :root[data-theme="paper"] {
+    --background: 43 30% 95%;
+    --foreground: 40 6% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 40 6% 10%;
+    --raised: 42 24% 92%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 40 6% 10%;
+    --primary: 36 71% 42%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 42 24% 92%;
+    --secondary-foreground: 40 6% 10%;
+    --muted: 42 24% 92%;
+    --muted-foreground: 38 5% 41%;
+    --faint: 40 8% 61%;
+    --accent: 36 71% 42%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 10 48% 48%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 40 14% 86%;
+    --hairline: 40 8% 10% / 0.08;
+    --hairline-strong: 40 8% 10% / 0.16;
+    --input: 42 24% 92%;
+    --ring: 36 71% 42%;
+    --white: 40 6% 10%;
+    --black: 38 14% 42%;
+    --sidebar-background: 42 26% 93%;
+    --sidebar-foreground: 40 6% 10%;
+    --sidebar-accent: 42 21% 88%;
+    --sidebar-accent-foreground: 40 6% 10%;
+    --sidebar-border: 40 14% 88%;
+    color-scheme: light;
+    --graphite-50: 240 5% 8%;
+    --graphite-100: 240 5% 11%;
+    --graphite-200: 240 6% 14%;
+    --graphite-300: 240 5% 18%;
+    --graphite-400: 240 5% 24%;
+    --graphite-500: 240 4% 36%;
+    --graphite-600: 240 4% 56%;
+    --graphite-700: 240 5% 67%;
+    --graphite-800: 240 5% 80%;
+    --graphite-900: 240 6% 90%;
+    --graphite-950: 240 5% 96%;
+    --sage-50: 141 26% 11%;
+    --sage-100: 150 26% 17%;
+    --sage-200: 150 26% 24%;
+    --sage-300: 150 26% 31%;
+    --sage-400: 149 26% 39%;
+    --sage-500: 148 26% 47%;
+    --sage-600: 148 28% 56%;
+    --sage-700: 146 31% 66%;
+    --sage-800: 145 33% 78%;
+    --sage-900: 146 34% 88%;
+    --sage-950: 142 31% 95%;
+    --clay-50: 7 45% 11%;
+    --clay-100: 9 46% 18%;
+    --clay-200: 9 46% 26%;
+    --clay-300: 9 47% 35%;
+    --clay-400: 10 47% 44%;
+    --clay-500: 10 51% 53%;
+    --clay-600: 10 62% 61%;
+    --clay-700: 11 63% 70%;
+    --clay-800: 12 65% 80%;
+    --clay-900: 12 67% 89%;
+    --clay-950: 12 65% 95%;
+    --slateblue-50: 212 25% 12%;
+    --slateblue-100: 212 26% 18%;
+    --slateblue-200: 212 26% 26%;
+    --slateblue-300: 213 26% 35%;
+    --slateblue-400: 212 26% 44%;
+    --slateblue-500: 212 28% 53%;
+    --slateblue-600: 211 34% 62%;
+    --slateblue-700: 211 35% 71%;
+    --slateblue-800: 211 35% 79%;
+    --slateblue-900: 211 36% 88%;
+    --slateblue-950: 213 36% 95%;
+    --lamp-50: 32 53% 12%;
+    --lamp-100: 32 54% 19%;
+    --lamp-200: 33 56% 28%;
+    --lamp-300: 34 59% 37%;
+    --lamp-400: 35 60% 45%;
+    --lamp-500: 35 64% 53%;
+    --lamp-600: 36 71% 59%;
+    --lamp-700: 37 73% 67%;
+    --lamp-800: 38 75% 77%;
+    --lamp-900: 38 75% 88%;
+    --lamp-950: 38 76% 95%;
   }
 }
 
@@ -52,10 +206,13 @@
     @apply bg-background text-foreground font-sans antialiased;
     touch-action: manipulation;
     overflow-x: hidden;
-    background-image:
-      radial-gradient(ellipse at 20% 50%, hsl(239 84% 67% / 0.05) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 20%, hsl(262 83% 58% / 0.05) 0%, transparent 50%);
-    background-attachment: fixed;
+    font-size: 15px;
+    font-feature-settings: "ss01", "cv11";
+  }
+
+  /* Números siempre en mono tabular (horas, plata, fechas, contadores). */
+  .font-mono, code, kbd {
+    font-variant-numeric: tabular-nums;
   }
 
   h1,
@@ -65,6 +222,7 @@
   h5,
   h6 {
     @apply font-heading;
+    letter-spacing: -0.02em;
   }
 
   /* Barra de scroll fina pero agarrable con el mouse.
@@ -105,32 +263,87 @@
 
 @layer components {
 
-  /* Glass morphism card */
+  /* Superficie de escritorio: sin blur ni sombra, la elevación es el tono. */
   .glass {
-    @apply bg-card/80 backdrop-blur-xl border border-border/50;
+    background-color: hsl(var(--card));
+    border: 1px solid hsl(var(--hairline));
   }
 
-  /* Gradient text */
+  /* Antes era un degradado; el design system no usa texto degradé. */
   .gradient-text {
-    @apply bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent;
+    color: hsl(var(--foreground));
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  /* Etiqueta de sección: 11px, mayúsculas, tracking amplio. */
+  .label-caps {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: hsl(var(--muted-foreground));
+  }
+
+  .hairline { border-color: hsl(var(--hairline)); }
+
+  /* El único elemento que brilla en la pantalla. */
+  .lamp {
+    background-color: hsl(var(--lamp-400) / 0.10);
+    border: 1px solid hsl(var(--lamp-400) / 0.40);
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 font-semibold transition-[transform,background-color] active:translate-y-px disabled:opacity-50 disabled:pointer-events-none;
+    min-height: 44px;
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+  }
+  .btn-primary:hover { filter: brightness(1.06); }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 font-semibold transition-colors active:translate-y-px disabled:opacity-50 disabled:pointer-events-none;
+    min-height: 44px;
+    background-color: hsl(var(--raised));
+    border: 1px solid hsl(var(--hairline));
+    color: hsl(var(--foreground));
+  }
+  .btn-secondary:hover { border-color: hsl(var(--hairline-strong)); }
+
+  .field {
+    @apply w-full rounded-xl px-3.5 text-sm outline-none transition-shadow;
+    min-height: 44px;
+    background-color: hsl(var(--raised));
+    border: 1px solid hsl(var(--hairline));
+    color: hsl(var(--foreground));
+  }
+  .field::placeholder { color: hsl(var(--faint)); }
+  .field:focus { box-shadow: 0 0 0 2px hsl(var(--ring) / 0.5); }
+
+  .kbd {
+    @apply inline-flex items-center rounded-md px-1.5 font-mono text-[10px];
+    height: 20px;
+    background-color: hsl(var(--raised));
+    border: 1px solid hsl(var(--hairline));
+    color: hsl(var(--muted-foreground));
   }
 
   /* Priority indicators */
   .priority-high {
-    @apply border-l-2 border-l-red-500;
+    @apply border-l-2 border-l-red-400;
   }
 
   .priority-medium {
-    @apply border-l-2 border-l-amber-500;
+    @apply border-l-2 border-l-amber-400;
   }
 
   .priority-low {
-    @apply border-l-2 border-l-blue-500;
+    @apply border-l-2 border-l-sky-400;
   }
 
   /* Glow effect for active elements */
   .glow-primary {
-    box-shadow: 0 0 20px hsl(239 84% 67% / 0.3);
+    box-shadow: none;
   }
 
   /* Bottom bar safe area — reserves space equal to BottomBar */
