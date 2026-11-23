@@ -141,7 +141,7 @@ export async function GET(req: NextRequest) {
 
         const [commitRes, tasksRes, habitsRes, habitLogsRes, planRes, trainLogsRes, eveningRes] =
             await Promise.all([
-                q('daily_commitments').eq('date', today).maybeSingle(),
+                q('morning_ritual_logs').eq('date', today).maybeSingle(),
                 q('tasks').in('status', ['Todo', 'InProgress']),
                 q('habits').eq('is_active', true),
                 q('habit_logs').gte('completed_at', `${today}T00:00:00-03:00`),
@@ -150,7 +150,7 @@ export async function GET(req: NextRequest) {
                 q('evening_ritual_logs').eq('date', today).maybeSingle()
             ])
 
-        const commitment = commitRes.data
+        const dayPlan = commitRes.data
         const openTasks = tasksRes.data || []
         const habits = habitsRes.data || []
         const habitLogs = habitLogsRes.data || []
@@ -186,32 +186,13 @@ export async function GET(req: NextRequest) {
             }
         }
 
-        // ---------- 1. Recordatorio del compromiso, a la hora exacta ----------
-        if (prefs.commitment_reminder && commitment && commitment.status === 'pending') {
-            if (isDue(commitment.scheduled_time, now, windowMin)) {
-                due.push({
-                    kind: 'commitment',
-                    refId: commitment.id,
-                    payload: {
-                        title: 'Es la hora',
-                        body: commitment.two_minute_version
-                            ? `${commitment.action}\n\nSi no podés con todo: ${commitment.two_minute_version}`
-                            : commitment.action,
-                        url: '/',
-                        tag: 'commitment',
-                        requireInteraction: true
-                    }
-                })
-            }
-        }
-
         // ---------- 2. Briefing de la mañana ----------
         if (prefs.morning_briefing && isDue(prefs.morning_time, now, windowMin)) {
             const lines: string[] = []
-            if (commitment) {
-                lines.push(`Hoy: ${commitment.action}${commitment.scheduled_time ? ` (${hhmm(commitment.scheduled_time)})` : ''}`)
+            if (dayPlan?.daily_objective) {
+                lines.push(`Foco: ${dayPlan.daily_objective}`)
             } else {
-                lines.push('No firmaste compromiso para hoy.')
+                lines.push('Todavía no planificaste el día.')
             }
             if (todayTasks.length) lines.push(`${todayTasks.length} tarea${todayTasks.length > 1 ? 's' : ''} para hoy`)
             if (pendingHabits.length) lines.push(`${pendingHabits.length} hábito${pendingHabits.length > 1 ? 's' : ''} pendiente${pendingHabits.length > 1 ? 's' : ''}`)
@@ -246,15 +227,12 @@ export async function GET(req: NextRequest) {
 
         // ---------- 4. Ritual nocturno ----------
         if (prefs.evening_ritual && !eveningDone && isDue(prefs.evening_time, now, windowMin)) {
-            const pending = commitment && commitment.status === 'pending'
             due.push({
                 kind: 'evening',
                 refId: '',
                 payload: {
                     title: 'Cerrá el día',
-                    body: pending
-                        ? 'Te falta resolver el compromiso de hoy y firmar el de mañana. Son 3 minutos.'
-                        : 'Anotá la victoria del día y firmá el compromiso de mañana. Son 3 minutos.',
+                    body: 'Mirá cómo salió el foco, pasá lo pendiente a mañana y anotá la victoria. Son 3 minutos.',
                     url: '/cierre',
                     tag: 'evening',
                     requireInteraction: true

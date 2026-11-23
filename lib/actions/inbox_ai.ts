@@ -28,6 +28,8 @@ export interface NoteSuggestion {
     category?: 'Work' | 'Personal'
     energy_level?: string
     due_date?: string | null
+    /** task: día en que se planea hacerla (el plan del día la manda a "hoy"). */
+    planned_date?: string | null
     /** event */
     event_date?: string | null
     start_time?: string | null
@@ -159,7 +161,8 @@ export async function applyInboxSuggestion(suggestion: NoteSuggestion) {
                 category: suggestion.category || 'Personal',
                 energy_level: suggestion.energy_level || 'Deep Work',
                 status: 'Todo',
-                due_date: suggestion.due_date || null
+                due_date: suggestion.due_date || null,
+                planned_date: suggestion.planned_date || null
             })
             if (error) throw error
             break

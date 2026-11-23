@@ -9,15 +9,14 @@ import {
 import { useRouter } from 'next/navigation'
 import { saveEveningRitual } from '@/lib/actions/evening_ritual'
 import { generateWeeklyReview, saveWeeklyReflection } from '@/lib/actions/weekly_review'
-import { CommitmentWidget } from '@/components/commitments/CommitmentWidget'
+import { DayFocusWidget } from '@/components/plan/DayFocusWidget'
 import { QuickExpenseTrigger } from '@/components/finances/QuickExpenseButton'
 import { cn, formatCurrency } from '@/lib/utils'
 
 interface Props {
     ritual: any
-    commitment: any
-    tomorrow: any
-    commitmentStats: any
+    dayPlan: { log: any; tasks: any[] }
+    tomorrowFocus: string | null
     ritualStats: { total: number; streak: number; avgRating: number | null; doneToday: boolean }
     weekStart: string
     weeklyPlan: any
@@ -35,7 +34,7 @@ const RATINGS = [
 ]
 
 export function CierrePageClient({
-    ritual, commitment, tomorrow, commitmentStats, ritualStats,
+    ritual, dayPlan, tomorrowFocus, ritualStats,
     weekStart, weeklyPlan, initialTab, appDay, daySpend
 }: Props) {
     const router = useRouter()
@@ -65,7 +64,7 @@ export function CierrePageClient({
                 win: win.trim() || null,
                 gratitude: gratitude.trim() || null,
                 brain_dump: brainDump.trim() || null,
-                tomorrow_committed: Boolean(tomorrow)
+                tomorrow_committed: Boolean(tomorrowFocus)
             })
             setBrainDump('')
             setSaved(true)
@@ -164,13 +163,13 @@ export function CierrePageClient({
                             </p>
                         </div>
                     )}
-                    {/* Paso 1: resolver el compromiso de hoy */}
-                    <CommitmentWidget
-                        today={commitment}
-                        tomorrow={tomorrow}
-                        stats={commitmentStats}
+                    {/* Paso 1: cómo salió el foco y qué pasa a mañana */}
+                    <DayFocusWidget
+                        mode="close"
                         date={appDay.date}
-                        isAfterMidnight={appDay.isAfterMidnight}
+                        focus={dayPlan.log?.daily_objective || null}
+                        tasks={dayPlan.tasks}
+                        tomorrowFocus={tomorrowFocus}
                     />
 
                     {/* Gastos del día: el mejor momento para cargar lo que se escapó */}

@@ -1,5 +1,5 @@
 import { getEveningRitual, getEveningRitualStats } from '@/lib/actions/evening_ritual'
-import { getCommitment, getCommitmentStats } from '@/lib/actions/commitments'
+import { getDayPlan } from '@/lib/actions/morning_ritual'
 import { getWeekStart, getWeeklyReview } from '@/lib/actions/weekly_review'
 import { addDaysToDateStr } from '@/lib/utils'
 import { getAppDay } from '@/lib/actions/day'
@@ -8,7 +8,7 @@ import { CierrePageClient } from './page.client'
 
 export const dynamic = 'force-dynamic'
 
-const EMPTY_COMMITMENT_STATS = { total: 0, done: 0, partial: 0, skipped: 0, successRate: 0, streak: 0 }
+const EMPTY_PLAN = { log: null, tasks: [] as any[] }
 const EMPTY_RITUAL_STATS = { total: 0, streak: 0, avgRating: null, doneToday: false }
 
 export default async function CierrePage({
@@ -24,12 +24,11 @@ export default async function CierrePage({
     const today = appDay.date
     const weekStart = await getWeekStart()
 
-    const [ritual, ritualStats, commitment, tomorrow, commitmentStats, weeklyPlan, recentExpenses] = await Promise.all([
+    const [ritual, ritualStats, dayPlan, tomorrowPlan, weeklyPlan, recentExpenses] = await Promise.all([
         getEveningRitual(today).catch(() => null),
         getEveningRitualStats().catch(() => EMPTY_RITUAL_STATS),
-        getCommitment(today).catch(() => null),
-        getCommitment(addDaysToDateStr(today, 1)).catch(() => null),
-        getCommitmentStats().catch(() => EMPTY_COMMITMENT_STATS),
+        getDayPlan(today).catch(() => EMPTY_PLAN),
+        getDayPlan(addDaysToDateStr(today, 1)).catch(() => EMPTY_PLAN),
         getWeeklyReview(weekStart).catch(() => null),
         getExpenseHistory(3).catch(() => null)
     ])
@@ -45,9 +44,8 @@ export default async function CierrePage({
     return (
         <CierrePageClient
             ritual={ritual}
-            commitment={commitment}
-            tomorrow={tomorrow}
-            commitmentStats={commitmentStats}
+            dayPlan={dayPlan}
+            tomorrowFocus={tomorrowPlan.log?.daily_objective || null}
             ritualStats={ritualStats}
             weekStart={weekStart}
             weeklyPlan={weeklyPlan}

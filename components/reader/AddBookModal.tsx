@@ -12,6 +12,8 @@ import { cn } from '@/lib/utils'
 
 interface Props {
     linkable: LinkableMediaBook[]
+    /** Viene de "Pendientes": el PDF se vincula sí o sí a esa ficha. */
+    presetMediaId?: string | null
     onClose: () => void
     onAdded: (bookId: string) => void
 }
@@ -53,7 +55,8 @@ function titleFromFilename(name: string) {
         .trim()
 }
 
-export function AddBookModal({ linkable, onClose, onAdded }: Props) {
+export function AddBookModal({ linkable, presetMediaId, onClose, onAdded }: Props) {
+    const preset = presetMediaId ? linkable.find(m => m.id === presetMediaId) || null : null
     const inputRef = useRef<HTMLInputElement>(null)
     const [stage, setStage] = useState<'pick' | 'reading' | 'details' | 'uploading'>('pick')
     const [draft, setDraft] = useState<Draft | null>(null)
@@ -83,7 +86,7 @@ export function AddBookModal({ linkable, onClose, onAdded }: Props) {
             const title = info.title || titleFromFilename(file.name)
             // Si ya está en el tracker con un título parecido, se sugiere vincularlo.
             const nTitle = normalize(title)
-            const match = linkable.find(m => {
+            const match = preset || linkable.find(m => {
                 const n = normalize(m.title)
                 return n.length > 2 && (nTitle.includes(n) || n.includes(nTitle))
             })
@@ -152,7 +155,7 @@ export function AddBookModal({ linkable, onClose, onAdded }: Props) {
             >
                 <div className="flex items-center justify-between px-5 pt-5 pb-3">
                     <div>
-                        <h2 className="font-heading font-bold text-lg">Agregar libro</h2>
+                        <h2 className="font-heading font-bold text-lg">{preset ? `Empezar "${preset.title}"` : 'Agregar libro'}</h2>
                         <p className="text-xs text-muted-foreground">Se guarda en tu cuenta y lo abrís desde cualquier dispositivo.</p>
                     </div>
                     <button

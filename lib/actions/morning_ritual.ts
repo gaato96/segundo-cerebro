@@ -3,8 +3,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { generateText, parseJSON } from '@/lib/ai'
-import { buildBrainSnapshot } from '@/lib/actions/assistant'
 import { runAction, type ActionResult } from '@/lib/actionResult'
+import { syncRecurringTasks } from '@/lib/actions/tasks'
+import { addDaysToDateStr, isHabitScheduledForDate } from '@/lib/utils'
 
 export interface MorningRitualLog {
     id: string
@@ -126,7 +127,14 @@ export async function saveRitualConfig(sectionsOrder: string[], promptText: stri
     return { success: true }
 }
 
-import { syncRecurringTasks } from '@/lib/actions/tasks'
+// ============================================================
+// PLANIFICAR EL DÍA
+//
+// El orden es el del uso real: todo se anota en el Inbox durante el día,
+// a la mañana se vacía (cada captura va a tarea, evento, idea…), y recién
+// con eso más las tareas abiertas, los objetivos y los hábitos se elige
+// el foco: una línea y hasta 3 tareas.
+// ============================================================
 
 export async function getMorningData(dateStr: string) {
     const supabase = await createClient()
@@ -135,14 +143,16 @@ export async function getMorningData(dateStr: string) {
 
     await syncRecurringTasks(user.id)
 
-    const [tasksRes, habitsRes, inboxRes, eventsRes] = await Promise.all([
+    const [tasksRes, habitsRes, inboxRes, eventsRes, objectivesRes, logsRes] = await Promise.all([
         supabase
             .from('tasks')
             .select('*')
             .eq('user_id', user.id)
             .in('status', ['Todo', 'InProgress'])
-            .or(`due_date.lte.${dateStr},planned_date.eq.${dateStr},due_date.is.null`)
-            .order('priority', { ascending: true }),
+            .or(`due_date.lte.${dateStr},planned_date.eq.${dateStr},planned_date.is.null`)
+            .order('priority', { ascending: true })
+            .order('due_date', { ascending: true, nullsFirst: false })
+            .limit(80),
 
         supabase
             .from('habits')
@@ -152,125 +162,283 @@ export async function getMorningData(dateStr: string) {
 
         supabase
             .from('mental_notes')
-            .select('id')
+            .select('id, content, created_at')
             .eq('user_id', user.id)
-            .eq('is_processed', false),
+            .eq('is_processed', false)
+            .order('created_at', { ascending: true }),
 
         supabase
             .from('events')
             .select('*')
             .eq('user_id', user.id)
             .eq('event_date', dateStr)
-            .order('start_time', { ascending: true, nullsFirst: true })
+            .order('start_time', { ascending: true, nullsFirst: true }),
+
+        supabase
+            .from('objectives')
+            .select('id, title, progress_pct, type, timeframe')
+            .eq('user_id', user.id)
+            .eq('status', 'Active')
+            .order('priority', { ascending: true, nullsFirst: false }),
+
+        supabase
+            .from('habit_logs')
+            .select('habit_id')
+            .eq('user_id', user.id)
+            .gte('completed_at', `${dateStr}T00:00:00-03:00`)
+            .lt('completed_at', `${addDaysToDateStr(dateStr, 1)}T00:00:00-03:00`)
     ])
+
+    const doneHabitIds = new Set((logsRes.data || []).map((l: any) => l.habit_id))
+    const habits = (habitsRes.data || [])
+        .filter((h: any) => isHabitScheduledForDate(h, dateStr))
+        .map((h: any) => ({ ...h, done_today: doneHabitIds.has(h.id) }))
+
+    const notes = inboxRes.data || []
 
     return {
         tasks: tasksRes.data || [],
-        habits: habitsRes.data || [],
-        inboxUnreadCount: inboxRes.data?.length || 0,
-        events: eventsRes.data || []
+        habits,
+        inboxNotes: notes,
+        inboxUnreadCount: notes.length,
+        events: eventsRes.data || [],
+        objectives: objectivesRes.data || []
     }
 }
 
+/** El plan de un día: la línea de foco y sus tareas, con su estado actual. */
+export async function getDayPlan(dateStr: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { log: null, tasks: [] as any[] }
+
+    const { data: log } = await supabase
+        .from('morning_ritual_logs')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('date', dateStr)
+        .maybeSingle()
+
+    const ids: string[] = log?.mit_task_ids || []
+    if (!ids.length) return { log: log || null, tasks: [] as any[] }
+
+    const { data: tasks } = await supabase
+        .from('tasks')
+        .select('id, title, status, priority, objective_id')
+        .eq('user_id', user.id)
+        .in('id', ids)
+
+    // Respeta el orden en que se eligieron: la primera es el foco #1.
+    const byId = new Map((tasks || []).map(t => [t.id, t]))
+    return { log, tasks: ids.map(id => byId.get(id)).filter(Boolean) as any[] }
+}
+
+/** Deja las tareas elegidas planificadas para ese día (aparecen en el dashboard). */
+export async function planTasksForDay(taskIds: string[], dateStr: string) {
+    if (!taskIds.length) return { success: true }
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'No autorizado' }
+
+    const { error } = await supabase
+        .from('tasks')
+        .update({ planned_date: dateStr, updated_at: new Date().toISOString() })
+        .eq('user_id', user.id)
+        .in('id', taskIds)
+
+    if (error) return { error: error.message }
+    revalidatePath('/')
+    revalidatePath('/tasks')
+    revalidatePath('/planner')
+    return { success: true }
+}
+
+/** Crea una tarea ya planificada para el día y la devuelve (para elegirla como foco). */
+export async function createTaskForDay(title: string, dateStr: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'No autorizado' }
+    if (!title.trim()) return { error: 'Escribí la tarea.' }
+
+    const { data, error } = await supabase
+        .from('tasks')
+        .insert({
+            user_id: user.id,
+            title: title.trim().slice(0, 200),
+            priority: 2,
+            category: 'Personal',
+            energy_level: 'Deep Work',
+            status: 'Todo',
+            planned_date: dateStr
+        })
+        .select()
+        .single()
+
+    if (error) return { error: error.message }
+    revalidatePath('/tasks')
+    revalidatePath('/')
+    return { success: true, task: data }
+}
+
+/**
+ * Cierre del día: lo que quedó sin hacer del foco pasa a mañana, y opcionalmente
+ * se deja escrita la línea de foco de mañana (el plan de la mañana arranca con ella).
+ */
+export async function carryOverToTomorrow(dateStr: string, tomorrowFocus?: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'No autorizado' }
+
+    const tomorrow = addDaysToDateStr(dateStr, 1)
+    const { tasks } = await getDayPlan(dateStr)
+    const pending = tasks.filter((t: any) => t.status !== 'Done').map((t: any) => t.id)
+
+    if (pending.length) {
+        const { error } = await supabase
+            .from('tasks')
+            .update({ planned_date: tomorrow, updated_at: new Date().toISOString() })
+            .eq('user_id', user.id)
+            .in('id', pending)
+        if (error) return { error: error.message }
+    }
+
+    const { data: existing } = await supabase
+        .from('morning_ritual_logs')
+        .select('id, daily_objective, mit_task_ids, completed_at')
+        .eq('user_id', user.id)
+        .eq('date', tomorrow)
+        .maybeSingle()
+
+    // Si mañana ya está planificado no se pisa nada: solo se suman las pendientes.
+    const mergedIds = Array.from(new Set([...(existing?.mit_task_ids || []), ...pending])).slice(0, 3)
+    const focus = tomorrowFocus?.trim() || existing?.daily_objective || null
+
+    const { error: upError } = await supabase
+        .from('morning_ritual_logs')
+        .upsert({
+            user_id: user.id,
+            date: tomorrow,
+            daily_objective: focus,
+            mit_task_ids: mergedIds
+        }, { onConflict: 'user_id,date' })
+
+    if (upError) return { error: upError.message }
+
+    revalidatePath('/')
+    revalidatePath('/ritual')
+    revalidatePath('/cierre')
+    return { success: true, moved: pending.length }
+}
+
 // ============================================================
-// EL COACH ARRANCA EL DÍA POR VOS
+// LA IA ORDENA, NO INVENTA
 //
-// La primera tarjeta del ritual es la más cara: a las 7 de la mañana no sabés
-// por dónde empezar y la decisión sigue abierta. Esto la cierra mirando TODO
-// el Segundo Cerebro (tareas vencidas, hábitos caídos, plata, objetivos,
-// entrenamiento) y proponiendo objetivo, MITs y afirmación.
+// Antes proponía un "objetivo del día" libre y salía cualquier cosa que no era
+// lo que el usuario quería hacer. Ahora solo elige entre tareas que YA existen,
+// empujando las que están atadas a un objetivo activo, y si el usuario ya
+// escribió su foco, lo respeta.
 // ============================================================
 
 export interface MorningPlanSuggestion {
     daily_objective: string
     reasoning: string
-    affirmation: string
-    /** IDs de tareas ya existentes que el coach eligió como MITs. */
+    /** IDs de tareas ya existentes, en orden: la primera es el foco #1. */
     mit_task_ids: string[]
-    mits: { task_id: string | null; title: string; reason: string }[]
+    mits: { task_id: string; title: string; reason: string }[]
     /** Lo que ve que se está yendo de control, si es que ve algo. */
     warning: string | null
 }
 
-export async function suggestMorningPlan(dateStr: string): Promise<ActionResult<MorningPlanSuggestion>> {
-    return runAction('suggestMorningPlan', () => buildMorningPlan(dateStr))
+export async function suggestMorningPlan(dateStr: string, userFocus?: string): Promise<ActionResult<MorningPlanSuggestion>> {
+    return runAction('suggestMorningPlan', () => buildMorningPlan(dateStr, userFocus))
 }
 
-async function buildMorningPlan(dateStr: string): Promise<MorningPlanSuggestion> {
+async function buildMorningPlan(dateStr: string, userFocus?: string): Promise<MorningPlanSuggestion> {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
 
-    const [snapshot, morningData] = await Promise.all([
-        buildBrainSnapshot(),
-        getMorningData(dateStr)
-    ])
+    const morningData = await getMorningData(dateStr)
+    const tasks = (morningData?.tasks || []).slice(0, 40)
+    if (!tasks.length) throw new Error('No tenés tareas abiertas para elegir. Cargá alguna o vaciá el Inbox primero.')
 
-    const tasks = (morningData?.tasks || []).slice(0, 30)
+    const objectives = morningData?.objectives || []
+    const objTitle = new Map(objectives.map((o: any) => [o.id, o.title]))
 
-    const taskList = tasks.length
-        ? tasks
-            .map((t: any, i: number) => {
-                const bits = [`[${i}] ${t.title}`]
-                if (t.priority) bits.push(`prioridad ${t.priority}`)
-                if (t.due_date) bits.push(`vence ${t.due_date}`)
-                if (t.category) bits.push(t.category)
-                return bits.join(' · ')
-            })
-            .join('\n')
-        : '(no tiene tareas abiertas cargadas)'
+    const objectiveList = objectives.length
+        ? objectives.map((o: any) => `- ${o.title} (${o.progress_pct || 0}%)`).join('\n')
+        : '(no tiene objetivos activos)'
+
+    const taskList = tasks
+        .map((t: any, i: number) => {
+            const bits = [`[${i}] ${t.title}`]
+            if (t.priority) bits.push(`prioridad ${t.priority}`)
+            if (t.due_date) bits.push(`vence ${String(t.due_date).slice(0, 10)}`)
+            if (t.planned_date === dateStr) bits.push('ya planificada para hoy')
+            if (t.objective_id && objTitle.has(t.objective_id)) bits.push(`objetivo: ${objTitle.get(t.objective_id)}`)
+            return bits.join(' · ')
+        })
+        .join('\n')
+
+    const habits = (morningData?.habits || []).map((h: any) => h.title).join(', ') || '(ninguno)'
+    const events = (morningData?.events || [])
+        .map((e: any) => `${e.is_all_day ? 'todo el día' : String(e.start_time || '').slice(0, 5)} ${e.title}`)
+        .join(' · ') || '(sin eventos)'
 
     const prompt = `
-<segundo_cerebro>
-${snapshot}
-</segundo_cerebro>
+Día: ${dateStr}
 
-Tareas abiertas del usuario, numeradas:
+Objetivos activos del usuario:
+${objectiveList}
+
+Hábitos de hoy: ${habits}
+Eventos de hoy: ${events}
+
+Tareas abiertas, numeradas:
 ${taskList}
 
-Sos su coach y le estás armando el arranque del día ${dateStr}. Todavía no decidió nada: decidí vos mirando sus datos reales.
+${userFocus?.trim()
+        ? `El usuario YA decidió su foco de hoy: "${userFocus.trim()}". No lo cambies. Elegí las tareas que más sirven a ESE foco.`
+        : 'El usuario todavía no escribió su foco.'}
+
+Elegí entre 1 y 3 tareas para hoy.
 
 Reglas duras:
-- El objetivo del día es UNO solo, concreto y terminable hoy. Nada de "avanzar en X".
-- Elegí entre 1 y 3 MITs. Priorizá lo vencido y lo que destraba otra cosa, no lo urgente-ruidoso.
-- Preferí tareas que YA existen (usá su número). Solo proponé una nueva si no hay ninguna que sirva, y en ese caso poné index null.
-- Si ves algo saliéndose de control (plata, tareas vencidas hace días, un hábito que se cayó, ánimo bajo sostenido), decilo en "warning". Si no ves nada, poné null.
-- La afirmación se escribe en primera persona y tiene que enganchar con lo que hoy le cuesta, no ser una frase de taza.
-- Español rioplatense con voseo. Directo, sin palmaditas.
+- SOLO podés elegir tareas de la lista, por su número. Nunca inventes una tarea nueva.
+- Orden de prioridad: lo que está vencido o ya planificado para hoy, después lo que empuja un objetivo activo, después el resto.
+- Tené en cuenta los eventos: si el día está cargado, elegí menos.
+- "daily_objective": si el usuario ya escribió su foco, devolvelo igual. Si no, una frase corta que resuma qué hace que hoy sea un buen día, basada en la tarea #1.
+- "warning": solo si ves algo concreto saliéndose de control en estos datos (muchas vencidas, un objetivo sin ninguna tarea). Si no, null.
+- Español rioplatense, directo, sin frases motivacionales.
 
 Respondé SOLO con este JSON:
 {
   "daily_objective": "...",
-  "reasoning": "una o dos frases citando datos concretos suyos",
-  "mits": [ { "index": 0, "title": "...", "reason": "..." } ],
-  "affirmation": "...",
-  "warning": "... o null"
+  "reasoning": "una frase citando datos concretos",
+  "mits": [ { "index": 0, "reason": "..." } ],
+  "warning": null
 }`.trim()
 
-    const text = await generateText(prompt, { temperature: 0.6, maxOutputTokens: 1800, json: true })
+    const text = await generateText(prompt, { temperature: 0.4, maxOutputTokens: 1200, json: true })
     const parsed = parseJSON<any>(text)
 
-    if (!parsed.daily_objective) {
-        throw new Error('La IA no devolvió ningún objetivo. Probá de nuevo en unos segundos.')
-    }
-
+    const seen = new Set<string>()
     const mits = (Array.isArray(parsed.mits) ? parsed.mits : [])
-        .slice(0, 3)
         .map((m: any) => {
             const task = typeof m?.index === 'number' ? tasks[m.index] : null
-            return {
-                task_id: task?.id || null,
-                title: task?.title || m?.title || '',
-                reason: m?.reason || ''
-            }
+            if (!task || seen.has(task.id)) return null
+            seen.add(task.id)
+            return { task_id: task.id as string, title: task.title as string, reason: m?.reason || '' }
         })
-        .filter((m: any) => m.title)
+        .filter(Boolean)
+        .slice(0, 3) as MorningPlanSuggestion['mits']
+
+    if (!mits.length) throw new Error('La IA no eligió ninguna tarea válida. Probá de nuevo o elegí a mano.')
 
     return {
-        daily_objective: String(parsed.daily_objective).trim(),
+        daily_objective: userFocus?.trim() || String(parsed.daily_objective || mits[0].title).trim(),
         reasoning: parsed.reasoning || '',
-        affirmation: parsed.affirmation || '',
-        mit_task_ids: mits.map((m: any) => m.task_id).filter(Boolean) as string[],
+        mit_task_ids: mits.map(m => m.task_id),
         mits,
         warning: parsed.warning && String(parsed.warning).toLowerCase() !== 'null' ? String(parsed.warning) : null
     }

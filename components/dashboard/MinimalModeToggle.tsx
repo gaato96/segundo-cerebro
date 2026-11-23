@@ -7,7 +7,7 @@ import { setMinimalMode } from '@/lib/actions/profile'
 import { cn } from '@/lib/utils'
 
 /**
- * Modo mínimo: lo único obligatorio del día es el compromiso y los hábitos.
+ * Modo mínimo: lo único obligatorio del día es el foco y los hábitos.
  * Todo lo demás (ritual, victoria, notas, pomodoro, stats) queda opcional.
  */
 export function MinimalModeToggle({ enabled, variant = 'chip' }: { enabled: boolean; variant?: 'chip' | 'card' }) {
@@ -35,7 +35,7 @@ export function MinimalModeToggle({ enabled, variant = 'chip' }: { enabled: bool
                 <div className="space-y-1">
                     <p className="text-sm font-semibold text-white flex items-center gap-2"><Feather className="w-4 h-4 text-teal-300" /> Modo mínimo</p>
                     <p className="text-xs text-muted-foreground leading-relaxed">
-                        El dashboard muestra solo lo obligatorio: el compromiso del día, los hábitos y las tareas de hoy, más la captura al Inbox.
+                        El dashboard muestra solo lo obligatorio: el foco del día, los hábitos y las tareas de hoy, más la captura al Inbox.
                         El ritual, la victoria del día, el pomodoro y las estadísticas quedan opcionales. Ideal para semanas cargadas o para volver después de desconectarte.
                     </p>
                 </div>

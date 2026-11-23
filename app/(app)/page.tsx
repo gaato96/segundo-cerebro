@@ -13,11 +13,11 @@ import { getRitualLog } from '@/lib/actions/morning_ritual'
 import Link from 'next/link'
 import { Sun, Moon } from 'lucide-react'
 import { QuickExpenseTrigger } from '@/components/finances/QuickExpenseButton'
-import { getLocalDateStr, getLocalMonthYearStr, getLocalDayOfWeek, formatLocalDate, addDaysToDateStr } from '@/lib/utils'
+import { getLocalDateStr, getLocalMonthYearStr, getLocalDayOfWeek, formatLocalDate } from '@/lib/utils'
 
 import { syncRecurringTasks } from '@/lib/actions/tasks'
-import { CommitmentWidget } from '@/components/commitments/CommitmentWidget'
-import { getCommitment, getCommitmentStats } from '@/lib/actions/commitments'
+import { DayFocusWidget } from '@/components/plan/DayFocusWidget'
+import { getDayPlan } from '@/lib/actions/morning_ritual'
 import { MonthForecastWidget } from '@/components/finances/MonthForecastWidget'
 import { getMonthForecast } from '@/lib/actions/forecast'
 import { getAppDay } from '@/lib/actions/day'
@@ -76,15 +76,13 @@ export default async function DashboardPage() {
 
     const todayFormatted = formatLocalDate(now)
 
-    // El compromiso vive en el día lógico: pasada la medianoche sigue siendo
+    // El foco vive en el día lógico: pasada la medianoche sigue siendo
     // el día que estás terminando, no uno nuevo.
     const appDay = await getAppDay()
 
-    const [pendingInboxRes, todayCommitment, tomorrowCommitment, commitmentStats, forecast, replanNudge, minimal] = await Promise.all([
+    const [pendingInboxRes, dayPlan, forecast, replanNudge, minimal] = await Promise.all([
         supabase.from('mental_notes').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('is_processed', false),
-        getCommitment(appDay.date).catch(() => null),
-        getCommitment(addDaysToDateStr(appDay.date, 1)).catch(() => null),
-        getCommitmentStats().catch(() => ({ done: 0, total: 0, successRate: 0, streak: 0, partial: 0, skipped: 0 })),
+        getDayPlan(appDay.date).catch(() => ({ log: null, tasks: [] as any[] })),
         getMonthForecast().catch(() => null),
         getReplanNudge(),
         getMinimalMode()
@@ -100,7 +98,7 @@ export default async function DashboardPage() {
                         {todayFormatted}
                     </h1>
                     <p className="text-muted-foreground text-sm mt-0.5">
-                        {minimal ? 'Lo mínimo de hoy: compromiso, hábitos y tareas.' : 'Tu Resumen Diario y Centro de Control'}
+                        {minimal ? 'Lo mínimo de hoy: foco, hábitos y tareas.' : 'Tu Resumen Diario y Centro de Control'}
                     </p>
                 </div>
 
@@ -112,13 +110,13 @@ export default async function DashboardPage() {
                     {!minimal && <Link
                         href="/ritual"
                         className={`px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 border shadow-lg transition-all whitespace-nowrap ${
-                            ritualLog
+                            ritualLog?.completed_at
                                 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
                                 : 'bg-amber-500/10 text-amber-300 border-amber-500/30 hover:bg-amber-500/20 animate-pulse'
                         }`}
                     >
                         <Sun className="w-4 h-4 text-amber-400 shrink-0" />
-                        <span>{ritualLog ? '✓ Ritual Completado' : 'Iniciar Ritual →'}</span>
+                        <span>{ritualLog?.completed_at ? '✓ Día planificado' : 'Planificar el día →'}</span>
                     </Link>}
 
                     <Link
@@ -146,12 +144,10 @@ export default async function DashboardPage() {
                         {todayEvents.length > 0 && <TodayEventsWidget events={todayEvents} />}
                     </div>
                     <div className="space-y-6">
-                        <CommitmentWidget
-                            today={todayCommitment}
-                            tomorrow={tomorrowCommitment}
-                            stats={commitmentStats}
+                        <DayFocusWidget
                             date={appDay.date}
-                            isAfterMidnight={appDay.isAfterMidnight}
+                            focus={dayPlan.log?.completed_at ? dayPlan.log?.daily_objective || null : null}
+                            tasks={dayPlan.log?.completed_at ? dayPlan.tasks : []}
                         />
                         <InboxCaptureWidget pending={pendingInbox} />
                     </div>
@@ -184,15 +180,13 @@ export default async function DashboardPage() {
                             <TodayEventsWidget events={todayEvents} />
                         </div>
 
-                        {/* Right: Compromiso + Pomodoro */}
+                        {/* Right: Foco + Pomodoro */}
                         <div className="space-y-6">
-                            <CommitmentWidget
-                                today={todayCommitment}
-                                tomorrow={tomorrowCommitment}
-                                stats={commitmentStats}
-                                date={appDay.date}
-                                isAfterMidnight={appDay.isAfterMidnight}
-                            />
+                            <DayFocusWidget
+                            date={appDay.date}
+                            focus={dayPlan.log?.completed_at ? dayPlan.log?.daily_objective || null : null}
+                            tasks={dayPlan.log?.completed_at ? dayPlan.tasks : []}
+                        />
                             {forecast && <MonthForecastWidget forecast={forecast} compact />}
                             <PomodoroWidget
                                 tasks={todayTasks}

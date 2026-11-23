@@ -37,14 +37,9 @@ const TOGGLES: { key: string; label: string; desc: string; timeKey?: string; def
         defaultOn: true
     },
     {
-        key: 'commitment_reminder',
-        label: 'Recordatorio del compromiso',
-        desc: 'Justo a la hora que firmaste, con la versión de 2 minutos adentro. Es el que más importa.'
-    },
-    {
         key: 'morning_briefing',
         label: 'Briefing de la mañana',
-        desc: 'Compromiso del día, tareas, hábitos pendientes y si te toca entrenar.',
+        desc: 'Foco del día, tareas, hábitos pendientes y si te toca entrenar.',
         timeKey: 'morning_time'
     },
     {
@@ -55,7 +50,7 @@ const TOGGLES: { key: string; label: string; desc: string; timeKey?: string; def
     {
         key: 'evening_ritual',
         label: 'Cierre del día',
-        desc: 'Para resolver el compromiso de hoy y firmar el de mañana.',
+        desc: 'Para ver cómo salió el foco y pasar lo pendiente a mañana.',
         timeKey: 'evening_time'
     },
     {
@@ -230,7 +225,7 @@ export function NotificationSettings({ prefs, devices, vapidPublicKey, configure
                             {hasDevices ? 'Notificaciones activas' : 'Notificaciones desactivadas'}
                         </h3>
                         <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
-                            Sin esto, el compromiso vive en una pantalla que tenés que acordarte de abrir.
+                            Sin esto, el plan del día vive en una pantalla que tenés que acordarte de abrir.
                             Con esto, te busca él a vos a la hora que firmaste.
                         </p>
                     </div>

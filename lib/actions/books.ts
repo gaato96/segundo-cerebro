@@ -74,7 +74,12 @@ async function requireUser() {
 
 function mapBook(row: any): BookItem {
     const { media, ...rest } = row
-    return { ...rest, rating: media?.rating != null ? Number(media.rating) : null }
+    return {
+        ...rest,
+        // Sin tapa propia (PDF sin portada) se usa la que se buscó estando en pendientes.
+        cover: rest.cover || media?.cover_url || null,
+        rating: media?.rating != null ? Number(media.rating) : null
+    }
 }
 
 export async function getBooks(): Promise<BookItem[]> {
@@ -84,7 +89,7 @@ export async function getBooks(): Promise<BookItem[]> {
 
     const { data, error } = await supabase
         .from('books')
-        .select('*, media:media_backlog(rating)')
+        .select('*, media:media_backlog(rating, cover_url)')
         .eq('user_id', user.id)
         .order('progress_updated_at', { ascending: false })
 
@@ -103,7 +108,7 @@ export async function getBook(id: string): Promise<BookItem | null> {
 
     const { data, error } = await supabase
         .from('books')
-        .select('*, media:media_backlog(rating)')
+        .select('*, media:media_backlog(rating, cover_url)')
         .eq('id', id)
         .eq('user_id', user.id)
         .maybeSingle()
@@ -465,6 +470,208 @@ export async function deleteBook(id: string): Promise<ActionResult<null>> {
         const { error: delError } = await supabase.from('books').delete().eq('id', id).eq('user_id', user.id)
         if (delError) throw delError
 
+        revalidatePath('/lectura')
+        revalidatePath('/media')
+        return null
+    })
+}
+
+// ============================================================
+// PENDIENTES: libros que quiero leer, sin PDF todavía
+//
+// Viven en Entretenimiento (media_backlog, tipo Book) sin un PDF vinculado.
+// Se cargan solo con el título; la tapa se busca sola en Open Library.
+// Cuando toca leerlo, se sube el PDF y queda vinculado a esa misma ficha.
+// ============================================================
+
+export interface PendingBook {
+    id: string
+    title: string
+    author_or_studio: string | null
+    status: string
+    progress: string | null
+    cover_url: string | null
+    created_at: string
+}
+
+export interface CoverResult {
+    title: string
+    author: string | null
+    year: number | null
+    cover_url: string
+}
+
+export async function getPendingBooks(): Promise<PendingBook[]> {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return []
+
+    const [{ data: media }, { data: linked }] = await Promise.all([
+        supabase
+            .from('media_backlog')
+            .select('id, title, author_or_studio, status, progress, cover_url, created_at')
+            .eq('user_id', user.id)
+            .eq('type', 'Book')
+            .in('status', ['Backlog', 'Active'])
+            .order('created_at', { ascending: false }),
+        supabase
+            .from('books')
+            .select('media_id')
+            .eq('user_id', user.id)
+            .not('media_id', 'is', null)
+    ])
+
+    const taken = new Set((linked || []).map(b => b.media_id))
+    return (media || []).filter(m => !taken.has(m.id)) as PendingBook[]
+}
+
+async function fetchJson(url: string, ms = 6000): Promise<any | null> {
+    try {
+        const res = await fetch(url, {
+            signal: AbortSignal.timeout(ms),
+            headers: { 'User-Agent': 'SegundoCerebro/1.0 (lector personal)' },
+            cache: 'no-store'
+        })
+        if (!res.ok) return null
+        return await res.json()
+    } catch {
+        return null
+    }
+}
+
+async function searchCovers(query: string, limit = 8): Promise<CoverResult[]> {
+    const q = encodeURIComponent(query.trim())
+    const ol = await fetchJson(
+        `https://openlibrary.org/search.json?q=${q}&limit=${limit * 2}&fields=title,author_name,cover_i,first_publish_year`
+    )
+    const results: CoverResult[] = (ol?.docs || [])
+        .filter((d: any) => d.cover_i)
+        .slice(0, limit)
+        .map((d: any) => ({
+            title: d.title,
+            author: d.author_name?.[0] || null,
+            year: d.first_publish_year || null,
+            cover_url: `https://covers.openlibrary.org/b/id/${d.cover_i}-L.jpg`
+        }))
+    if (results.length) return results
+
+    // Respaldo: Google Books (sin clave tiene cupo diario chico, por eso va segundo).
+    const gb = await fetchJson(
+        `https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=${limit}&fields=items(volumeInfo(title,authors,publishedDate,imageLinks))`
+    )
+    return (gb?.items || [])
+        .map((i: any) => i.volumeInfo)
+        .filter((v: any) => v?.imageLinks?.thumbnail)
+        .map((v: any) => ({
+            title: v.title,
+            author: v.authors?.[0] || null,
+            year: v.publishedDate ? parseInt(String(v.publishedDate).slice(0, 4), 10) || null : null,
+            cover_url: String(v.imageLinks.thumbnail).replace('http://', 'https://').replace('&edge=curl', '')
+        }))
+}
+
+/** Busca un libro por título (y autor) y devuelve opciones con tapa. */
+export async function searchBookCovers(query: string): Promise<ActionResult<CoverResult[]>> {
+    return runAction('searchBookCovers', async () => {
+        if (!query.trim()) return []
+        return searchCovers(query)
+    })
+}
+
+export async function addPendingBook(input: {
+    title: string
+    author?: string | null
+    cover_url?: string | null
+}): Promise<ActionResult<{ id: string }>> {
+    return runAction('addPendingBook', async () => {
+        const { supabase, user } = await requireUser()
+        const title = input.title.trim()
+        if (!title) throw new Error('Escribí el título.')
+
+        let cover = input.cover_url?.startsWith('https://') ? input.cover_url : null
+        let author = input.author?.trim() || null
+        // Si no eligió ninguna opción, se busca la tapa sola.
+        if (!cover) {
+            const [first] = await searchCovers(author ? `${title} ${author}` : title, 1)
+            if (first) {
+                cover = first.cover_url
+                author = author || first.author
+            }
+        }
+
+        const { data, error } = await supabase
+            .from('media_backlog')
+            .insert({
+                user_id: user.id,
+                type: 'Book',
+                status: 'Backlog',
+                title: title.slice(0, 200),
+                author_or_studio: author,
+                cover_url: cover,
+                progress: 'Pág 1',
+                notes: ''
+            })
+            .select('id')
+            .single()
+        if (error) throw error
+
+        revalidatePath('/lectura')
+        revalidatePath('/media')
+        return { id: data.id }
+    })
+}
+
+export async function setPendingBookCover(id: string, coverUrl: string): Promise<ActionResult<null>> {
+    return runAction('setPendingBookCover', async () => {
+        const { supabase, user } = await requireUser()
+        if (!coverUrl.startsWith('https://')) throw new Error('Tapa inválida.')
+        const { error } = await supabase
+            .from('media_backlog')
+            .update({ cover_url: coverUrl })
+            .eq('id', id)
+            .eq('user_id', user.id)
+        if (error) throw error
+        revalidatePath('/lectura')
+        return null
+    })
+}
+
+/** Busca tapa para los pendientes que no tienen. De a pocos, para no tardar. */
+export async function fillMissingCovers(): Promise<ActionResult<{ filled: number }>> {
+    return runAction('fillMissingCovers', async () => {
+        const { supabase, user } = await requireUser()
+        const pending = (await getPendingBooks()).filter(b => !b.cover_url).slice(0, 8)
+
+        const found = await Promise.all(pending.map(async b => {
+            const [first] = await searchCovers(b.author_or_studio ? `${b.title} ${b.author_or_studio}` : b.title, 1)
+            return first ? { id: b.id, cover: first.cover_url, author: b.author_or_studio || first.author } : null
+        }))
+
+        let filled = 0
+        for (const f of found) {
+            if (!f) continue
+            const { error } = await supabase
+                .from('media_backlog')
+                .update({ cover_url: f.cover, author_or_studio: f.author })
+                .eq('id', f.id)
+                .eq('user_id', user.id)
+            if (!error) filled++
+        }
+        if (filled) revalidatePath('/lectura')
+        return { filled }
+    })
+}
+
+export async function removePendingBook(id: string): Promise<ActionResult<null>> {
+    return runAction('removePendingBook', async () => {
+        const { supabase, user } = await requireUser()
+        const { error } = await supabase
+            .from('media_backlog')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', user.id)
+            .eq('type', 'Book')
+        if (error) throw error
         revalidatePath('/lectura')
         revalidatePath('/media')
         return null

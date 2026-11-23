@@ -1,0 +1,130 @@
+'use client'
+
+import { useState } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { Target, CheckCircle2, ArrowRight, Loader2, MoveRight, Check } from 'lucide-react'
+import { updateTaskStatus } from '@/lib/actions/tasks'
+import { carryOverToTomorrow } from '@/lib/actions/morning_ritual'
+import { cn } from '@/lib/utils'
+
+interface Props {
+    date: string
+    focus: string | null
+    tasks: { id: string; title: string; status: string }[]
+    /** "close" = cierre del día: ofrece pasar lo pendiente a mañana. */
+    mode?: 'day' | 'close'
+    /** Foco de mañana si ya quedó escrito (solo en el cierre). */
+    tomorrowFocus?: string | null
+}
+
+/** El foco del día (una línea + hasta 3 tareas), con lo que salió del plan de la mañana. */
+export function DayFocusWidget({ date, focus, tasks: initialTasks, mode = 'day', tomorrowFocus }: Props) {
+    const router = useRouter()
+    const [tasks, setTasks] = useState(initialTasks)
+    const [nextFocus, setNextFocus] = useState(tomorrowFocus || '')
+    const [moving, setMoving] = useState(false)
+    const [moved, setMoved] = useState<number | null>(null)
+
+    const done = tasks.filter(t => t.status === 'Done').length
+    const pending = tasks.length - done
+    const planned = !!focus || tasks.length > 0
+
+    async function toggle(id: string, status: string) {
+        const next = status === 'Done' ? 'Todo' : 'Done'
+        setTasks(prev => prev.map(t => (t.id === id ? { ...t, status: next } : t)))
+        await updateTaskStatus(id, next)
+    }
+
+    async function handleCarry() {
+        setMoving(true)
+        const res = await carryOverToTomorrow(date, nextFocus)
+        setMoving(false)
+        if (res.error) return alert(res.error)
+        setMoved(res.moved ?? 0)
+        router.refresh()
+    }
+
+    return (
+        <div className="glass p-5 rounded-2xl border border-amber-500/25 space-y-4">
+            <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/25">
+                        <Target className="w-4 h-4" />
+                    </div>
+                    <div>
+                        <h3 className="text-sm font-heading font-bold text-foreground leading-tight">
+                            {mode === 'close' ? '¿Cómo te fue con el foco?' : 'Foco de hoy'}
+                        </h3>
+                        <p className="text-[10px] text-muted-foreground">
+                            {planned ? `${done} de ${tasks.length} hechas` : 'Todavía no planificaste el día'}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {planned ? (
+                <>
+                    {focus && <p className="text-sm font-semibold text-foreground leading-snug">{focus}</p>}
+                    <div className="space-y-1.5">
+                        {tasks.map((t, i) => {
+                            const isDone = t.status === 'Done'
+                            return (
+                                <button
+                                    key={t.id}
+                                    onClick={() => toggle(t.id, t.status)}
+                                    className={cn(
+                                        'w-full text-left flex items-center gap-2.5 p-2.5 rounded-xl border transition-colors',
+                                        isDone ? 'bg-emerald-500/10 border-emerald-500/25' : 'bg-secondary/40 border-border/50 hover:bg-secondary/60'
+                                    )}
+                                >
+                                    <span className={cn('w-5 h-5 rounded-md border flex items-center justify-center shrink-0',
+                                        isDone ? 'bg-emerald-600 border-emerald-500 text-white' : i === 0 ? 'border-amber-400/70' : 'border-white/20')}>
+                                        {isDone && <CheckCircle2 className="w-3.5 h-3.5" />}
+                                    </span>
+                                    <span className={cn('text-xs flex-1 min-w-0 truncate', isDone ? 'line-through text-muted-foreground' : 'text-foreground')}>
+                                        {t.title}
+                                    </span>
+                                </button>
+                            )
+                        })}
+                    </div>
+                </>
+            ) : (
+                <Link
+                    href="/ritual"
+                    className="w-full py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5"
+                >
+                    Planificar el día <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+            )}
+
+            {mode === 'close' && (
+                <div className="pt-3 border-t border-border/40 space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Foco de mañana (opcional)</label>
+                    <input
+                        value={nextFocus}
+                        onChange={e => setNextFocus(e.target.value)}
+                        placeholder="Una línea. A la mañana arrancás con esto."
+                        className="w-full bg-background/60 border border-border rounded-lg px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                    />
+                    {moved !== null ? (
+                        <p className="text-[11px] text-emerald-300 flex items-center gap-1.5">
+                            <Check className="w-3.5 h-3.5" />
+                            {moved > 0 ? `${moved} ${moved === 1 ? 'tarea pasó' : 'tareas pasaron'} a mañana.` : 'Listo, mañana queda preparado.'}
+                        </p>
+                    ) : (
+                        <button
+                            onClick={handleCarry}
+                            disabled={moving || (!pending && !nextFocus.trim())}
+                            className="w-full py-2 bg-secondary hover:bg-secondary/70 border border-border rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1.5 disabled:opacity-40"
+                        >
+                            {moving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MoveRight className="w-3.5 h-3.5" />}
+                            {pending > 0 ? `Pasar ${pending} pendiente${pending === 1 ? '' : 's'} a mañana` : 'Guardar foco de mañana'}
+                        </button>
+                    )}
+                </div>
+            )}
+        </div>
+    )
+}

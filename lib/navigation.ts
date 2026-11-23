@@ -33,7 +33,7 @@ export const NAV_GROUPS: NavGroup[] = [
         label: 'Hoy',
         items: [
             { href: '/', icon: LayoutDashboard, label: 'Dashboard', short: 'Inicio' },
-            { href: '/ritual', icon: Sun, label: 'Ritual Matutino', short: 'Ritual' },
+            { href: '/ritual', icon: Sun, label: 'Planificar el día', short: 'Plan' },
             { href: '/cierre', icon: Moon, label: 'Cierre del Día', short: 'Cierre' },
             { href: '/asistente', icon: MessageCircleHeart, label: 'Copiloto' }
         ]
