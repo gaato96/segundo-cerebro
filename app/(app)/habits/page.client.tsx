@@ -266,33 +266,6 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                 <HabitClock habits={habits.filter(h => h.is_active && isHabitScheduledForDate(h, todayStr))} done={completedTodayIds} onToggle={handleToggleHabit} />
             </section>
 
-            {/* Controls Bar */}
-            <div className="glass p-4 rounded-2xl border border-hairline flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Ordenar por:</span>
-                    <select
-                        value={sortBy}
-                        onChange={(e: any) => setSortBy(e.target.value)}
-                        className="bg-black/30 border border-hairline rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-400/50"
-                    >
-                        <option value="tod">Momento del día (Mañana → Noche)</option>
-                        <option value="time_asc">Duración (Menor a Mayor)</option>
-                        <option value="time_desc">Duración (Mayor a Menor)</option>
-                    </select>
-                </div>
-
-                <button
-                    onClick={() => setShowOnlyToday(!showOnlyToday)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all ${showOnlyToday
-                        ? 'bg-indigo-600/20 border-indigo-500/40 text-indigo-300'
-                        : 'bg-white/5 border-hairline text-muted-foreground hover:text-white'
-                        }`}
-                >
-                    <Calendar className="w-3.5 h-3.5" />
-                    {showOnlyToday ? 'Mostrando hoy' : 'Solo hoy'}
-                </button>
-            </div>
-
             {/* El coach propone hábitos nuevos mirando todo el contexto */}
             <div className="glass p-5 rounded-2xl border border-hairline space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -382,8 +355,20 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                 )}
             </div>
 
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="label-caps">Todos tus hábitos</h2>
+                <div className="flex gap-2">
+                    <select aria-label="Ordenar" value={sortBy} onChange={(e: any) => setSortBy(e.target.value)} className="field text-xs">
+                        <option value="tod">Por momento del día</option>
+                        <option value="time_asc">Los más cortos primero</option>
+                        <option value="time_desc">Los más largos primero</option>
+                    </select>
+                    <button onClick={() => setShowOnlyToday(!showOnlyToday)} aria-pressed={showOnlyToday} className="btn-secondary"><Calendar className="w-4 h-4" /> {showOnlyToday ? 'Ver todos' : 'Solo hoy'}</button>
+                </div>
+            </div>
+
             {/* Habits List */}
-            <div className="space-y-3">
+            <div className="rounded-2xl border border-hairline bg-card divide-y divide-hairline overflow-hidden">
                 {sortedHabits.map((h) => {
                     const isDone = completedTodayIds.has(h.id)
                     const scheduledToday = isHabitScheduledForDate(h, todayStr)
@@ -391,15 +376,13 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                     return (
                         <div
                             key={h.id}
-                            className={`glass rounded-2xl p-4 border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${isDone ? 'bg-emerald-500/5 border-emerald-500/30' : 'border-border/50 hover:bg-secondary/40'
-                                }`}
-                            style={{ borderLeftWidth: 4, borderLeftColor: h.color_hex }}
+                            className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                         >
                             <div className="flex items-center gap-3">
                                 <button
                                     onClick={() => handleToggleHabit(h.id)}
                                     disabled={!scheduledToday}
-                                    className={`w-7 h-7 rounded-xl flex items-center justify-center border transition-all shrink-0 ${isDone
+                                    className={`w-6 h-6 rounded-full flex items-center justify-center border transition-all shrink-0 ${isDone
                                         ? 'bg-emerald-600 border-emerald-500 text-white'
                                         : scheduledToday
                                             ? 'bg-black/30 border-white/20 text-transparent hover:border-emerald-500'
@@ -409,7 +392,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                     <Check className="w-4 h-4" />
                                 </button>
                                 <div>
-                                    <h4 className={`text-base font-bold font-heading ${isDone ? 'line-through text-muted-foreground' : 'text-white'}`}>
+                                    <h4 className={`text-sm font-medium ${isDone ? 'line-through text-muted-foreground' : 'text-white'}`}>
                                         {h.title}
                                     </h4>
                                     <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -417,7 +400,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                             {getTimeOfDayIcon(h.time_of_day)}
                                             {getTimeOfDayLabel(h.time_of_day)}
                                         </span>
-                                        <span className="text-xs text-indigo-300 font-mono flex items-center gap-1">
+                                        <span className="text-xs text-muted-foreground font-mono flex items-center gap-1">
                                             <Clock className="w-3 h-3" />
                                             {h.estimated_minutes || 15} min
                                         </span>
@@ -426,7 +409,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                                 {String(h.reminder_time).slice(0, 5)}
                                             </span>
                                         )}
-                                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-600/10 border border-indigo-500/20 text-indigo-300 flex items-center gap-1 font-semibold">
+                                        <span className="text-[11px] px-2 py-0.5 rounded-full border border-hairline text-muted-foreground flex items-center gap-1 font-semibold">
                                             <RefreshCw className="w-2.5 h-2.5" />
                                             {frequencyLabel(h)}
                                         </span>
@@ -443,7 +426,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                                 <span className={`text-[11px] px-2 py-0.5 rounded-full border font-semibold ${
                                                     complete
                                                         ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400'
-                                                        : 'bg-amber-500/10 border-amber-500/25 text-amber-300'
+                                                        : 'border-hairline text-muted-foreground'
                                                 }`}>
                                                     {done}/{target} esta semana{complete ? ' · cupo cumplido' : ''}
                                                 </span>
