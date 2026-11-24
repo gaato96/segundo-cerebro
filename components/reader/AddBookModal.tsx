@@ -147,15 +147,15 @@ export function AddBookModal({ linkable, presetMediaId, onClose, onAdded }: Prop
     const busy = stage === 'reading' || stage === 'uploading'
 
     return (
-        <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4">
+        <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-black/70 p-0 sm:p-4">
             <motion.div
                 initial={{ opacity: 0, y: 24 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="w-full sm:max-w-lg bg-popover border border-white/10 rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[92dvh] overflow-y-auto"
+                className="w-full sm:max-w-lg bg-popover border border-hairline rounded-t-3xl sm:rounded-2xl shadow-2xl max-h-[92dvh] overflow-y-auto"
             >
                 <div className="flex items-center justify-between px-5 pt-5 pb-3">
                     <div>
-                        <h2 className="font-heading font-bold text-lg">{preset ? `Empezar "${preset.title}"` : 'Agregar libro'}</h2>
+                        <h2 className="font-semibold text-lg">{preset ? `Empezar "${preset.title}"` : 'Agregar libro'}</h2>
                         <p className="text-xs text-muted-foreground">Se guarda en tu cuenta y lo abrís desde cualquier dispositivo.</p>
                     </div>
                     <button
@@ -226,7 +226,7 @@ export function AddBookModal({ linkable, presetMediaId, onClose, onAdded }: Prop
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="flex gap-4">
                                 {draft.cover ? (
-                                    <img src={draft.cover} alt="" className="w-24 aspect-[2/3] object-cover rounded-xl border border-white/10 shadow-lg shrink-0" />
+                                    <img src={draft.cover} alt="" className="w-24 aspect-[2/3] object-cover rounded-xl border border-hairline shrink-0" />
                                 ) : (
                                     <div className="w-24 aspect-[2/3] rounded-xl bg-secondary flex items-center justify-center shrink-0">
                                         <BookOpen className="w-8 h-8 text-muted-foreground" />
@@ -287,7 +287,7 @@ export function AddBookModal({ linkable, presetMediaId, onClose, onAdded }: Prop
                                 <div className="space-y-1.5">
                                     <div className="h-2 rounded-full bg-secondary overflow-hidden">
                                         <div
-                                            className="h-full bg-gradient-to-r from-amber-500 to-orange-400 transition-[width] duration-200"
+                                            className="h-full bg-raised transition-[width] duration-200"
                                             style={{ width: `${Math.round(progress * 100)}%` }}
                                         />
                                     </div>

@@ -53,10 +53,10 @@ export function DayFocusWidget({ date, focus, tasks: initialTasks, mode = 'day',
                         <Target className="w-4 h-4" />
                     </div>
                     <div>
-                        <h3 className="text-sm font-heading font-bold text-foreground leading-tight">
+                        <h3 className="text-sm font-semibold text-foreground leading-tight">
                             {mode === 'close' ? '¿Cómo te fue con el foco?' : 'Foco de hoy'}
                         </h3>
-                        <p className="text-[10px] text-muted-foreground">
+                        <p className="text-[11px] text-muted-foreground">
                             {planned ? `${done} de ${tasks.length} hechas` : 'Todavía no planificaste el día'}
                         </p>
                     </div>
@@ -93,7 +93,7 @@ export function DayFocusWidget({ date, focus, tasks: initialTasks, mode = 'day',
             ) : (
                 <Link
                     href="/ritual"
-                    className="w-full py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5"
+                    className="w-full py-2.5 bg-primary text-primary-foreground hover:brightness-105 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5"
                 >
                     Planificar el día <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
@@ -101,7 +101,7 @@ export function DayFocusWidget({ date, focus, tasks: initialTasks, mode = 'day',
 
             {mode === 'close' && (
                 <div className="pt-3 border-t border-border/40 space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Foco de mañana (opcional)</label>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Foco de mañana (opcional)</label>
                     <input
                         value={nextFocus}
                         onChange={e => setNextFocus(e.target.value)}

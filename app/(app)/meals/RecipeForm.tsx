@@ -39,8 +39,8 @@ export function RecipeForm({ onClose }: { onClose: () => void }) {
     }
 
     return (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-            <div className="bg-popover border border-white/10 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl p-8 relative">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80">
+            <div className="bg-popover border border-hairline w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl p-8 relative">
                 <button
                     onClick={onClose}
                     className="absolute top-6 right-6 p-2 hover:bg-white/10 rounded-full"
@@ -48,7 +48,7 @@ export function RecipeForm({ onClose }: { onClose: () => void }) {
                     <X className="w-5 h-5" />
                 </button>
 
-                <h2 className="text-3xl font-heading font-bold mb-6">Nueva Receta</h2>
+                <h2 className="text-3xl font-semibold mb-6">Nueva Receta</h2>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="space-y-4">
@@ -57,7 +57,7 @@ export function RecipeForm({ onClose }: { onClose: () => void }) {
                             <input
                                 name="name"
                                 required
-                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-indigo-500 outline-none transition-all"
+                                className="w-full bg-white/5 border border-hairline rounded-xl px-4 py-3 focus:border-indigo-500 outline-none transition-all"
                                 placeholder="Ej: Milanesa con puré"
                             />
                         </div>
@@ -70,7 +70,7 @@ export function RecipeForm({ onClose }: { onClose: () => void }) {
                             <input
                                 name="link"
                                 type="url"
-                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-indigo-500 outline-none transition-all text-indigo-300"
+                                className="w-full bg-white/5 border border-hairline rounded-xl px-4 py-3 focus:border-indigo-500 outline-none transition-all text-indigo-300"
                                 placeholder="https://youtube.com/..."
                             />
                         </div>
@@ -78,7 +78,7 @@ export function RecipeForm({ onClose }: { onClose: () => void }) {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label className="text-xs font-bold uppercase text-muted-foreground tracking-widest block mb-2">Complejidad</label>
-                                <select name="complexity" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none" defaultValue="Medium">
+                                <select name="complexity" className="w-full bg-white/5 border border-hairline rounded-xl px-4 py-3 outline-none" defaultValue="Medium">
                                     <option value="Fast">Rápida</option>
                                     <option value="Medium">Media</option>
                                     <option value="Complex">Compleja</option>
@@ -86,11 +86,11 @@ export function RecipeForm({ onClose }: { onClose: () => void }) {
                             </div>
                             <div>
                                 <label className="text-xs font-bold uppercase text-muted-foreground tracking-widest block mb-2">Proteína Principal</label>
-                                <input name="protein_type" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none" placeholder="Ej: Pollo" />
+                                <input name="protein_type" className="w-full bg-white/5 border border-hairline rounded-xl px-4 py-3 outline-none" placeholder="Ej: Pollo" />
                             </div>
                             <div>
                                 <label className="text-xs font-bold uppercase text-muted-foreground tracking-widest block mb-2">Guarnición/es (separadas por coma)</label>
-                                <input name="carb_type" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none" placeholder="Ej: Papa, Puré, Arroz, Fideos" />
+                                <input name="carb_type" className="w-full bg-white/5 border border-hairline rounded-xl px-4 py-3 outline-none" placeholder="Ej: Papa, Puré, Arroz, Fideos" />
                             </div>
                         </div>
 
@@ -102,19 +102,19 @@ export function RecipeForm({ onClose }: { onClose: () => void }) {
                                         <input
                                             value={ing.item}
                                             onChange={(e) => updateIngredient(index, 'item', e.target.value)}
-                                            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm outline-none"
+                                            className="flex-1 bg-white/5 border border-hairline rounded-xl px-4 py-2 text-sm outline-none"
                                             placeholder="Ingrediente"
                                         />
                                         <input
                                             value={ing.amount}
                                             onChange={(e) => updateIngredient(index, 'amount', e.target.value)}
-                                            className="w-20 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm outline-none"
+                                            className="w-20 bg-white/5 border border-hairline rounded-xl px-4 py-2 text-sm outline-none"
                                             placeholder="Cant."
                                         />
                                         <input
                                             value={ing.unit}
                                             onChange={(e) => updateIngredient(index, 'unit', e.target.value)}
-                                            className="w-20 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm outline-none"
+                                            className="w-20 bg-white/5 border border-hairline rounded-xl px-4 py-2 text-sm outline-none"
                                             placeholder="Ud."
                                         />
                                         <button
@@ -141,7 +141,7 @@ export function RecipeForm({ onClose }: { onClose: () => void }) {
                             <textarea
                                 name="steps"
                                 rows={4}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none resize-none"
+                                className="w-full bg-white/5 border border-hairline rounded-xl px-4 py-3 outline-none resize-none"
                                 placeholder="Escribe los pasos aquí..."
                             ></textarea>
                         </div>
@@ -158,7 +158,7 @@ export function RecipeForm({ onClose }: { onClose: () => void }) {
                         <button
                             type="submit"
                             disabled={isSaving}
-                            className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 px-8 py-3 rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-indigo-600/20"
+                            className="bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] disabled:opacity-50 px-8 py-3 rounded-xl font-bold flex items-center gap-2 transition-all"
                         >
                             {isSaving ? 'Guardando...' : (
                                 <>

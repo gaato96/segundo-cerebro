@@ -105,7 +105,7 @@ export async function getInsights(days = 90) {
             q('habit_logs').gte('completed_at', `${from}T00:00:00-03:00`),
             q('habits').eq('is_active', true),
             q('training_logs').gte('date', from),
-            q('daily_commitments').gte('date', from),
+            q('morning_ritual_logs').gte('date', from),
             q('tasks').eq('status', 'Done').gte('updated_at', `${from}T00:00:00-03:00`),
             q('evening_ritual_logs').gte('date', from)
         ])
@@ -114,7 +114,8 @@ export async function getInsights(days = 90) {
     const habitLogs = habitLogsRes.data || []
     const habits = habitsRes.data || []
     const trainLogs = (trainLogsRes.data || []).filter((l: any) => l.completed && l.date)
-    const commitments = commitmentsRes.data || []
+    // El plan del día reemplazó al compromiso: cuenta el día con foco elegido y confirmado.
+    const commitments = (commitmentsRes.data || []).filter((r: any) => r.completed_at && (r.daily_objective || r.mit_task_ids?.length))
     const doneTasks = tasksRes.data || []
     const evenings = eveningRes.data || []
 
@@ -128,9 +129,6 @@ export async function getInsights(days = 90) {
     }
 
     const trainedDates = new Set(trainLogs.map((l: any) => l.date))
-    const commitmentDoneDates = new Set(
-        commitments.filter((c: any) => c.status === 'done' || c.status === 'partial').map((c: any) => c.date)
-    )
     const commitmentSignedDates = new Set(commitments.map((c: any) => c.date))
     const eveningDates = new Set(evenings.map((e: any) => e.date))
 
@@ -162,27 +160,25 @@ export async function getInsights(days = 90) {
         unit: '/5'
     }))
 
-    // 2. Ánimo con compromiso cumplido vs no
+    // 2. Ánimo los días planificados vs los que no
     correlations.push(buildCorrelation({
-        id: 'mood-commitment',
-        question: '¿Cómo está tu ánimo los días que cumplís el compromiso?',
-        withValues: allDates.filter(d => moodByDate.has(d) && commitmentDoneDates.has(d)).map(d => moodByDate.get(d)!),
-        withLabel: 'que lo cumplís',
-        withoutValues: allDates
-            .filter(d => moodByDate.has(d) && commitmentSignedDates.has(d) && !commitmentDoneDates.has(d))
-            .map(d => moodByDate.get(d)!),
-        withoutLabel: 'que no lo cumplís',
+        id: 'mood-planned',
+        question: '¿Cómo está tu ánimo los días que planificás?',
+        withValues: allDates.filter(d => moodByDate.has(d) && commitmentSignedDates.has(d)).map(d => moodByDate.get(d)!),
+        withLabel: 'que planificás',
+        withoutValues: allDates.filter(d => moodByDate.has(d) && !commitmentSignedDates.has(d)).map(d => moodByDate.get(d)!),
+        withoutLabel: 'sin plan',
         unit: '/5'
     }))
 
-    // 3. Tareas cerradas con compromiso firmado vs sin
+    // 3. Tareas cerradas con plan vs sin plan
     correlations.push(buildCorrelation({
-        id: 'tasks-commitment',
-        question: '¿Cerrás más tareas los días que firmaste compromiso?',
+        id: 'tasks-planned',
+        question: '¿Cerrás más tareas cuando planificás el día?',
         withValues: allDates.filter(d => commitmentSignedDates.has(d)).map(d => tasksByDate.get(d) || 0),
-        withLabel: 'con compromiso firmado',
+        withLabel: 'con plan',
         withoutValues: allDates.filter(d => !commitmentSignedDates.has(d)).map(d => tasksByDate.get(d) || 0),
-        withoutLabel: 'sin compromiso',
+        withoutLabel: 'sin plan',
         unit: ' tareas'
     }))
 
@@ -224,7 +220,7 @@ export async function getInsights(days = 90) {
             mood: avg(moods),
             training: range.filter(d => trainedDates.has(d)).length,
             habits: range.reduce((s, d) => s + (habitCountByDate.get(d) || 0), 0),
-            commitments: range.filter(d => commitmentDoneDates.has(d)).length
+            commitments: range.filter(d => commitmentSignedDates.has(d)).length
         })
     }
 
@@ -251,7 +247,7 @@ export async function interpretInsights() {
 
     const reliable = data.correlations.filter(c => c.reliable)
     if (!reliable.length) {
-        return 'Todavía no hay datos suficientes para sacar conclusiones. Necesitás unas semanas registrando ánimo, entrenamientos y compromisos. Volvé cuando tengas al menos 4 días de cada tipo.'
+        return 'Todavía no hay datos suficientes para sacar conclusiones. Necesitás unas semanas registrando ánimo, entrenamientos y días planificados. Volvé cuando tengas al menos 4 días de cada tipo.'
     }
 
     const facts = reliable.map(c =>
@@ -265,7 +261,7 @@ Estas son correlaciones reales calculadas sobre los datos del usuario (últimos 
 
 ${facts}
 
-Cobertura de datos: ánimo registrado ${data.coverage.moodDays} días, entrenamientos ${data.coverage.trainedDays}, compromisos firmados ${data.coverage.commitmentDays}, cierres de día ${data.coverage.eveningDays}.
+Cobertura de datos: ánimo registrado ${data.coverage.moodDays} días, entrenamientos ${data.coverage.trainedDays}, días planificados ${data.coverage.commitmentDays}, cierres de día ${data.coverage.eveningDays}.
 
 En máximo 120 palabras:
 1. Cuál de estas relaciones es la más accionable y por qué.

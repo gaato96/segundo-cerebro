@@ -37,7 +37,7 @@ export function EventCard({ event, onEdit, compact = false }: EventCardProps) {
                     <Icon className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
                     <span className="text-xs font-semibold text-white/90 truncate">{event.title}</span>
                 </div>
-                <span className="text-[10px] font-mono text-muted-foreground shrink-0 ml-2">
+                <span className="text-[11px] font-mono text-muted-foreground shrink-0 ml-2">
                     {event.is_all_day ? 'Día entero' : event.start_time?.slice(0, 5)}
                 </span>
             </motion.div>
@@ -47,7 +47,7 @@ export function EventCard({ event, onEdit, compact = false }: EventCardProps) {
     return (
         <motion.div
             whileHover={{ y: -2 }}
-            className="glass rounded-2xl p-4 border border-border/50 shadow-md relative overflow-hidden group transition-all"
+            className="glass rounded-2xl p-4 border border-hairline relative overflow-hidden group transition-all"
             style={{ borderLeftWidth: 4, borderLeftColor: event.color_hex }}
         >
             <div className="flex items-start justify-between gap-2">
@@ -59,7 +59,7 @@ export function EventCard({ event, onEdit, compact = false }: EventCardProps) {
                         <Icon className="w-4 h-4" />
                     </div>
                     <div>
-                        <h4 className="font-heading font-bold text-sm text-white group-hover:text-indigo-300 transition-colors">
+                        <h4 className="font-semibold text-sm text-white group-hover:text-indigo-300 transition-colors">
                             {event.title}
                         </h4>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5 font-mono">

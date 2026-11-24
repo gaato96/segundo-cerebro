@@ -164,7 +164,7 @@ export function DailySpending({ records: initialRecords, plan, today }: Props) {
                                 'px-3 py-1.5 rounded-xl text-[11px] font-semibold border transition-all whitespace-nowrap',
                                 rangeKind === k
                                     ? 'bg-emerald-600/25 border-emerald-500/50 text-white'
-                                    : 'bg-black/20 border-white/10 text-muted-foreground hover:text-white'
+                                    : 'bg-black/20 border-hairline text-muted-foreground hover:text-white'
                             )}
                         >
                             {RANGE_LABELS[k]}
@@ -175,8 +175,8 @@ export function DailySpending({ records: initialRecords, plan, today }: Props) {
             </div>
 
             {noData && (
-                <div className="glass rounded-2xl p-5 border border-emerald-500/25 bg-gradient-to-br from-emerald-950/20 to-transparent space-y-2">
-                    <h3 className="font-heading font-bold text-white text-sm flex items-center gap-2">
+                <div className="glass rounded-2xl p-5 border border-hairline space-y-2">
+                    <h3 className="font-semibold text-white text-sm flex items-center gap-2">
                         <Lightbulb className="w-4 h-4 text-emerald-400" /> Cómo arrancar
                     </h3>
                     <ul className="text-xs text-muted-foreground space-y-1 leading-relaxed list-disc pl-4">
@@ -206,8 +206,8 @@ export function DailySpending({ records: initialRecords, plan, today }: Props) {
                     value={formatCurrency(summary.medianDay)}
                     sub={`${summary.noSpendDays} de ${summary.days} días sin gastar`}
                 />
-                <div className="glass p-4 rounded-2xl border border-border/50">
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Hoy / tope diario</p>
+                <div className="glass p-4 rounded-2xl border border-hairline">
+                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Hoy / tope diario</p>
                     <p className={cn('text-xl font-bold font-heading', target && todayTotal > target ? 'text-red-400' : 'text-white')}>
                         {formatCurrency(todayTotal)}
                     </p>
@@ -228,12 +228,12 @@ export function DailySpending({ records: initialRecords, plan, today }: Props) {
                             <button className="p-1 text-emerald-400"><Check className="w-3.5 h-3.5" /></button>
                         </form>
                     ) : (
-                        <button onClick={() => setEditingTarget(true)} className="text-[10px] text-indigo-300 hover:text-indigo-200 mt-1 font-semibold flex items-center gap-1">
+                        <button onClick={() => setEditingTarget(true)} className="text-[11px] text-indigo-300 hover:text-indigo-200 mt-1 font-semibold flex items-center gap-1">
                             <Target className="w-3 h-3" />
                             {target ? `Tope ${formatCurrency(target)} · cambiar` : 'Poner un tope diario'}
                         </button>
                     )}
-                    {targetMsg && <p className="text-[10px] text-muted-foreground mt-1">{targetMsg}</p>}
+                    {targetMsg && <p className="text-[11px] text-muted-foreground mt-1">{targetMsg}</p>}
                 </div>
             </div>
 
@@ -246,11 +246,11 @@ export function DailySpending({ records: initialRecords, plan, today }: Props) {
             )}
 
             {/* Gasto por día */}
-            <div className="glass rounded-3xl p-5 border border-border/50 space-y-3">
+            <div className="glass rounded-2xl p-5 border border-hairline space-y-3">
                 <div className="flex items-center justify-between gap-2">
-                    <h3 className="font-heading font-bold text-sm text-white">Gasto por día</h3>
-                    <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-                        <span className="flex items-center gap-1"><span className="w-3 border-t-2 border-dashed border-white/50" /> promedio</span>
+                    <h3 className="font-semibold text-sm text-white">Gasto por día</h3>
+                    <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                        <span className="flex items-center gap-1"><span className="w-3 border-t-2 border-dashed border-hairline0" /> promedio</span>
                         {target ? <span className="flex items-center gap-1"><span className="w-3 border-t-2 border-amber-400" /> tope</span> : null}
                     </div>
                 </div>
@@ -292,7 +292,7 @@ export function DailySpending({ records: initialRecords, plan, today }: Props) {
                         })}
                     </div>
                 </div>
-                <div className="flex justify-between text-[10px] text-muted-foreground">
+                <div className="flex justify-between text-[11px] text-muted-foreground">
                     <span>{shortDate(range.from)}</span>
                     {hoverDay ? (() => {
                         const p = summary.series.find(s => s.date === hoverDay)
@@ -308,8 +308,8 @@ export function DailySpending({ records: initialRecords, plan, today }: Props) {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 {/* Por categoría */}
-                <div className="glass rounded-3xl p-5 border border-border/50 space-y-3">
-                    <h3 className="font-heading font-bold text-sm text-white">En qué se te va la plata</h3>
+                <div className="glass rounded-2xl p-5 border border-hairline space-y-3">
+                    <h3 className="font-semibold text-sm text-white">En qué se te va la plata</h3>
                     {summary.byCategory.length === 0 ? (
                         <p className="text-xs text-muted-foreground italic py-4 text-center">Sin gastos en este período.</p>
                     ) : (
@@ -323,12 +323,12 @@ export function DailySpending({ records: initialRecords, plan, today }: Props) {
                                             <span className="text-white truncate">{cat.emoji} {c.category}</span>
                                             <span className="flex items-center gap-2 shrink-0">
                                                 {hasPrev && summary.days >= 14 && d && d.previous > 0 && Math.abs(d.deltaMonthly) >= 1 && (
-                                                    <span className={cn('text-[10px] font-semibold', d.deltaMonthly > 0 ? 'text-red-400' : 'text-emerald-400')}>
+                                                    <span className={cn('text-[11px] font-semibold', d.deltaMonthly > 0 ? 'text-red-400' : 'text-emerald-400')}>
                                                         {d.deltaMonthly > 0 ? '▲' : '▼'} {formatCurrency(Math.abs(d.deltaMonthly))}/mes
                                                     </span>
                                                 )}
                                                 <span className="font-mono font-bold text-white">{formatCurrency(c.total)}</span>
-                                                <span className="text-[10px] text-muted-foreground w-8 text-right">{c.pct.toFixed(0)}%</span>
+                                                <span className="text-[11px] text-muted-foreground w-8 text-right">{c.pct.toFixed(0)}%</span>
                                             </span>
                                         </div>
                                         <div className="h-2 bg-black/30 rounded-full overflow-hidden">
@@ -342,9 +342,9 @@ export function DailySpending({ records: initialRecords, plan, today }: Props) {
                 </div>
 
                 {/* Necesario / gusto / impulso + medios de pago */}
-                <div className="glass rounded-3xl p-5 border border-border/50 space-y-4">
+                <div className="glass rounded-2xl p-5 border border-hairline space-y-4">
                     <div className="space-y-2">
-                        <h3 className="font-heading font-bold text-sm text-white">¿Era necesario?</h3>
+                        <h3 className="font-semibold text-sm text-white">¿Era necesario?</h3>
                         {necTotal > 0 ? (
                             <>
                                 <div className="flex h-3 rounded-full overflow-hidden gap-[2px] bg-black/30">
@@ -384,8 +384,8 @@ export function DailySpending({ records: initialRecords, plan, today }: Props) {
                         )}
                     </div>
 
-                    <div className="space-y-2 border-t border-white/5 pt-3">
-                        <h3 className="font-heading font-bold text-sm text-white">Cómo pagás</h3>
+                    <div className="space-y-2 border-t border-hairline pt-3">
+                        <h3 className="font-semibold text-sm text-white">Cómo pagás</h3>
                         {summary.byMethod.length === 0 ? (
                             <p className="text-xs text-muted-foreground italic">Sin datos todavía.</p>
                         ) : summary.byMethod.map(m => {
@@ -409,9 +409,9 @@ export function DailySpending({ records: initialRecords, plan, today }: Props) {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 {/* Hormiga */}
-                <div className="glass rounded-3xl p-5 border border-border/50 space-y-3">
+                <div className="glass rounded-2xl p-5 border border-hairline space-y-3">
                     <div>
-                        <h3 className="font-heading font-bold text-sm text-white flex items-center gap-2"><Bug className="w-4 h-4 text-amber-400" /> Gastos hormiga</h3>
+                        <h3 className="font-semibold text-sm text-white flex items-center gap-2"><Bug className="w-4 h-4 text-amber-400" /> Gastos hormiga</h3>
                         <p className="text-[11px] text-muted-foreground mt-0.5">Chiquitos y repetidos (3 o más veces, ticket ≤ {formatCurrency(Math.max(summary.typicalTicket * 1.5, 0))}).</p>
                     </div>
                     {summary.hormiga.length === 0 ? (
@@ -419,14 +419,14 @@ export function DailySpending({ records: initialRecords, plan, today }: Props) {
                     ) : (
                         <div className="space-y-2">
                             {summary.hormiga.map(h => (
-                                <div key={`${h.label}-${h.category}`} className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-black/20 border border-white/5 text-xs">
+                                <div key={`${h.label}-${h.category}`} className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-black/20 border border-hairline text-xs">
                                     <div className="min-w-0">
                                         <p className="text-white font-semibold truncate">{getCategory(h.category).emoji} {h.label}</p>
-                                        <p className="text-[10px] text-muted-foreground">{h.count} veces · {formatCurrency(h.avgTicket)} promedio</p>
+                                        <p className="text-[11px] text-muted-foreground">{h.count} veces · {formatCurrency(h.avgTicket)} promedio</p>
                                     </div>
                                     <div className="text-right shrink-0">
                                         <p className="font-mono font-bold text-amber-300">{formatCurrency(h.monthly)}/mes</p>
-                                        <p className="text-[10px] text-muted-foreground">{formatCurrency(h.yearly)}/año</p>
+                                        <p className="text-[11px] text-muted-foreground">{formatCurrency(h.yearly)}/año</p>
                                     </div>
                                 </div>
                             ))}
@@ -435,9 +435,9 @@ export function DailySpending({ records: initialRecords, plan, today }: Props) {
                 </div>
 
                 {/* Día de la semana */}
-                <div className="glass rounded-3xl p-5 border border-border/50 space-y-3">
+                <div className="glass rounded-2xl p-5 border border-hairline space-y-3">
                     <div>
-                        <h3 className="font-heading font-bold text-sm text-white flex items-center gap-2"><CalendarDays className="w-4 h-4 text-indigo-400" /> Qué día gastás más</h3>
+                        <h3 className="font-semibold text-sm text-white flex items-center gap-2"><CalendarDays className="w-4 h-4 text-indigo-400" /> Qué día gastás más</h3>
                         {worstWeekday && worstWeekday.avg > 0 && (
                             <p className="text-[11px] text-muted-foreground mt-0.5">
                                 Los {WEEKDAY_FULL[worstWeekday.weekday]} gastás en promedio {formatCurrency(worstWeekday.avg)}
@@ -452,13 +452,13 @@ export function DailySpending({ records: initialRecords, plan, today }: Props) {
                                     className={cn('w-full rounded-t-[4px]', w.weekday === worstWeekday?.weekday && w.avg > 0 ? 'bg-indigo-400' : 'bg-indigo-500/50')}
                                     style={{ height: `${Math.max((w.avg / maxWeekday) * 100, w.avg > 0 ? 3 : 0)}%` }}
                                 />
-                                <span className="text-[10px] text-muted-foreground">{w.label}</span>
+                                <span className="text-[11px] text-muted-foreground">{w.label}</span>
                             </div>
                         ))}
                     </div>
                     {summary.expensiveDays.length > 0 && (
-                        <div className="border-t border-white/5 pt-2 space-y-1">
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Días caros</p>
+                        <div className="border-t border-hairline pt-2 space-y-1">
+                            <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Días caros</p>
                             {summary.expensiveDays.map(d => (
                                 <p key={d.date} className="text-[11px] text-muted-foreground">
                                     <span className="text-white capitalize">{dayLabel(d.date, today)}</span>: {formatCurrency(d.total)}{d.topItem ? ` · sobre todo ${d.topItem}` : ''}
@@ -470,10 +470,10 @@ export function DailySpending({ records: initialRecords, plan, today }: Props) {
             </div>
 
             {/* Analista IA */}
-            <div className="glass rounded-3xl p-5 border border-violet-500/25 bg-gradient-to-br from-violet-950/20 to-transparent space-y-4">
+            <div className="glass rounded-2xl p-5 border border-hairline space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                        <h3 className="font-heading font-bold text-base text-white flex items-center gap-2">
+                        <h3 className="font-semibold text-base text-white flex items-center gap-2">
                             <Sparkles className="w-4 h-4 text-violet-400" /> Dónde recortar
                         </h3>
                         <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -484,7 +484,7 @@ export function DailySpending({ records: initialRecords, plan, today }: Props) {
                     <button
                         onClick={handleAnalyze}
                         disabled={analyzing}
-                        className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-violet-600/20 disabled:opacity-60 self-start"
+                        className="px-4 py-2 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 disabled:opacity-60 self-start"
                     >
                         {analyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                         {analysis ? 'Volver a analizar' : 'Analizar mis gastos'}
@@ -506,18 +506,18 @@ export function DailySpending({ records: initialRecords, plan, today }: Props) {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/25">
-                                <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">Ahorro posible</p>
+                                <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-300">Ahorro posible</p>
                                 <p className="text-xl font-bold text-white font-heading">{formatCurrency(analysis.total_potential_saving)}<span className="text-xs text-muted-foreground font-normal">/mes</span></p>
-                                <p className="text-[10px] text-muted-foreground">{formatCurrency(analysis.total_potential_saving * 12)} al año</p>
+                                <p className="text-[11px] text-muted-foreground">{formatCurrency(analysis.total_potential_saving * 12)} al año</p>
                             </div>
                             {analysis.daily_target > 0 && (
                                 <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/25">
-                                    <p className="text-[10px] font-bold uppercase tracking-wider text-amber-300">Tope diario sugerido</p>
+                                    <p className="text-[11px] font-bold uppercase tracking-wider text-amber-300">Tope diario sugerido</p>
                                     <p className="text-xl font-bold text-white font-heading">{formatCurrency(analysis.daily_target)}</p>
                                     {target === analysis.daily_target ? (
-                                        <p className="text-[10px] text-emerald-300 font-semibold">✓ Es tu tope actual</p>
+                                        <p className="text-[11px] text-emerald-300 font-semibold">✓ Es tu tope actual</p>
                                     ) : (
-                                        <button onClick={() => saveTarget(analysis.daily_target)} className="text-[10px] text-amber-200 hover:text-white font-semibold">
+                                        <button onClick={() => saveTarget(analysis.daily_target)} className="text-[11px] text-amber-200 hover:text-white font-semibold">
                                             Usarlo como mi tope →
                                         </button>
                                     )}
@@ -526,10 +526,10 @@ export function DailySpending({ records: initialRecords, plan, today }: Props) {
                         </div>
 
                         {analysis.quick_win && (
-                            <div className="p-3 rounded-2xl bg-white/5 border border-white/10 flex gap-2">
+                            <div className="p-3 rounded-2xl bg-white/5 border border-hairline flex gap-2">
                                 <Zap className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                                 <div>
-                                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Esta semana</p>
+                                    <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Esta semana</p>
                                     <p className="text-xs text-white">{analysis.quick_win}</p>
                                 </div>
                             </div>
@@ -537,16 +537,16 @@ export function DailySpending({ records: initialRecords, plan, today }: Props) {
 
                         {analysis.leaks.length > 0 && (
                             <div className="space-y-2">
-                                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Fugas</p>
+                                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Fugas</p>
                                 {analysis.leaks.map((l, i) => (
-                                    <div key={i} className="p-3 rounded-2xl bg-black/20 border border-white/5 space-y-1">
+                                    <div key={i} className="p-3 rounded-2xl bg-black/20 border border-hairline space-y-1">
                                         <div className="flex items-start justify-between gap-2">
                                             <p className="text-xs font-bold text-white">{getCategory(l.category).emoji} {l.title}</p>
-                                            <span className="text-[10px] font-mono text-red-300 shrink-0">{formatCurrency(l.monthly_amount)}/mes</span>
+                                            <span className="text-[11px] font-mono text-red-300 shrink-0">{formatCurrency(l.monthly_amount)}/mes</span>
                                         </div>
                                         <p className="text-[11px] text-muted-foreground">{l.why}</p>
                                         <p className="text-[11px] text-white flex gap-1"><ArrowRight className="w-3 h-3 shrink-0 mt-0.5 text-emerald-400" />{l.action}</p>
-                                        {l.monthly_saving > 0 && <p className="text-[10px] text-emerald-300 font-semibold">Ahorro: ~{formatCurrency(l.monthly_saving)}/mes</p>}
+                                        {l.monthly_saving > 0 && <p className="text-[11px] text-emerald-300 font-semibold">Ahorro: ~{formatCurrency(l.monthly_saving)}/mes</p>}
                                     </div>
                                 ))}
                             </div>
@@ -554,14 +554,14 @@ export function DailySpending({ records: initialRecords, plan, today }: Props) {
 
                         {analysis.swaps.length > 0 && (
                             <div className="space-y-2">
-                                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Reemplazos</p>
+                                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Reemplazos</p>
                                 {analysis.swaps.map((s, i) => (
-                                    <div key={i} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 p-2.5 rounded-xl bg-black/20 border border-white/5 text-[11px]">
+                                    <div key={i} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 p-2.5 rounded-xl bg-black/20 border border-hairline text-[11px]">
                                         <span className="text-red-300/90 line-through decoration-red-400/50 sm:flex-1">{s.from}</span>
                                         <Repeat className="w-3 h-3 text-muted-foreground hidden sm:block shrink-0" />
                                         <span className="text-white sm:flex-1">{s.to}</span>
                                         <span className="text-emerald-300 font-mono shrink-0">+{formatCurrency(s.monthly_saving)}/mes</span>
-                                        <span className="text-[9px] uppercase tracking-wider text-muted-foreground shrink-0">esfuerzo {s.effort}</span>
+                                        <span className="text-[11px] uppercase tracking-wider text-muted-foreground shrink-0">esfuerzo {s.effort}</span>
                                     </div>
                                 ))}
                             </div>
@@ -569,7 +569,7 @@ export function DailySpending({ records: initialRecords, plan, today }: Props) {
 
                         {analysis.rules.length > 0 && (
                             <div className="space-y-1.5">
-                                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Tus reglas</p>
+                                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Tus reglas</p>
                                 {analysis.rules.map((r, i) => (
                                     <p key={i} className="text-xs text-white flex gap-1.5"><Check className="w-3.5 h-3.5 text-violet-400 shrink-0 mt-0.5" />{r}</p>
                                 ))}
@@ -580,10 +580,10 @@ export function DailySpending({ records: initialRecords, plan, today }: Props) {
             </div>
 
             {/* Lista de gastos por día */}
-            <div className="glass rounded-3xl p-5 border border-border/50 space-y-3">
+            <div className="glass rounded-2xl p-5 border border-hairline space-y-3">
                 <div className="flex items-center justify-between">
-                    <h3 className="font-heading font-bold text-sm text-white">Registro ({rangeItems.length})</h3>
-                    <span className="text-[10px] text-muted-foreground">{RANGE_LABELS[rangeKind]}</span>
+                    <h3 className="font-semibold text-sm text-white">Registro ({rangeItems.length})</h3>
+                    <span className="text-[11px] text-muted-foreground">{RANGE_LABELS[rangeKind]}</span>
                 </div>
                 {groupedItems.length === 0 ? (
                     <p className="text-xs text-muted-foreground italic text-center py-4">Sin gastos en este período.</p>
@@ -607,7 +607,7 @@ export function DailySpending({ records: initialRecords, plan, today }: Props) {
                                                 <span className="text-base shrink-0">{cat.emoji}</span>
                                                 <div className="min-w-0">
                                                     <p className="text-white truncate">{r.description || r.category}</p>
-                                                    <p className="text-[10px] text-muted-foreground truncate">
+                                                    <p className="text-[11px] text-muted-foreground truncate">
                                                         {r.category}
                                                         {pm && ` · ${pm.label}`}
                                                         {nec && ` · ${nec.emoji} ${nec.label}`}
@@ -641,11 +641,11 @@ export function DailySpending({ records: initialRecords, plan, today }: Props) {
 
 function Kpi({ label, value, sub, tone }: { label: string; value: string; sub: string; tone?: 'good' | 'bad' }) {
     return (
-        <div className="glass p-4 rounded-2xl border border-border/50">
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">{label}</p>
+        <div className="glass p-4 rounded-2xl border border-hairline">
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">{label}</p>
             <p className="text-xl font-bold font-heading text-white">{value}</p>
             <p className={cn(
-                'text-[10px] mt-0.5 flex items-center gap-1',
+                'text-[11px] mt-0.5 flex items-center gap-1',
                 tone === 'bad' ? 'text-red-400' : tone === 'good' ? 'text-emerald-400' : 'text-muted-foreground'
             )}>
                 {tone === 'bad' && <TrendingUp className="w-3 h-3" />}

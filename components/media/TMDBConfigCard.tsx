@@ -20,9 +20,9 @@ export function TMDBConfigCard() {
     }
 
     return (
-        <div className="glass p-5 rounded-2xl border border-border/50 bg-secondary/10 flex flex-col md:flex-row md:items-center justify-between gap-4 max-w-3xl">
+        <div className="glass p-5 rounded-2xl border border-hairline bg-secondary/10 flex flex-col md:flex-row md:items-center justify-between gap-4 max-w-3xl">
             <div className="space-y-1">
-                <h3 className="font-heading font-bold text-sm text-white flex items-center gap-1.5">
+                <h3 className="font-semibold text-sm text-white flex items-center gap-1.5">
                     <Key className="w-4 h-4 text-indigo-400" />
                     API Key de TMDB (The Movie Database)
                 </h3>
@@ -47,7 +47,7 @@ export function TMDBConfigCard() {
                         value={apiKey}
                         onChange={(e) => setApiKey(e.target.value)}
                         placeholder="Ingresa tu API Key de TMDB..."
-                        className="w-full md:w-[260px] bg-background border border-border rounded-xl pl-3 pr-10 py-2 text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+                        className="w-full md:w-[260px] bg-background border border-border rounded-xl pl-3 pr-10 py-2 text-xs focus:ring-2 focus:ring-amber-400/50 outline-none"
                     />
                     <button
                         type="button"
@@ -59,7 +59,7 @@ export function TMDBConfigCard() {
                 </div>
                 <button
                     onClick={handleSave}
-                    className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 shadow shadow-indigo-600/20 shrink-0"
+                    className="bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 shadow shrink-0"
                 >
                     {saved ? (
                         <>

@@ -245,7 +245,7 @@ export function ChallengeCard({
     return (
         <motion.div
             layout
-            className={`glass rounded-3xl border transition-all overflow-hidden ${
+            className={`glass rounded-2xl border transition-all overflow-hidden ${
                 status === 'Completed'
                     ? 'border-emerald-500/30 bg-emerald-950/10'
                     : status === 'Abandoned'
@@ -254,7 +254,7 @@ export function ChallengeCard({
             }`}
         >
             {/* Header */}
-            <div className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 bg-gradient-to-r from-black/40 via-transparent to-black/20">
+            <div className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-hairline">
                 <div className="flex items-start gap-4">
                     <div className={`p-3.5 rounded-2xl border text-xl font-bold flex items-center justify-center shrink-0 ${
                         challenge.game === 'FM24'
@@ -266,14 +266,14 @@ export function ChallengeCard({
 
                     <div className="space-y-1">
                         <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-heading font-black text-xl text-white">{challenge.team_name}</span>
+                            <span className="font-heading font-semibold text-xl text-white">{challenge.team_name}</span>
                             {challenge.league && (
                                 <span className="text-[11px] bg-secondary/80 px-2.5 py-0.5 rounded-full text-muted-foreground border border-border">
                                     {challenge.league} {challenge.country ? `(${challenge.country})` : ''}
                                 </span>
                             )}
                             {challenge.challenge_type && (
-                                <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2.5 py-0.5 rounded-full border border-emerald-500/20 font-bold uppercase tracking-wider">
+                                <span className="text-[11px] bg-emerald-500/10 text-emerald-400 px-2.5 py-0.5 rounded-full border border-emerald-500/20 font-bold uppercase tracking-wider">
                                     {challenge.challenge_type}
                                 </span>
                             )}
@@ -313,7 +313,7 @@ export function ChallengeCard({
             </div>
 
             {challenge.description && (
-                <div className="px-5 pt-3 text-xs text-muted-foreground leading-relaxed border-b border-white/5 pb-3 bg-black/10">
+                <div className="px-5 pt-3 text-xs text-muted-foreground leading-relaxed border-b border-hairline pb-3 bg-black/10">
                     {challenge.description}
                 </div>
             )}
@@ -349,7 +349,7 @@ export function ChallengeCard({
                     </div>
                 </div>
 
-                <div className="w-full bg-secondary/50 h-2.5 rounded-full overflow-hidden flex border border-white/5">
+                <div className="w-full bg-secondary/50 h-2.5 rounded-full overflow-hidden flex border border-hairline">
                     <div className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full transition-all duration-500" style={{ width: `${progressPct}%` }} />
                     {failedCount > 0 && (
                         <div className="bg-red-500/70 h-full transition-all duration-500" style={{ width: `${Math.round((failedCount / totalCount) * 100)}%` }} />
@@ -364,7 +364,7 @@ export function ChallengeCard({
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="p-5 border-t border-white/5 space-y-5"
+                        className="p-5 border-t border-hairline space-y-5"
                     >
                         <div className="flex items-center justify-between">
                             <h5 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
@@ -389,7 +389,7 @@ export function ChallengeCard({
                                     placeholder="Ej: Lograr el ascenso a Primera División"
                                     value={newObjText}
                                     onChange={(e) => setNewObjText(e.target.value)}
-                                    className="w-full bg-secondary border border-border rounded-xl px-3 py-2 text-xs outline-none focus:ring-1 focus:ring-emerald-500 text-white"
+                                    className="w-full bg-secondary border border-border rounded-xl px-3 py-2 text-xs outline-none focus:ring-1 focus:ring-amber-400/50 text-white"
                                 />
                                 <div className="flex flex-wrap items-center gap-2">
                                     <select value={newObjCategory} onChange={(e) => setNewObjCategory(e.target.value as any)}
@@ -415,7 +415,7 @@ export function ChallengeCard({
                                     <div className="flex gap-2 ml-auto">
                                         <button type="button" onClick={() => setIsAddingObj(false)} className="px-3 py-1.5 text-xs text-muted-foreground hover:text-white">Cancelar</button>
                                         <button type="submit" disabled={isSavingObjs}
-                                            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow transition-all">
+                                            className="bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow transition-all">
                                             {isSavingObjs ? 'Guardando...' : 'Guardar'}
                                         </button>
                                     </div>
@@ -433,12 +433,12 @@ export function ChallengeCard({
                             return (
                                 <div key={seasonNum} className={`rounded-2xl border p-4 space-y-3 ${SEASON_COLORS[colorIdx]}`}>
                                     {/* Season header */}
-                                    <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                                    <div className="flex items-center justify-between pb-2 border-b border-hairline">
                                         <div className={`flex items-center gap-2 text-xs font-bold uppercase tracking-wider ${SEASON_TEXT[colorIdx]}`}>
                                             <CalendarDays className="w-4 h-4" />
                                             🗓️ Temporada {seasonNum}
                                         </div>
-                                        <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-black/40 ${SEASON_TEXT[colorIdx]}`}>
+                                        <span className={`text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-black/40 ${SEASON_TEXT[colorIdx]}`}>
                                             {completedInSeason} / {seasonObjs.length} Completados
                                         </span>
                                     </div>
@@ -459,7 +459,7 @@ export function ChallengeCard({
                                                             ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200'
                                                             : obj.status === 'failed'
                                                             ? 'bg-red-500/10 border-red-500/30 text-red-300 opacity-80'
-                                                            : 'bg-black/30 hover:bg-black/40 border-white/5 text-white'
+                                                            : 'bg-black/30 hover:bg-black/40 border-hairline text-white'
                                                     }`}
                                                 >
                                                     {/* Status toggle button */}
@@ -485,7 +485,7 @@ export function ChallengeCard({
                                                                 />
                                                                 <div className="flex flex-wrap items-center gap-2">
                                                                     <select value={editingCategory} onChange={(e) => setEditingCategory(e.target.value as any)}
-                                                                        className="bg-black/60 border border-white/10 rounded-lg px-2 py-1 text-[11px] text-white">
+                                                                        className="bg-black/60 border border-hairline rounded-lg px-2 py-1 text-[11px] text-white">
                                                                         <option value="trophy">🏆 Trofeo</option>
                                                                         <option value="transfer">🎯 Fichajes</option>
                                                                         <option value="academy">🎖 Cantera</option>
@@ -498,13 +498,13 @@ export function ChallengeCard({
                                                                         <span className="text-[11px] text-muted-foreground">Temporada:</span>
                                                                         <input type="number" min={1} max={30} value={editingSeason}
                                                                             onChange={(e) => setEditingSeason(Number(e.target.value))}
-                                                                            className="w-12 bg-black/60 border border-white/10 rounded-lg px-2 py-0.5 text-[11px] text-white text-center" />
+                                                                            className="w-12 bg-black/60 border border-hairline rounded-lg px-2 py-0.5 text-[11px] text-white text-center" />
                                                                     </div>
 
                                                                     <div className="flex gap-1 ml-auto">
                                                                         <button type="button" onClick={() => setEditingObjId(null)} className="text-[11px] text-muted-foreground hover:text-white px-2 py-1">Cancelar</button>
                                                                         <button onClick={() => handleSaveEditedObjective(obj.id)} disabled={isSavingObjs}
-                                                                            className="text-[11px] bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2.5 py-1 rounded-lg">
+                                                                            className="text-[11px] bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white font-bold px-2.5 py-1 rounded-lg">
                                                                             Guardar
                                                                         </button>
                                                                     </div>
@@ -517,7 +517,7 @@ export function ChallengeCard({
                                                                 </p>
                                                                 <div className="flex items-center justify-between gap-2 flex-wrap">
                                                                     <div className="flex items-center gap-2 flex-wrap">
-                                                                        <span className={`inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-md border font-semibold ${catInfo.color}`}>
+                                                                        <span className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md border font-semibold ${catInfo.color}`}>
                                                                             <CatIcon className="w-3 h-3" />
                                                                             {catInfo.label}
                                                                         </span>
@@ -526,7 +526,7 @@ export function ChallengeCard({
                                                                         <select
                                                                             value={obj.season || 1}
                                                                             onChange={(e) => handleChangeObjectiveSeason(obj.id, Number(e.target.value))}
-                                                                            className="text-[9px] bg-black/40 text-muted-foreground border border-white/10 rounded px-1.5 py-0.5 font-mono cursor-pointer hover:text-white outline-none"
+                                                                            className="text-[11px] bg-black/40 text-muted-foreground border border-hairline rounded px-1.5 py-0.5 font-mono cursor-pointer hover:text-white outline-none"
                                                                             title="Cambiar temporada asignada"
                                                                         >
                                                                             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 26].map(s => (
@@ -534,7 +534,7 @@ export function ChallengeCard({
                                                                             ))}
                                                                         </select>
 
-                                                                        <span className="text-[10px] text-muted-foreground font-mono">
+                                                                        <span className="text-[11px] text-muted-foreground font-mono">
                                                                             {obj.status === 'completed' ? '✓ Cumplido' : obj.status === 'failed' ? '✗ Perdido' : '⏳ Pendiente'}
                                                                         </span>
                                                                     </div>

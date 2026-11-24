@@ -118,9 +118,9 @@ export function MatchTracker({ matches }: Props) {
     return (
         <div className="space-y-5">
             {/* Cabecera */}
-            <div className="glass p-4 rounded-2xl border border-sky-500/20 bg-gradient-to-r from-sky-950/20 to-secondary/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="glass p-4 rounded-2xl border border-hairline flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                    <h3 className="text-base font-heading font-bold text-foreground flex items-center gap-2">
+                    <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
                         <Trophy className="w-4 h-4 text-sky-400" /> Mis partidos
                     </h3>
                     <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -130,7 +130,7 @@ export function MatchTracker({ matches }: Props) {
                 {!form && (
                     <button
                         onClick={openNew}
-                        className="px-3.5 py-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 shrink-0"
+                        className="px-3.5 py-2 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 shrink-0"
                     >
                         <Plus className="w-4 h-4" /> Registrar partido
                     </button>
@@ -139,7 +139,7 @@ export function MatchTracker({ matches }: Props) {
 
             {/* Formulario */}
             {form && (
-                <div className="glass p-4 rounded-2xl border border-sky-500/30 space-y-4">
+                <div className="glass p-4 rounded-2xl border border-hairline space-y-4">
                     <div className="flex items-center justify-between">
                         <h4 className="text-sm font-bold text-foreground">{editingId ? 'Editar partido' : 'Nuevo partido'}</h4>
                         <button onClick={() => { setForm(null); setEditingId(null) }} className="p-1 text-muted-foreground hover:text-foreground">
@@ -209,7 +209,7 @@ export function MatchTracker({ matches }: Props) {
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="w-full py-2.5 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2"
+                        className="w-full py-2.5 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2"
                     >
                         {saving && <Loader2 className="w-4 h-4 animate-spin" />}
                         {editingId ? 'Guardar cambios' : 'Guardar partido'}
@@ -228,7 +228,7 @@ export function MatchTracker({ matches }: Props) {
 
             {/* ¿Estoy mejorando? */}
             {comparison && (
-                <div className="glass p-4 rounded-2xl border border-border/50 space-y-3">
+                <div className="glass p-4 rounded-2xl border border-hairline space-y-3">
                     <h4 className="text-sm font-bold text-foreground">¿Estoy mejorando?</h4>
                     <p className="text-[11px] text-muted-foreground">
                         Promedio de tus {comparison.n === 1 ? 'último partido' : `últimos ${comparison.n} partidos`} contra
@@ -237,7 +237,7 @@ export function MatchTracker({ matches }: Props) {
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         {comparison.rows.map(r => (
                             <div key={r.key} className="rounded-xl border border-border/40 bg-background/40 p-3">
-                                <span className="block text-[10px] uppercase tracking-wider text-muted-foreground">{r.label}</span>
+                                <span className="block text-[11px] uppercase tracking-wider text-muted-foreground">{r.label}</span>
                                 <span className="block text-lg font-bold text-foreground leading-tight mt-1">
                                     {r.last !== null ? r.last.toFixed(1) : '—'}
                                 </span>
@@ -253,12 +253,12 @@ export function MatchTracker({ matches }: Props) {
             {/* Historial */}
             {matches.length > 0 && (
                 <div className="space-y-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Historial</span>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Historial</span>
                     {[...matches].reverse().map(m => (
-                        <div key={m.id} className="glass rounded-2xl border border-border/50 p-3.5 flex items-start gap-3">
+                        <div key={m.id} className="glass rounded-2xl border border-hairline p-3.5 flex items-start gap-3">
                             <div className="w-11 h-11 rounded-xl bg-lime-500/10 border border-lime-500/30 flex flex-col items-center justify-center shrink-0">
                                 <span className="text-base font-bold text-lime-400 leading-none">{m.overall}</span>
-                                <span className="text-[8px] text-muted-foreground uppercase">nota</span>
+                                <span className="text-[11px] text-muted-foreground uppercase">nota</span>
                             </div>
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap text-[11px]">
@@ -298,7 +298,7 @@ const inputCls = 'w-full bg-background/60 border border-border/60 rounded-lg px-
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
     return (
         <label className="block space-y-1">
-            <span className="block text-[10px] font-semibold text-muted-foreground">{label}</span>
+            <span className="block text-[11px] font-semibold text-muted-foreground">{label}</span>
             {children}
         </label>
     )
@@ -309,7 +309,7 @@ function ScorePicker({ label, hint, value, onChange }: { label: string; hint: st
         <div className="space-y-1.5">
             <div className="flex items-baseline justify-between gap-2">
                 <span className="text-xs font-semibold text-foreground">{label}</span>
-                <span className="text-[10px] text-muted-foreground">{hint}</span>
+                <span className="text-[11px] text-muted-foreground">{hint}</span>
             </div>
             <div className="grid grid-cols-10 gap-1">
                 {Array.from({ length: 10 }, (_, i) => i + 1).map(n => (
@@ -333,14 +333,14 @@ function ScorePicker({ label, hint, value, onChange }: { label: string; hint: st
 }
 
 function Delta({ value }: { value: number | null }) {
-    if (value === null) return <span className="block text-[10px] text-muted-foreground mt-0.5">sin datos</span>
+    if (value === null) return <span className="block text-[11px] text-muted-foreground mt-0.5">sin datos</span>
     if (Math.abs(value) < 0.05) {
-        return <span className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5"><Minus className="w-3 h-3" /> igual</span>
+        return <span className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5"><Minus className="w-3 h-3" /> igual</span>
     }
     const up = value > 0
     const Icon = up ? TrendingUp : TrendingDown
     return (
-        <span className={cn('text-[10px] font-semibold flex items-center gap-1 mt-0.5', up ? 'text-lime-400' : 'text-red-400')}>
+        <span className={cn('text-[11px] font-semibold flex items-center gap-1 mt-0.5', up ? 'text-lime-400' : 'text-red-400')}>
             <Icon className="w-3 h-3" /> {up ? '+' : ''}{value.toFixed(1)}
         </span>
     )
@@ -360,12 +360,12 @@ function TrendChart({ matches }: { matches: any[] }) {
     const y = (v: number) => PAD_T + (1 - (v - 1) / 9) * (H - PAD_T - PAD_B)
 
     return (
-        <div className="glass p-4 rounded-2xl border border-border/50 space-y-2">
+        <div className="glass p-4 rounded-2xl border border-hairline space-y-2">
             <div className="flex items-center justify-between gap-2 flex-wrap">
                 <h4 className="text-sm font-bold text-foreground">Partido a partido</h4>
                 <div className="flex gap-3">
                     {series.map(s => (
-                        <span key={s.key} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                        <span key={s.key} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                             <span className="w-3 h-0.5 rounded-full" style={{ background: s.color }} /> {s.label}
                         </span>
                     ))}

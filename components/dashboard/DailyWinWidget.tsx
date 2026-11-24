@@ -45,7 +45,7 @@ export function DailyWinWidget({ initialWin, dateStr }: DailyWinWidgetProps) {
     }
 
     return (
-        <div className="glass rounded-2xl p-6 border border-yellow-500/30 shadow-lg bg-gradient-to-br from-background to-yellow-500/5 relative overflow-hidden">
+        <div className="glass rounded-2xl p-6 border border-yellow-500/30 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 blur-3xl rounded-full" />
 
             <div className="flex items-center gap-3 mb-4">
@@ -53,7 +53,7 @@ export function DailyWinWidget({ initialWin, dateStr }: DailyWinWidgetProps) {
                     <Trophy className="w-5 h-5 text-yellow-500" />
                 </div>
                 <div>
-                    <h3 className="font-heading font-semibold text-lg">Victoria del Día</h3>
+                    <h3 className="font-semibold text-lg">Victoria del Día</h3>
                     <p className="text-xs text-muted-foreground">Solo una cosa que salió bien. El progreso real suma.</p>
                 </div>
             </div>

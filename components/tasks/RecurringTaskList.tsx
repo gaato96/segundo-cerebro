@@ -69,7 +69,7 @@ export function RecurringTaskList({ recurringTasks, onEdit }: RecurringTaskListP
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95 }}
-                            className="glass p-4 rounded-xl border border-border/50 shadow-sm flex items-start justify-between gap-4 group"
+                            className="glass p-4 rounded-xl border border-hairline shadow-sm flex items-start justify-between gap-4 group"
                         >
                             <div className="space-y-2 flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
@@ -84,29 +84,29 @@ export function RecurringTaskList({ recurringTasks, onEdit }: RecurringTaskListP
                                 )}
 
                                 <div className="flex flex-wrap items-center gap-2 pt-1">
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 flex items-center gap-1">
+                                    <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 flex items-center gap-1">
                                         <Clock className="w-3 h-3" />
                                         {RECURRENCE_LABELS[task.recurrence_type] || task.recurrence_type}
                                         {daysStr && ` (${daysStr})`}
                                     </span>
 
-                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getPriorityColor(task.priority)}`}>
+                                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${getPriorityColor(task.priority)}`}>
                                         {getPriorityLabel(task.priority)}
                                     </span>
 
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-muted text-muted-foreground border border-border">
+                                    <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-muted text-muted-foreground border border-border">
                                         {task.category}
                                     </span>
 
                                     {task.reminder_time && (
-                                        <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-amber-500/10 text-amber-300 border border-amber-500/20 flex items-center gap-1">
+                                        <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-amber-500/10 text-amber-300 border border-amber-500/20 flex items-center gap-1">
                                             <Bell className="w-3 h-3" />
                                             {String(task.reminder_time).slice(0, 5)}
                                         </span>
                                     )}
 
                                     {task.next_occurrence_date && (
-                                        <span className="text-[10px] text-muted-foreground flex items-center gap-1 ml-auto">
+                                        <span className="text-[11px] text-muted-foreground flex items-center gap-1 ml-auto">
                                             <Calendar className="w-3 h-3 text-indigo-400" />
                                             Próxima: {formatDate(task.next_occurrence_date)}
                                         </span>

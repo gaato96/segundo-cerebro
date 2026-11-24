@@ -37,7 +37,7 @@ export function MonthForecastWidget({ forecast, compact = false }: { forecast: M
 
     return (
         <div className={cn(
-            'glass p-5 rounded-2xl border bg-gradient-to-br to-secondary/20 space-y-4',
+            'glass p-5 rounded-2xl border space-y-4',
             style.border,
             style.bg
         )}>
@@ -46,10 +46,10 @@ export function MonthForecastWidget({ forecast, compact = false }: { forecast: M
                     <Icon className="w-4 h-4" />
                 </div>
                 <div className="min-w-0 flex-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground block">
                         Semáforo del mes
                     </span>
-                    <h3 className={cn('text-sm font-heading font-bold leading-snug mt-0.5', style.text)}>
+                    <h3 className={cn('text-sm font-semibold leading-snug mt-0.5', style.text)}>
                         {forecast.headline}
                     </h3>
                     <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">{forecast.detail}</p>
@@ -58,7 +58,7 @@ export function MonthForecastWidget({ forecast, compact = false }: { forecast: M
 
             {/* Avance del mes */}
             <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                     <span>Día {forecast.daysElapsed} de {forecast.daysInMonth}</span>
                     <span>{forecast.daysRemaining} días restantes</span>
                 </div>
@@ -95,7 +95,7 @@ export function MonthForecastWidget({ forecast, compact = false }: { forecast: M
 
             {!compact && forecast.upcomingFixedItems.length > 0 && (
                 <div className="space-y-1.5 pt-1 border-t border-border/40">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 pt-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 pt-2">
                         <CalendarClock className="w-3 h-3" /> Lo que se viene
                     </span>
                     {forecast.upcomingFixedItems.map((item, i) => (
@@ -134,7 +134,7 @@ function Metric({ label, value, muted, className }: {
             )}>
                 {value}
             </span>
-            <span className="block text-[9px] text-muted-foreground uppercase tracking-wider mt-0.5">{label}</span>
+            <span className="block text-[11px] text-muted-foreground uppercase tracking-wider mt-0.5">{label}</span>
         </div>
     )
 }

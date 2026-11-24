@@ -39,13 +39,13 @@ export function ExerciseRoutine({ exercisePlan }: ExerciseRoutineProps) {
 
     return (
         <div className="space-y-5">
-            <div className="glass p-6 rounded-2xl border border-emerald-500/25 bg-gradient-to-br from-emerald-950/20 to-secondary/20 space-y-5">
+            <div className="glass p-6 rounded-2xl border border-hairline space-y-5">
                 <div className="flex items-start gap-3">
                     <div className="p-3 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shrink-0">
                         <Dumbbell className="w-6 h-6" />
                     </div>
                     <div>
-                        <h3 className="text-lg font-heading font-bold text-foreground leading-tight">
+                        <h3 className="text-lg font-semibold text-foreground leading-tight">
                             El entrenamiento ahora tiene módulo propio
                         </h3>
                         <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
@@ -76,7 +76,7 @@ export function ExerciseRoutine({ exercisePlan }: ExerciseRoutineProps) {
 
                 <Link
                     href="/entrenamiento"
-                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-3 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2"
                 >
                     Ir a mi plan de entrenamiento
                     <ArrowRight className="w-4 h-4" />
@@ -96,8 +96,8 @@ export function ExerciseRoutine({ exercisePlan }: ExerciseRoutineProps) {
                     {showLegacy && (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 opacity-70">
                             {legacyRoutines.map((item: any, idx: number) => (
-                                <div key={idx} className="glass p-4 rounded-xl border border-border/50 space-y-2">
-                                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                                <div key={idx} className="glass p-4 rounded-xl border border-hairline space-y-2">
+                                    <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
                                         {item.day}
                                     </span>
                                     <h4 className="text-xs font-bold text-foreground">{item.title}</h4>

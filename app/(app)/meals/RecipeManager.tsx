@@ -52,10 +52,10 @@ export function RecipeManager({ recipes, onClose }: { recipes: Recipe[], onClose
     }
 
     return (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-            <div className="bg-popover border border-white/10 w-full max-w-2xl max-h-[80vh] flex flex-col rounded-3xl relative overflow-hidden">
-                <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5 flex-wrap gap-4">
-                    <h2 className="text-2xl font-heading font-bold flex items-center gap-2">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80">
+            <div className="bg-popover border border-hairline w-full max-w-2xl max-h-[80vh] flex flex-col rounded-2xl relative overflow-hidden">
+                <div className="p-6 border-b border-hairline flex justify-between items-center bg-white/5 flex-wrap gap-4">
+                    <h2 className="text-2xl font-semibold flex items-center gap-2">
                         Mis Recetas
                         <span className="text-xs font-mono font-normal bg-indigo-500/20 text-indigo-400 px-2 py-1 rounded-full">
                             {recipes.length} guardadas
@@ -90,7 +90,7 @@ export function RecipeManager({ recipes, onClose }: { recipes: Recipe[], onClose
                             <button
                                 onClick={handleImportPresets}
                                 disabled={isImporting}
-                                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition-colors text-sm font-semibold disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-indigo-600/20"
+                                className="px-5 py-2.5 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white rounded-xl transition-colors text-sm font-semibold disabled:opacity-50 flex items-center gap-2"
                             >
                                 {isImporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                                 Cargar 24 Recetas Frecuentes
@@ -98,7 +98,7 @@ export function RecipeManager({ recipes, onClose }: { recipes: Recipe[], onClose
                         </div>
                     ) : (
                         recipes.map((recipe) => (
-                            <div key={recipe.id} className="bg-white/5 rounded-2xl p-4 flex justify-between items-center hover:bg-white/[0.07] transition-all border border-white/5">
+                            <div key={recipe.id} className="bg-white/5 rounded-2xl p-4 flex justify-between items-center hover:bg-white/[0.07] transition-all border border-hairline">
                                 <div>
                                     <h3 className="font-bold text-lg">{recipe.name}</h3>
                                     <p className="text-sm text-muted-foreground line-clamp-1">{recipe.description || 'Sin descripción'}</p>

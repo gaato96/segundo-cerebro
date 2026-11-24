@@ -54,16 +54,16 @@ export function NutritionChat({ initialMessages = [] }: NutritionChatProps) {
     }
 
     return (
-        <div className="glass rounded-2xl border border-emerald-500/20 shadow-xl h-[650px] flex flex-col overflow-hidden">
+        <div className="glass rounded-2xl border border-hairline h-[650px] flex flex-col overflow-hidden">
             {/* Header */}
             <div className="p-4 border-b border-border/50 bg-emerald-950/20 flex items-center gap-3 shrink-0">
                 <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-sm">
                     <Bot className="w-5 h-5" />
                 </div>
                 <div>
-                    <h3 className="text-base font-heading font-bold text-foreground flex items-center gap-2">
+                    <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
                         Nutricionista IA
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">
+                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">
                             Experto Tucumán
                         </span>
                     </h3>
@@ -116,7 +116,7 @@ export function NutritionChat({ initialMessages = [] }: NutritionChatProps) {
 
                             <div className={`max-w-[80%] rounded-2xl p-3.5 text-xs leading-relaxed ${
                                 isUser
-                                    ? 'bg-emerald-600 text-white rounded-tr-none shadow-md'
+                                    ? 'bg-emerald-600 text-white rounded-tr-none'
                                     : 'bg-secondary/80 border border-border/60 text-foreground rounded-tl-none'
                             }`}>
                                 {isUser ? (
@@ -160,12 +160,12 @@ export function NutritionChat({ initialMessages = [] }: NutritionChatProps) {
                     onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                     disabled={loading}
                     placeholder="Escribí tu consulta para el nutricionista..."
-                    className="flex-1 bg-secondary/60 border border-border rounded-xl px-4 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all"
+                    className="flex-1 bg-secondary/60 border border-border rounded-xl px-4 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition-all"
                 />
                 <button
                     onClick={() => handleSend()}
                     disabled={!input.trim() || loading}
-                    className="p-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white rounded-xl transition-all shadow-md shrink-0 flex items-center justify-center"
+                    className="p-2.5 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] disabled:opacity-40 text-white rounded-xl transition-all shrink-0 flex items-center justify-center"
                 >
                     <Send className="w-4 h-4" />
                 </button>

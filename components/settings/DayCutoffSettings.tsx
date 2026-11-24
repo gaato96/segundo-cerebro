@@ -35,13 +35,13 @@ export function DayCutoffSettings({ cutoffHour, appDate, calendarDate, isAfterMi
     }
 
     return (
-        <div className="glass p-5 rounded-2xl border border-indigo-500/20 space-y-4">
+        <div className="glass p-5 rounded-2xl border border-hairline space-y-4">
             <div className="flex items-center gap-2.5">
                 <div className="p-2 rounded-xl bg-indigo-500/15 text-indigo-400 border border-indigo-500/25">
                     <Moon className="w-4 h-4" />
                 </div>
                 <div>
-                    <h3 className="text-sm font-heading font-bold text-foreground leading-tight">
+                    <h3 className="text-sm font-semibold text-foreground leading-tight">
                         ¿A qué hora termina tu día?
                     </h3>
                     <p className="text-[11px] text-muted-foreground">
@@ -64,8 +64,8 @@ export function DayCutoffSettings({ cutoffHour, appDate, calendarDate, isAfterMi
                         disabled={saving}
                         className={`px-3.5 py-2 rounded-xl border text-xs font-semibold transition-all disabled:opacity-50 ${
                             hour === h
-                                ? 'bg-indigo-600 border-indigo-500 text-white shadow-md'
-                                : 'bg-black/20 border-white/10 text-muted-foreground hover:text-white'
+                                ? 'bg-indigo-600 border-indigo-500 text-white'
+                                : 'bg-black/20 border-hairline text-muted-foreground hover:text-white'
                         }`}
                     >
                         {String(h).padStart(2, '0')}:00

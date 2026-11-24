@@ -1,6 +1,7 @@
 'use client'
 
 import { toggleHabitToday } from '@/lib/actions/today'
+import { HabitClock } from '@/components/habits/HabitClock'
 import { HabitMatrix } from '@/components/habits/HabitMatrix'
 import { PageShell, PageHeader } from '@/components/ui/kit'
 import { useState } from 'react'
@@ -252,7 +253,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                     { label: 'Tiempo diario', value: `${totalEstMinutesDaily} min` }
                 ].map(k => (
                     <div key={k.label} className="flex-1 min-w-[140px] px-5 py-4">
-                        <p className="label-caps !text-[10px]">{k.label}</p>
+                        <p className="label-caps !text-[11px]">{k.label}</p>
                         <p className="font-mono text-2xl mt-1">{k.value}</p>
                     </div>
                 ))}
@@ -260,14 +261,19 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
 
             <HabitMatrix habits={habits} logs={logs} todayStr={todayStr} onToggleToday={handleToggleHabit} />
 
+            <section>
+                <h2 className="label-caps mb-3">Hoy, por momento del día</h2>
+                <HabitClock habits={habits.filter(h => h.is_active && isHabitScheduledForDate(h, todayStr))} done={completedTodayIds} onToggle={handleToggleHabit} />
+            </section>
+
             {/* Controls Bar */}
-            <div className="glass p-4 rounded-2xl border border-border/50 flex flex-wrap items-center justify-between gap-4">
+            <div className="glass p-4 rounded-2xl border border-hairline flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Ordenar por:</span>
                     <select
                         value={sortBy}
                         onChange={(e: any) => setSortBy(e.target.value)}
-                        className="bg-black/30 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className="bg-black/30 border border-hairline rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-400/50"
                     >
                         <option value="tod">Momento del día (Mañana → Noche)</option>
                         <option value="time_asc">Duración (Menor a Mayor)</option>
@@ -279,7 +285,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                     onClick={() => setShowOnlyToday(!showOnlyToday)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all ${showOnlyToday
                         ? 'bg-indigo-600/20 border-indigo-500/40 text-indigo-300'
-                        : 'bg-white/5 border-white/10 text-muted-foreground hover:text-white'
+                        : 'bg-white/5 border-hairline text-muted-foreground hover:text-white'
                         }`}
                 >
                     <Calendar className="w-3.5 h-3.5" />
@@ -288,10 +294,10 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
             </div>
 
             {/* El coach propone hábitos nuevos mirando todo el contexto */}
-            <div className="glass p-5 rounded-2xl border border-violet-500/25 space-y-3">
+            <div className="glass p-5 rounded-2xl border border-hairline space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
-                        <h3 className="text-sm font-heading font-bold text-white">
+                        <h3 className="text-sm font-semibold text-white">
                             ¿Qué hábito me convendría sumar?
                         </h3>
                         <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -301,7 +307,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                     <button
                         onClick={handleSuggestHabits}
                         disabled={suggesting}
-                        className="px-4 py-2.5 bg-violet-600/90 hover:bg-violet-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition-colors disabled:opacity-60 shrink-0"
+                        className="px-4 py-2.5 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition-colors disabled:opacity-60 shrink-0"
                     >
                         {suggesting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
                         {suggesting ? 'Leyendo tus datos…' : 'Recomendame hábitos'}
@@ -325,7 +331,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                 <h4 className="text-sm font-bold text-white leading-snug">{sug.title}</h4>
 
                                 <div className="flex flex-wrap gap-1.5">
-                                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/25 text-indigo-300 font-semibold">
+                                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/25 text-indigo-300 font-semibold">
                                         {sug.frequency_type === 'x_per_week'
                                             ? `${sug.frequency_times_per_week}× por semana`
                                             : sug.frequency_type === 'x_per_day'
@@ -334,7 +340,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                                     ? sug.frequency_days.map(d => DAYS_ISO.find(x => x.iso === d)?.label).join(' · ')
                                                     : 'Diario'}
                                     </span>
-                                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-muted-foreground">
+                                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/5 border border-hairline text-muted-foreground">
                                         {sug.estimated_minutes} min
                                     </span>
                                 </div>
@@ -342,13 +348,13 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                 <p className="text-[11px] text-muted-foreground leading-relaxed flex-1">{sug.why}</p>
 
                                 {sug.minimum_version && (
-                                    <p className="text-[10px] text-amber-300/90 bg-amber-500/5 border border-amber-500/20 rounded-lg p-2">
+                                    <p className="text-[11px] text-amber-300/90 bg-amber-500/5 border border-amber-500/20 rounded-lg p-2">
                                         <strong className="text-amber-200">En el peor día:</strong> {sug.minimum_version}
                                     </p>
                                 )}
 
                                 {sug.anchor && (
-                                    <p className="text-[10px] text-sky-300/90 flex items-start gap-1">
+                                    <p className="text-[11px] text-sky-300/90 flex items-start gap-1">
                                         <Link2 className="w-3 h-3 shrink-0 mt-0.5" />
                                         {sug.anchor}
                                     </p>
@@ -358,14 +364,14 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                     <button
                                         onClick={() => handleAddSuggestion(sug, idx)}
                                         disabled={addingIdx === idx}
-                                        className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 disabled:opacity-50"
+                                        className="flex-1 py-2 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 disabled:opacity-50"
                                     >
                                         {addingIdx === idx ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
                                         Sumarlo
                                     </button>
                                     <button
                                         onClick={() => setSuggestions(prev => (prev || []).filter((_, i) => i !== idx))}
-                                        className="px-2.5 py-2 bg-secondary hover:bg-secondary/70 border border-border text-muted-foreground rounded-lg text-[10px] font-semibold"
+                                        className="px-2.5 py-2 bg-secondary hover:bg-secondary/70 border border-border text-muted-foreground rounded-lg text-[11px] font-semibold"
                                     >
                                         No
                                     </button>
@@ -394,10 +400,10 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                     onClick={() => handleToggleHabit(h.id)}
                                     disabled={!scheduledToday}
                                     className={`w-7 h-7 rounded-xl flex items-center justify-center border transition-all shrink-0 ${isDone
-                                        ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-600/30'
+                                        ? 'bg-emerald-600 border-emerald-500 text-white'
                                         : scheduledToday
                                             ? 'bg-black/30 border-white/20 text-transparent hover:border-emerald-500'
-                                            : 'bg-black/20 border-white/10 text-transparent opacity-40 cursor-not-allowed'
+                                            : 'bg-black/20 border-hairline text-transparent opacity-40 cursor-not-allowed'
                                         }`}
                                 >
                                     <Check className="w-4 h-4" />
@@ -420,12 +426,12 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                                 {String(h.reminder_time).slice(0, 5)}
                                             </span>
                                         )}
-                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-600/10 border border-indigo-500/20 text-indigo-300 flex items-center gap-1 font-semibold">
+                                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-600/10 border border-indigo-500/20 text-indigo-300 flex items-center gap-1 font-semibold">
                                             <RefreshCw className="w-2.5 h-2.5" />
                                             {frequencyLabel(h)}
                                         </span>
                                         {(h as any).auto_source && (
-                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-600/10 border border-emerald-500/20 text-emerald-300 font-semibold" title="Se tilda solo al registrar lo relacionado">
+                                            <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-600/10 border border-emerald-500/20 text-emerald-300 font-semibold" title="Se tilda solo al registrar lo relacionado">
                                                 automático
                                             </span>
                                         )}
@@ -434,7 +440,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                             const target = h.frequency_times_per_week || 3
                                             const complete = done >= target
                                             return (
-                                                <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${
+                                                <span className={`text-[11px] px-2 py-0.5 rounded-full border font-semibold ${
                                                     complete
                                                         ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400'
                                                         : 'bg-amber-500/10 border-amber-500/25 text-amber-300'
@@ -444,7 +450,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                             )
                                         })()}
                                         {!scheduledToday && (
-                                            <span className="text-[9px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-muted-foreground">
+                                            <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/5 border border-hairline text-muted-foreground">
                                                 No es hoy
                                             </span>
                                         )}
@@ -455,7 +461,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                             <div className="flex items-center gap-2 self-end sm:self-auto">
                                 <button
                                     onClick={() => openEditModal(h)}
-                                    className="p-2 rounded-xl bg-white/5 border border-white/10 text-muted-foreground hover:text-white hover:bg-white/10"
+                                    className="p-2 rounded-xl bg-white/5 border border-hairline text-muted-foreground hover:text-white hover:bg-white/10"
                                 >
                                     <Edit2 className="w-3.5 h-3.5" />
                                 </button>
@@ -486,16 +492,16 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setIsModalOpen(false)}
-                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                            className="absolute inset-0 bg-black/60"
                         />
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
-                            className="glass border border-border/50 w-full max-w-md rounded-3xl overflow-hidden shadow-2xl relative z-10 p-6 space-y-4 max-h-[90vh] overflow-y-auto"
+                            className="glass border border-hairline w-full max-w-md rounded-2xl overflow-hidden shadow-2xl relative z-10 p-6 space-y-4 max-h-[90vh] overflow-y-auto"
                         >
-                            <div className="flex items-center justify-between border-b border-white/5 pb-3">
-                                <h3 className="font-heading font-bold text-lg text-white">
+                            <div className="flex items-center justify-between border-b border-hairline pb-3">
+                                <h3 className="font-semibold text-lg text-white">
                                     {habitToEdit ? 'Editar Hábito' : 'Nuevo Hábito'}
                                 </h3>
                                 <button onClick={() => setIsModalOpen(false)} className="text-muted-foreground hover:text-white">
@@ -515,7 +521,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                         value={title}
                                         onChange={(e) => setTitle(e.target.value)}
                                         placeholder="Ej: Meditar 10 minutos, Leer..."
-                                        className="w-full bg-black/20 border border-white/10 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                        className="w-full bg-black/20 border border-hairline rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                                     />
                                 </div>
 
@@ -528,7 +534,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                         <select
                                             value={autoSource}
                                             onChange={(e) => setAutoSource(e.target.value)}
-                                            className="w-full bg-black/20 border border-white/10 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            className="w-full bg-black/20 border border-hairline rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                                         >
                                             <option value="">Nunca: lo tildo yo</option>
                                             <option value="training">Registro entreno, parque o un partido</option>
@@ -556,7 +562,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                                 onClick={() => setFrequencyType(opt.value)}
                                                 className={`px-3 py-2 rounded-xl border text-xs font-semibold transition-all text-left ${frequencyType === opt.value
                                                     ? 'bg-indigo-600/30 border-indigo-500/50 text-indigo-200'
-                                                    : 'bg-black/20 border-white/10 text-muted-foreground hover:text-white'
+                                                    : 'bg-black/20 border-hairline text-muted-foreground hover:text-white'
                                                     }`}
                                             >
                                                 {opt.label}
@@ -567,7 +573,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                     {/* Custom Days picker */}
                                     {frequencyType === 'custom_days' && (
                                         <div className="mt-3">
-                                            <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-2">
+                                            <label className="text-[11px] font-semibold text-muted-foreground uppercase block mb-2">
                                                 Seleccioná los días
                                             </label>
                                             <div className="flex gap-1.5 flex-wrap">
@@ -578,7 +584,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                                         onClick={() => toggleDay(iso)}
                                                         className={`w-9 h-9 rounded-xl border text-xs font-bold transition-all ${frequencyDays.includes(iso)
                                                             ? 'bg-indigo-600 border-indigo-500 text-white'
-                                                            : 'bg-black/20 border-white/10 text-muted-foreground hover:text-white'
+                                                            : 'bg-black/20 border-hairline text-muted-foreground hover:text-white'
                                                             }`}
                                                     >
                                                         {label}
@@ -591,7 +597,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                     {/* X times per week: no fija días, fija cupo semanal */}
                                     {frequencyType === 'x_per_week' && (
                                         <div className="mt-3">
-                                            <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">
+                                            <label className="text-[11px] font-semibold text-muted-foreground uppercase block mb-1">
                                                 Cantidad de veces por semana
                                             </label>
                                             <div className="flex gap-1.5 flex-wrap">
@@ -602,14 +608,14 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                                         onClick={() => setFrequencyTimesPerWeek(n)}
                                                         className={`w-9 h-9 rounded-xl border text-xs font-bold transition-all ${frequencyTimesPerWeek === n
                                                             ? 'bg-indigo-600 border-indigo-500 text-white'
-                                                            : 'bg-black/20 border-white/10 text-muted-foreground hover:text-white'
+                                                            : 'bg-black/20 border-hairline text-muted-foreground hover:text-white'
                                                             }`}
                                                     >
                                                         {n}
                                                     </button>
                                                 ))}
                                             </div>
-                                            <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
+                                            <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed">
                                                 Sin día fijo: lo podés marcar cualquier día de la semana hasta completar
                                                 el cupo. La semana arranca el lunes.
                                             </p>
@@ -619,7 +625,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                     {/* X times per day */}
                                     {frequencyType === 'x_per_day' && (
                                         <div className="mt-3">
-                                            <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">
+                                            <label className="text-[11px] font-semibold text-muted-foreground uppercase block mb-1">
                                                 Cantidad de veces por día
                                             </label>
                                             <input
@@ -628,7 +634,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                                 max={20}
                                                 value={frequencyTimesPerDay}
                                                 onChange={e => setFrequencyTimesPerDay(parseInt(e.target.value) || 2)}
-                                                className="w-24 bg-black/20 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                className="w-24 bg-black/20 border border-hairline rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                                             />
                                         </div>
                                     )}
@@ -645,7 +651,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                             min={1}
                                             value={estimatedMinutes}
                                             onChange={(e) => setEstimatedMinutes(parseInt(e.target.value) || 15)}
-                                            className="w-full bg-black/20 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            className="w-full bg-black/20 border border-hairline rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                                         />
                                     </div>
                                     <div>
@@ -655,7 +661,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                         <select
                                             value={timeOfDay}
                                             onChange={(e: any) => setTimeOfDay(e.target.value)}
-                                            className="w-full bg-black/20 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            className="w-full bg-black/20 border border-hairline rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                                         >
                                             <option value="morning">Mañana</option>
                                             <option value="afternoon">Tarde</option>
@@ -675,7 +681,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                             type="time"
                                             value={reminderTime}
                                             onChange={(e) => setReminderTime(e.target.value)}
-                                            className="w-36 bg-black/20 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 [color-scheme:dark]"
+                                            className="w-36 bg-black/20 border border-hairline rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50 [color-scheme:dark]"
                                         />
                                         {reminderTime && (
                                             <button type="button" onClick={() => setReminderTime('')} className="text-xs text-muted-foreground hover:text-foreground">
@@ -709,14 +715,14 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
                                     <button
                                         type="button"
                                         onClick={() => setIsModalOpen(false)}
-                                        className="px-4 py-2 border border-white/10 rounded-xl text-xs text-muted-foreground hover:text-white"
+                                        className="px-4 py-2 border border-hairline rounded-xl text-xs text-muted-foreground hover:text-white"
                                     >
                                         Cancelar
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-lg shadow-indigo-600/20"
+                                        className="px-5 py-2 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white rounded-xl text-xs font-semibold flex items-center gap-1.5"
                                     >
                                         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Guardar Hábito'}
                                     </button>

@@ -116,7 +116,7 @@ export function AssistantLauncher() {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setOpen(false)}
-                            className="absolute inset-0 bg-background/70 backdrop-blur-sm"
+                            className="absolute inset-0 bg-background/70"
                         />
 
                         <motion.div
@@ -132,8 +132,8 @@ export function AssistantLauncher() {
                                         <MessageCircleHeart className="w-4 h-4" />
                                     </div>
                                     <div>
-                                        <h3 className="text-sm font-heading font-bold text-foreground leading-tight">Copiloto</h3>
-                                        <p className="text-[10px] text-muted-foreground">Te conoce por tus datos, no por lo que le contás</p>
+                                        <h3 className="text-sm font-semibold text-foreground leading-tight">Copiloto</h3>
+                                        <p className="text-[11px] text-muted-foreground">Te conoce por tus datos, no por lo que le contás</p>
                                     </div>
                                 </div>
 

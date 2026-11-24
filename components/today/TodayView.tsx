@@ -39,7 +39,7 @@ const toMin = (t?: string | null) => {
 }
 const hhmm = (min: number) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`
 
-export function TodayView({ data }: { data: TodayData }) {
+export function TodayView({ data, minimal }: { data: TodayData; minimal?: boolean }) {
     const router = useRouter()
     const [focus, setFocus] = useState(data.focusTasks)
     const [others, setOthers] = useState(data.otherTasks)
@@ -335,7 +335,7 @@ export function TodayView({ data }: { data: TodayData }) {
                         )}
                     </Panel>
 
-                    <Panel>
+                    {!minimal && <Panel>
                         <SectionLabel>Plata hoy</SectionLabel>
                         <div className="flex items-end justify-between gap-3">
                             <div>
@@ -355,9 +355,9 @@ export function TodayView({ data }: { data: TodayData }) {
                                 <Plus className="w-3.5 h-3.5" /> Gasto
                             </button>
                         </div>
-                    </Panel>
+                    </Panel>}
 
-                    {data.book && (
+                    {!minimal && data.book && (
                         <Link href={`/leer/${data.book.id}`} className="block">
                             <Panel className="hover:border-[hsl(var(--hairline-strong))] transition-colors">
                                 <SectionLabel right={`${Math.round((data.book.current_page / data.book.page_count) * 100)}%`}>Leyendo</SectionLabel>

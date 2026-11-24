@@ -53,12 +53,12 @@ export function ManualMealSelectorModal({
     }
 
     return (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-            <div className="bg-popover border border-white/10 w-full max-w-lg max-h-[85vh] flex flex-col rounded-3xl relative overflow-hidden shadow-2xl">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80">
+            <div className="bg-popover border border-hairline w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl relative overflow-hidden shadow-2xl">
                 {/* Header */}
-                <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
+                <div className="p-6 border-b border-hairline flex justify-between items-center bg-white/5">
                     <div>
-                        <h2 className="text-2xl font-heading font-bold">Cambiar Comida</h2>
+                        <h2 className="text-2xl font-semibold">Cambiar Comida</h2>
                         <p className="text-sm text-indigo-400 font-medium mt-1">
                             {dayName} — {mealType}
                         </p>
@@ -90,7 +90,7 @@ export function ManualMealSelectorModal({
                     </div>
 
                     {/* Custom Meal Form */}
-                    <form onSubmit={handleSaveCustom} className="space-y-2 border-t border-white/5 pt-4">
+                    <form onSubmit={handleSaveCustom} className="space-y-2 border-t border-hairline pt-4">
                         <label className="text-xs font-bold uppercase text-muted-foreground tracking-widest block">¿Comiste otra cosa? Escríbela aquí</label>
                         <div className="flex gap-2">
                             <input
@@ -99,12 +99,12 @@ export function ManualMealSelectorModal({
                                 value={customMeal}
                                 onChange={(e) => setCustomMeal(e.target.value)}
                                 placeholder="Ej: Asado en familia, Ensalada rápida, etc."
-                                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                                className="flex-1 bg-white/5 border border-hairline rounded-xl px-4 py-2 text-sm focus:ring-1 focus:ring-amber-400/50 outline-none"
                             />
                             <button
                                 type="submit"
                                 disabled={saving === 'custom'}
-                                className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow"
+                                className="bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] disabled:opacity-50 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow"
                             >
                                 {saving === 'custom' ? 'Guardando...' : 'Guardar'}
                             </button>
@@ -112,7 +112,7 @@ export function ManualMealSelectorModal({
                     </form>
 
                     {/* Recipes catalog list */}
-                    <div className="space-y-3 border-t border-white/5 pt-4">
+                    <div className="space-y-3 border-t border-hairline pt-4">
                         <label className="text-xs font-bold uppercase text-muted-foreground tracking-widest block">Seleccionar de mis recetas</label>
                         <div className="relative">
                             <input
@@ -120,7 +120,7 @@ export function ManualMealSelectorModal({
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="Buscar receta..."
-                                className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-xs outline-none"
+                                className="w-full bg-white/5 border border-hairline rounded-xl pl-9 pr-4 py-2.5 text-xs outline-none"
                             />
                             <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-3" />
                         </div>
@@ -131,13 +131,13 @@ export function ManualMealSelectorModal({
                                     key={recipe.id}
                                     disabled={saving !== null}
                                     onClick={() => handleSelectRecipe(recipe.id, recipe.name)}
-                                    className="w-full text-left p-3 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 hover:border-indigo-500/30 transition-all flex items-center justify-between gap-3"
+                                    className="w-full text-left p-3 rounded-xl border border-hairline bg-white/5 hover:bg-white/10 hover:border-indigo-500/30 transition-all flex items-center justify-between gap-3"
                                 >
                                     <div className="flex items-center gap-2 min-w-0">
                                         <Utensils className="w-4 h-4 text-indigo-400 shrink-0" />
                                         <span className="font-semibold text-sm truncate">{recipe.name}</span>
                                     </div>
-                                    <span className="text-[10px] text-muted-foreground uppercase font-semibold shrink-0">
+                                    <span className="text-[11px] text-muted-foreground uppercase font-semibold shrink-0">
                                         {recipe.complexity === 'Fast' ? 'Rápida' : recipe.complexity === 'Complex' ? 'Compleja' : 'Media'}
                                     </span>
                                 </button>

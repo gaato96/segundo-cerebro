@@ -677,3 +677,16 @@ export async function removePendingBook(id: string): Promise<ActionResult<null>>
         return null
     })
 }
+
+/** Libros marcados como leídos en Entretenimiento que nunca tuvieron PDF. */
+export async function getReadWithoutPdf(): Promise<{ id: string; title: string; cover_url: string | null; rating: number | null }[]> {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return []
+    const [{ data: media }, { data: linked }] = await Promise.all([
+        supabase.from('media_backlog').select('id, title, cover_url, rating').eq('user_id', user.id).eq('type', 'Book').eq('status', 'Finished').order('created_at', { ascending: false }),
+        supabase.from('books').select('media_id').eq('user_id', user.id).not('media_id', 'is', null)
+    ])
+    const taken = new Set((linked || []).map(b => b.media_id))
+    return (media || []).filter(m => !taken.has(m.id))
+}

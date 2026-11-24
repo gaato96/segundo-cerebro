@@ -4,6 +4,7 @@ import { getBudgetProjections } from '@/lib/actions/budget_projections'
 import { getDebtsOverview, getIncomeRange, getUpcomingIncome, getIncomeAllocations } from '@/lib/actions/debts'
 import { getIncomeSources } from '@/lib/actions/income_sources'
 import { getExpenseHistory, getMoneyPlan, getPlanContext } from '@/lib/actions/expenses'
+import { getMonthForecast } from '@/lib/actions/forecast'
 import { FinancesClient } from './page.client'
 import { getLocalMonthYearStr, getLocalDateStr } from '@/lib/utils'
 
@@ -22,7 +23,7 @@ export default async function FinancesPage() {
     const [
         financesData, envelopes, projections,
         debtsOverview, incomeSources, incomeRange, upcomingIncome, allocations,
-        expenseRecords, moneyPlan, planContext
+        expenseRecords, moneyPlan, planContext, forecast
     ] = await Promise.all([
         getFinances(monthYear),
         getEnvelopes(monthYear),
@@ -34,7 +35,8 @@ export default async function FinancesPage() {
         getIncomeAllocations().catch(() => []),
         getExpenseHistory(100).catch(() => []),
         getMoneyPlan().catch(() => null),
-        getPlanContext()
+        getPlanContext(),
+        getMonthForecast().catch(() => null)
     ])
 
     return (
@@ -54,6 +56,7 @@ export default async function FinancesPage() {
             moneyPlan={moneyPlan}
             planContext={planContext}
             today={today}
+            forecast={forecast}
         />
     )
 }

@@ -121,38 +121,38 @@ export function TaskList({ pendingTasks, completedTasks }: TaskListProps) {
 
                 <div className="flex flex-wrap items-center gap-2 mt-3">
                     {!isCompleted && (
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getPriorityColor(task.priority)}`}>
+                        <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${getPriorityColor(task.priority)}`}>
                             {getPriorityLabel(task.priority)}
                         </span>
                     )}
 
-                    <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-muted text-muted-foreground border border-border flex items-center gap-1">
+                    <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-muted text-muted-foreground border border-border flex items-center gap-1">
                         <div className={`w-1.5 h-1.5 rounded-full ${task.category === 'Work' ? 'bg-orange-500' : 'bg-blue-500'}`} />
                         {task.category}
                     </span>
 
                     {task.energy_level && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-secondary text-muted-foreground border border-border flex items-center gap-1">
+                        <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-secondary text-muted-foreground border border-border flex items-center gap-1">
                             {task.energy_level === 'Deep Work' ? 'Foco profundo' : task.energy_level === 'Low Energy' ? 'Liviana' : 'Desde el celu'}
                         </span>
                     )}
 
                     {overdue && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-red-500/15 text-red-400 border border-red-500/30 flex items-center gap-1 ml-auto">
+                        <span className="text-[11px] px-2 py-0.5 rounded-full font-bold bg-red-500/15 text-red-400 border border-red-500/30 flex items-center gap-1 ml-auto">
                             <AlertCircle className="w-3 h-3" />
                             Vencida
                         </span>
                     )}
 
                     {task.due_date && (
-                        <span className={`text-[10px] flex items-center gap-1 ${overdue ? 'text-red-400 font-medium' : 'text-muted-foreground ml-auto'}`}>
+                        <span className={`text-[11px] flex items-center gap-1 ${overdue ? 'text-red-400 font-medium' : 'text-muted-foreground ml-auto'}`}>
                             <CalendarIcon className="w-3 h-3" />
                             {formatDate(task.due_date)}
                         </span>
                     )}
 
                     {task.reminder_time && !isCompleted && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center gap-1">
+                        <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center gap-1">
                             <Bell className="w-3 h-3" />
                             {task.reminder_time.substring(0, 5)}
                         </span>

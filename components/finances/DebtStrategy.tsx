@@ -150,14 +150,14 @@ export function DebtStrategyPanel({ overview, incomeRange, upcoming, monthlyExpe
                     )}
                 </div>
 
-                <div className="glass p-5 rounded-2xl border border-orange-500/25">
+                <div className="glass p-5 rounded-2xl border border-hairline">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
                         Costo de no hacer nada
                     </p>
                     <h3 className="text-2xl font-bold font-heading text-orange-400">
                         {formatCurrency(overview.totals.monthlyCost)}
                     </h3>
-                    <p className="text-[10px] text-muted-foreground mt-1">
+                    <p className="text-[11px] text-muted-foreground mt-1">
                         por mes solo en intereses ({formatCurrency(overview.totals.dailyCost)} por día)
                     </p>
                 </div>
@@ -165,7 +165,7 @@ export function DebtStrategyPanel({ overview, incomeRange, upcoming, monthlyExpe
 
             {/* Próximos cobros */}
             {upcoming.length > 0 && (
-                <div className="glass p-4 rounded-2xl border border-border/50 space-y-2">
+                <div className="glass p-4 rounded-2xl border border-hairline space-y-2">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                         <HandCoins className="w-3.5 h-3.5 text-emerald-400" /> Próximos cobros estimados
                     </h4>
@@ -174,7 +174,7 @@ export function DebtStrategyPanel({ overview, incomeRange, upcoming, monthlyExpe
                             <span
                                 key={i}
                                 className={cn(
-                                    'text-[10px] px-2.5 py-1 rounded-lg border',
+                                    'text-[11px] px-2.5 py-1 rounded-lg border',
                                     u.confidence === 'confirmada'
                                         ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-300'
                                         : u.confidence === 'probable'
@@ -190,10 +190,10 @@ export function DebtStrategyPanel({ overview, incomeRange, upcoming, monthlyExpe
             )}
 
             {/* Asesor: qué pagar primero */}
-            <div className="glass p-5 rounded-2xl border border-violet-500/25 space-y-3">
+            <div className="glass p-5 rounded-2xl border border-hairline space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
-                        <h3 className="text-sm font-heading font-bold text-white">¿Qué deuda pago primero?</h3>
+                        <h3 className="text-sm font-semibold text-white">¿Qué deuda pago primero?</h3>
                         <p className="text-[11px] text-muted-foreground mt-0.5">
                             Mira tus tasas reales, tus ingresos y tus cuotas, y arma el orden.
                         </p>
@@ -202,7 +202,7 @@ export function DebtStrategyPanel({ overview, incomeRange, upcoming, monthlyExpe
                         <select
                             value={method}
                             onChange={e => setMethod(e.target.value as PayoffMethod | '')}
-                            className="bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-[11px] text-white focus:outline-none focus:ring-1 focus:ring-violet-500"
+                            className="bg-black/30 border border-hairline rounded-xl px-3 py-2 text-[11px] text-white focus:outline-none focus:ring-1 focus:ring-amber-400/50"
                         >
                             <option value="">Que elija el asesor</option>
                             <option value="avalancha">Avalancha (menos interés)</option>
@@ -211,7 +211,7 @@ export function DebtStrategyPanel({ overview, incomeRange, upcoming, monthlyExpe
                         <button
                             onClick={handleStrategy}
                             disabled={loadingStrategy}
-                            className="px-4 py-2.5 bg-violet-600/90 hover:bg-violet-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 disabled:opacity-60"
+                            className="px-4 py-2.5 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white rounded-xl text-xs font-semibold flex items-center gap-2 disabled:opacity-60"
                         >
                             {loadingStrategy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                             Armar el plan
@@ -243,7 +243,7 @@ export function DebtStrategyPanel({ overview, incomeRange, upcoming, monthlyExpe
 
                         {strategy.order.length > 0 && (
                             <div className="space-y-2">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                                     Orden de ataque
                                 </span>
                                 {strategy.order.map(o => (
@@ -263,7 +263,7 @@ export function DebtStrategyPanel({ overview, incomeRange, upcoming, monthlyExpe
 
                         {strategy.refinance.length > 0 && (
                             <div className="space-y-2">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                                     ¿Cuál financiar en cuotas?
                                 </span>
                                 {strategy.refinance.map(r => (
@@ -277,7 +277,7 @@ export function DebtStrategyPanel({ overview, incomeRange, upcoming, monthlyExpe
                                         )}
                                     >
                                         <span className={cn(
-                                            'text-[9px] px-2 py-0.5 rounded-full font-bold shrink-0 mt-0.5',
+                                            'text-[11px] px-2 py-0.5 rounded-full font-bold shrink-0 mt-0.5',
                                             r.verdict === 'financiar'
                                                 ? 'bg-sky-500/20 text-sky-200'
                                                 : 'bg-secondary text-muted-foreground'
@@ -290,7 +290,7 @@ export function DebtStrategyPanel({ overview, incomeRange, upcoming, monthlyExpe
                                         </div>
                                     </div>
                                 ))}
-                                <p className="text-[10px] text-muted-foreground flex items-start gap-1.5">
+                                <p className="text-[11px] text-muted-foreground flex items-start gap-1.5">
                                     <Info className="w-3 h-3 shrink-0 mt-0.5" />
                                     Cuando arregles uno de verdad, cargalo en la pestaña Deudas con
                                     "Arreglé un plan de pago": ahí se simula y se convierte en cuota fija.
@@ -311,7 +311,7 @@ export function DebtStrategyPanel({ overview, incomeRange, upcoming, monthlyExpe
 
                         {strategy.next_step && (
                             <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25">
-                                <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 mb-1 flex items-center gap-1.5">
+                                <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-400 mb-1 flex items-center gap-1.5">
                                     <ArrowRight className="w-3 h-3" /> Hoy, esto
                                 </p>
                                 <p className="text-[12px] text-white">{strategy.next_step}</p>
@@ -322,9 +322,9 @@ export function DebtStrategyPanel({ overview, incomeRange, upcoming, monthlyExpe
             </div>
 
             {/* Asignación de un ingreso */}
-            <div className="glass p-5 rounded-2xl border border-emerald-500/25 space-y-3">
+            <div className="glass p-5 rounded-2xl border border-hairline space-y-3">
                 <div>
-                    <h3 className="text-sm font-heading font-bold text-white flex items-center gap-2">
+                    <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                         <Wallet className="w-4 h-4 text-emerald-400" /> Me entró plata, ¿a qué la destino?
                     </h3>
                     <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -340,18 +340,18 @@ export function DebtStrategyPanel({ overview, incomeRange, upcoming, monthlyExpe
                         value={amount}
                         onChange={e => { setAmount(e.target.value); setPlan(null) }}
                         placeholder="Cuánto entró"
-                        className="flex-1 bg-black/30 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        className="flex-1 bg-black/30 border border-hairline rounded-xl px-3.5 py-2.5 text-sm text-white font-mono focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                     />
                     <input
                         value={label}
                         onChange={e => setLabel(e.target.value)}
                         placeholder="De dónde (ej: seña del cliente X)"
-                        className="flex-1 bg-black/30 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        className="flex-1 bg-black/30 border border-hairline rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                     />
                     <button
                         onClick={handleAllocate}
                         disabled={loadingPlan || !amount}
-                        className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 disabled:opacity-50 shrink-0"
+                        className="px-4 py-2.5 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 disabled:opacity-50 shrink-0"
                     >
                         {loadingPlan ? <Loader2 className="w-4 h-4 animate-spin" /> : <TrendingDown className="w-4 h-4" />}
                         Repartir
@@ -375,7 +375,7 @@ export function DebtStrategyPanel({ overview, incomeRange, upcoming, monthlyExpe
                                 <div key={i} className="flex items-start justify-between gap-3 bg-secondary/40 border border-border/50 rounded-xl p-3">
                                     <div className="min-w-0 space-y-0.5">
                                         <div className="flex items-center gap-1.5 flex-wrap">
-                                            <span className={cn('text-[9px] px-2 py-0.5 rounded-full border font-semibold', TARGET_STYLE[item.target_type])}>
+                                            <span className={cn('text-[11px] px-2 py-0.5 rounded-full border font-semibold', TARGET_STYLE[item.target_type])}>
                                                 {TARGET_LABEL[item.target_type]}
                                             </span>
                                             <span className="text-[12px] font-bold text-white">{item.label}</span>
@@ -406,7 +406,7 @@ export function DebtStrategyPanel({ overview, incomeRange, upcoming, monthlyExpe
                             <button
                                 onClick={handleApply}
                                 disabled={applying}
-                                className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+                                className="flex-1 py-2.5 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50"
                             >
                                 {applying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                                 Aplicar: registrar los pagos a deudas
@@ -423,7 +423,7 @@ export function DebtStrategyPanel({ overview, incomeRange, upcoming, monthlyExpe
 
                 {allocations.length > 0 && !plan && (
                     <div className="pt-2 border-t border-border/40 space-y-1.5">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                             Repartos anteriores
                         </span>
                         {allocations.slice(0, 4).map((a: any) => (

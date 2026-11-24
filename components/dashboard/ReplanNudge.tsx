@@ -22,7 +22,7 @@ export function ReplanNudge({ nudge }: { nudge: Nudge }) {
                 <Icon className={cn('w-5 h-5', returning ? 'text-amber-300' : 'text-teal-300')} />
             </div>
             <div className="flex-1 min-w-0">
-                <p className="text-sm font-heading font-bold text-white">{nudge.title}</p>
+                <p className="text-sm font-semibold text-white">{nudge.title}</p>
                 <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{nudge.body}</p>
             </div>
             <span className={cn(

@@ -64,15 +64,15 @@ export function AddPendingBookModal({ onClose, onSaved, editing }: Props) {
     }
 
     return (
-        <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4">
+        <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-black/70 p-0 sm:p-4">
             <motion.div
                 initial={{ opacity: 0, y: 24 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="w-full sm:max-w-xl bg-popover border border-white/10 rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[92dvh] overflow-y-auto"
+                className="w-full sm:max-w-xl bg-popover border border-hairline rounded-t-3xl sm:rounded-2xl shadow-2xl max-h-[92dvh] overflow-y-auto"
             >
                 <div className="flex items-center justify-between px-5 pt-5 pb-3">
                     <div>
-                        <h2 className="font-heading font-bold text-lg">{editing ? 'Cambiar tapa' : 'Quiero leer…'}</h2>
+                        <h2 className="font-semibold text-lg">{editing ? 'Cambiar tapa' : 'Quiero leer…'}</h2>
                         <p className="text-xs text-muted-foreground">
                             {editing ? 'Elegí la portada correcta.' : 'Solo el título. La tapa se busca sola y el PDF lo subís cuando lo empieces.'}
                         </p>
@@ -133,7 +133,7 @@ export function AddPendingBookModal({ onClose, onSaved, editing }: Props) {
                                         >
                                             <div className={cn(
                                                 'relative aspect-[2/3] rounded-xl overflow-hidden border-2 bg-secondary transition-all',
-                                                active ? 'border-amber-400 shadow-lg shadow-amber-500/20' : 'border-transparent group-hover:border-white/20'
+                                                active ? 'border-amber-400' : 'border-transparent group-hover:border-white/20'
                                             )}>
                                                 <img src={r.cover_url} alt="" loading="lazy" className="w-full h-full object-cover" />
                                                 {active && (
@@ -143,7 +143,7 @@ export function AddPendingBookModal({ onClose, onSaved, editing }: Props) {
                                                 )}
                                             </div>
                                             <p className="text-[11px] font-semibold mt-1.5 line-clamp-2 leading-snug">{r.title}</p>
-                                            <p className="text-[10px] text-muted-foreground truncate">{[r.author, r.year].filter(Boolean).join(' · ')}</p>
+                                            <p className="text-[11px] text-muted-foreground truncate">{[r.author, r.year].filter(Boolean).join(' · ')}</p>
                                         </button>
                                     )
                                 })}

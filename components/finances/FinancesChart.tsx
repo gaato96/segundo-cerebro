@@ -62,7 +62,7 @@ export function FinancesChart({
     }
 
     return (
-        <div className="glass p-6 rounded-3xl border border-border/50 bg-secondary/5 flex flex-col md:flex-row items-center gap-8 justify-around">
+        <div className="glass p-6 rounded-2xl border border-hairline bg-secondary/5 flex flex-col md:flex-row items-center gap-8 justify-around">
             {/* Donut Chart SVG */}
             <div className="relative w-48 h-48 flex items-center justify-center shrink-0">
                 <svg width="100%" height="100%" viewBox="0 0 120 120" className="transform -rotate-90">
@@ -109,7 +109,7 @@ export function FinancesChart({
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
                     {hoveredIdx !== null && segments[hoveredIdx] ? (
                         <>
-                            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
+                            <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider">
                                 {segments[hoveredIdx].name}
                             </span>
                             <span className="text-lg font-bold text-white mt-0.5">
@@ -121,13 +121,13 @@ export function FinancesChart({
                         </>
                     ) : (
                         <>
-                            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
+                            <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider">
                                 Gasto Real Total
                             </span>
-                            <span className="text-xl font-black text-white mt-0.5 font-mono">
+                            <span className="text-xl font-semibold text-white mt-0.5 font-mono">
                                 {formatCurrency(totalExpenses)}
                             </span>
-                            <span className="text-[10px] text-emerald-400 mt-0.5 font-semibold">
+                            <span className="text-[11px] text-emerald-400 mt-0.5 font-semibold">
                                 {surplus > 0 ? `Surplus: ${((surplus / income) * 100).toFixed(0)}%` : 'Sin superávit'}
                             </span>
                         </>
@@ -137,7 +137,7 @@ export function FinancesChart({
 
             {/* Custom interactive legend */}
             <div className="flex-1 w-full max-w-sm space-y-3">
-                <h4 className="text-xs font-bold uppercase text-muted-foreground tracking-widest border-b border-white/5 pb-2">Desglose de Presupuesto</h4>
+                <h4 className="text-xs font-bold uppercase text-muted-foreground tracking-widest border-b border-hairline pb-2">Desglose de Presupuesto</h4>
                 {totalValue === 0 ? (
                     <p className="text-xs text-muted-foreground italic">No hay transacciones registradas este mes.</p>
                 ) : (
@@ -152,7 +152,7 @@ export function FinancesChart({
                                     onMouseLeave={() => setHoveredIdx(null)}
                                     className={`flex items-center justify-between p-2.5 rounded-xl transition-all border ${
                                         isHovered 
-                                            ? 'bg-white/5 border-white/10 scale-[1.02]' 
+                                            ? 'bg-white/5 border-hairline scale-[1.02]' 
                                             : 'border-transparent hover:bg-white/[0.02]'
                                     }`}
                                 >
@@ -165,7 +165,7 @@ export function FinancesChart({
                                         </div>
                                         <div>
                                             <p className="text-xs font-bold text-white/95">{seg.name}</p>
-                                            <p className="text-[10px] text-muted-foreground">{(seg.percentage * 100).toFixed(1)}% del total</p>
+                                            <p className="text-[11px] text-muted-foreground">{(seg.percentage * 100).toFixed(1)}% del total</p>
                                         </div>
                                     </div>
                                     <span className="text-xs font-bold font-mono text-white/80">{formatCurrency(seg.value)}</span>

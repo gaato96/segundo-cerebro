@@ -118,32 +118,32 @@ export function IncomeSources({ sources, range }: Props) {
         <div className="space-y-5">
             {/* Piso y techo */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="glass p-5 rounded-2xl border border-emerald-500/25">
+                <div className="glass p-5 rounded-2xl border border-hairline">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
                         Piso del mes
                     </p>
                     <h3 className="text-2xl font-bold font-heading text-emerald-400">{formatCurrency(range.floor)}</h3>
-                    <p className="text-[10px] text-muted-foreground mt-1">solo lo que entra seguro</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">solo lo que entra seguro</p>
                 </div>
                 <div className="glass p-5 rounded-2xl border border-amber-500/25">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
                         Techo del mes
                     </p>
                     <h3 className="text-2xl font-bold font-heading text-white">{formatCurrency(range.ceiling)}</h3>
-                    <p className="text-[10px] text-muted-foreground mt-1">si entra absolutamente todo</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">si entra absolutamente todo</p>
                 </div>
-                <div className="glass p-5 rounded-2xl border border-indigo-500/25">
+                <div className="glass p-5 rounded-2xl border border-hairline">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
                         Lo que no controlás
                     </p>
                     <h3 className="text-2xl font-bold font-heading text-white">
                         {formatCurrency(range.ceiling - range.floor)}
                     </h3>
-                    <p className="text-[10px] text-muted-foreground mt-1">depende de que salgan trabajos</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">depende de que salgan trabajos</p>
                 </div>
             </div>
 
-            <div className="glass p-4 rounded-2xl border border-border/50">
+            <div className="glass p-4 rounded-2xl border border-hairline">
                 <p className="text-[11px] text-muted-foreground leading-relaxed">
                     Un solo número de "ingreso mensual" no representa tu situación. Acá cada tipo se carga aparte:
                     el sueldo fijo, los trabajos que pueden salir o no, los que cobrás en varios pagos y los clientes
@@ -153,12 +153,12 @@ export function IncomeSources({ sources, range }: Props) {
             </div>
 
             <div className="flex items-center justify-between">
-                <h3 className="font-heading font-bold text-base text-white flex items-center gap-2">
+                <h3 className="font-semibold text-base text-white flex items-center gap-2">
                     <Wallet className="w-4 h-4 text-emerald-400" /> Tus fuentes de ingreso
                 </h3>
                 <button
                     onClick={openCreate}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-lg shadow-emerald-600/20"
+                    className="px-4 py-2 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white rounded-xl text-xs font-semibold flex items-center gap-1.5"
                 >
                     <Plus className="w-4 h-4" /> Nueva fuente
                 </button>
@@ -184,13 +184,13 @@ export function IncomeSources({ sources, range }: Props) {
                         {list.map(s => {
                             const conf = CONFIDENCE.find(c => c.value === s.confidence)
                             return (
-                                <div key={s.id} className="glass rounded-2xl p-4 border border-border/50 space-y-2.5">
+                                <div key={s.id} className="glass rounded-2xl p-4 border border-hairline space-y-2.5">
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="min-w-0">
                                             <div className="flex items-center gap-2 flex-wrap">
                                                 <h5 className="text-sm font-bold text-white">{s.name}</h5>
                                                 {conf && (
-                                                    <span className={cn('text-[9px] px-2 py-0.5 rounded-full border font-semibold', conf.style)}>
+                                                    <span className={cn('text-[11px] px-2 py-0.5 rounded-full border font-semibold', conf.style)}>
                                                         {conf.label}
                                                     </span>
                                                 )}
@@ -207,7 +207,7 @@ export function IncomeSources({ sources, range }: Props) {
                                                     <span>cada {s.frequency_months} meses</span>
                                                 )}
                                             </div>
-                                            {s.notes && <p className="text-[10px] text-muted-foreground mt-1">{s.notes}</p>}
+                                            {s.notes && <p className="text-[11px] text-muted-foreground mt-1">{s.notes}</p>}
                                         </div>
                                         <span className="font-mono font-bold text-white text-base shrink-0">
                                             {formatCurrency(s.amount)}
@@ -218,14 +218,14 @@ export function IncomeSources({ sources, range }: Props) {
                                         <button
                                             onClick={() => handleReceived(s)}
                                             disabled={busyId === s.id}
-                                            className="px-2.5 py-1.5 bg-emerald-600/15 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/25 rounded-lg text-[10px] font-semibold flex items-center gap-1.5 disabled:opacity-50"
+                                            className="px-2.5 py-1.5 bg-emerald-600/15 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/25 rounded-lg text-[11px] font-semibold flex items-center gap-1.5 disabled:opacity-50"
                                         >
                                             {busyId === s.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
                                             Ya lo cobré
                                         </button>
                                         <button
                                             onClick={() => openEdit(s)}
-                                            className="px-2.5 py-1.5 bg-secondary hover:bg-secondary/70 border border-border text-muted-foreground rounded-lg text-[10px] font-semibold"
+                                            className="px-2.5 py-1.5 bg-secondary hover:bg-secondary/70 border border-border text-muted-foreground rounded-lg text-[11px] font-semibold"
                                         >
                                             Editar
                                         </button>
@@ -250,13 +250,13 @@ export function IncomeSources({ sources, range }: Props) {
                         <motion.div
                             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                             onClick={() => setOpen(false)}
-                            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+                            className="absolute inset-0 bg-background/80"
                         />
                         <motion.div
                             initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }}
-                            className="relative w-full sm:max-w-lg max-h-[92vh] overflow-y-auto bg-secondary/90 backdrop-blur-xl border border-border rounded-t-2xl sm:rounded-2xl shadow-2xl"
+                            className="relative w-full sm:max-w-lg max-h-[92vh] overflow-y-auto bg-secondary/90 border border-border rounded-t-2xl sm:rounded-2xl shadow-2xl"
                         >
-                            <div className="p-4 border-b border-border flex items-center justify-between sticky top-0 bg-secondary/95 backdrop-blur-xl z-10">
+                            <div className="p-4 border-b border-border flex items-center justify-between sticky top-0 bg-secondary/95 z-10">
                                 <h3 className="font-semibold text-foreground text-sm">
                                     {form.id ? 'Editar fuente de ingreso' : 'Nueva fuente de ingreso'}
                                 </h3>
@@ -282,14 +282,14 @@ export function IncomeSources({ sources, range }: Props) {
                                                     'px-3 py-2 rounded-lg border text-[11px] font-semibold transition-all text-left',
                                                     form.kind === k.value
                                                         ? 'bg-emerald-600/25 border-emerald-500/50 text-emerald-200'
-                                                        : 'bg-black/20 border-white/10 text-muted-foreground hover:text-white'
+                                                        : 'bg-black/20 border-hairline text-muted-foreground hover:text-white'
                                                 )}
                                             >
                                                 {k.label}
                                             </button>
                                         ))}
                                     </div>
-                                    <p className="text-[10px] text-muted-foreground pt-0.5">
+                                    <p className="text-[11px] text-muted-foreground pt-0.5">
                                         {KINDS.find(k => k.value === form.kind)?.hint}
                                     </p>
                                 </div>
@@ -372,17 +372,17 @@ export function IncomeSources({ sources, range }: Props) {
                                                 type="button"
                                                 onClick={() => setForm(f => ({ ...f, confidence: c.value }))}
                                                 className={cn(
-                                                    'px-2 py-1.5 rounded-lg border text-[10px] font-semibold transition-all',
+                                                    'px-2 py-1.5 rounded-lg border text-[11px] font-semibold transition-all',
                                                     form.confidence === c.value
                                                         ? c.style
-                                                        : 'bg-black/20 border-white/10 text-muted-foreground hover:text-white'
+                                                        : 'bg-black/20 border-hairline text-muted-foreground hover:text-white'
                                                 )}
                                             >
                                                 {c.label}
                                             </button>
                                         ))}
                                     </div>
-                                    <p className="text-[10px] text-muted-foreground pt-0.5">
+                                    <p className="text-[11px] text-muted-foreground pt-0.5">
                                         Solo lo confirmado cuenta para el piso del mes. Lo demás es upside, no presupuesto.
                                     </p>
                                 </div>
@@ -398,7 +398,7 @@ export function IncomeSources({ sources, range }: Props) {
                                 <button
                                     type="submit"
                                     disabled={saving}
-                                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+                                    className="w-full py-3 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50"
                                 >
                                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                                     Guardar fuente
@@ -412,7 +412,7 @@ export function IncomeSources({ sources, range }: Props) {
     )
 }
 
-const inputCls = 'w-full bg-background/60 border border-border rounded-lg px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-emerald-500/40'
+const inputCls = 'w-full bg-background/60 border border-border rounded-lg px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-amber-400/50'
 
 function Field({ label, hint, required, children }: { label: string; hint?: string; required?: boolean; children: React.ReactNode }) {
     return (
@@ -420,7 +420,7 @@ function Field({ label, hint, required, children }: { label: string; hint?: stri
             <label className="text-[11px] font-semibold text-foreground">
                 {label} {required && <span className="text-emerald-400">*</span>}
             </label>
-            {hint && <p className="text-[10px] text-muted-foreground">{hint}</p>}
+            {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
             {children}
         </div>
     )

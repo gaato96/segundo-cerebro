@@ -73,8 +73,8 @@ export function GameRouletteModal({
     }, [games.length])
 
     return (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-            <div className="bg-popover border border-indigo-500/20 w-full max-w-md flex flex-col rounded-3xl relative overflow-hidden shadow-2xl p-6 text-center space-y-6">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80">
+            <div className="bg-popover border border-indigo-500/20 w-full max-w-md flex flex-col rounded-2xl relative overflow-hidden shadow-2xl p-6 text-center space-y-6">
                 <button
                     onClick={onClose}
                     className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-full transition-colors text-muted-foreground hover:text-white z-20"
@@ -86,7 +86,7 @@ export function GameRouletteModal({
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold">
                         <Sparkles className="w-3.5 h-3.5" /> Decisiones de Gaming
                     </div>
-                    <h2 className="text-2xl font-heading font-bold flex items-center justify-center gap-2 text-white">
+                    <h2 className="text-2xl font-semibold flex items-center justify-center gap-2 text-white">
                         <Dices className="w-6 h-6 text-indigo-400 animate-bounce" />
                         ¿Qué juego jugamos hoy?
                     </h2>
@@ -96,8 +96,8 @@ export function GameRouletteModal({
                 </div>
 
                 {/* Spinning Area */}
-                <div className="h-60 flex items-center justify-center border border-white/10 bg-black/40 rounded-2xl p-4 overflow-hidden relative shadow-inner">
-                    <div className="absolute inset-0 bg-gradient-to-t from-popover/70 via-transparent to-popover/70 pointer-events-none z-10" />
+                <div className="h-60 flex items-center justify-center border border-hairline bg-black/40 rounded-2xl p-4 overflow-hidden relative shadow-inner">
+                    <div className="absolute inset-0 pointer-events-none z-10" />
 
                     {games.length === 0 ? (
                         <div className="space-y-2 text-center p-4">
@@ -121,23 +121,23 @@ export function GameRouletteModal({
                                         <img
                                             src={games[currentIndex].cover_url}
                                             alt={games[currentIndex].title}
-                                            className="w-24 h-32 rounded-xl object-cover shadow-lg border border-indigo-500/30"
+                                            className="w-24 h-32 rounded-xl object-cover border border-indigo-500/30"
                                         />
                                     ) : (
-                                        <div className="w-24 h-32 rounded-xl bg-indigo-950/40 flex items-center justify-center text-indigo-400 shadow-lg border border-indigo-500/20">
+                                        <div className="w-24 h-32 rounded-xl bg-indigo-950/40 flex items-center justify-center text-indigo-400 border border-indigo-500/20">
                                             <Gamepad2 className="w-12 h-12" />
                                         </div>
                                     )}
 
                                     <div className="space-y-0.5 max-w-[280px]">
-                                        <h3 className="font-heading font-bold text-lg text-white leading-tight truncate">
+                                        <h3 className="font-semibold text-lg text-white leading-tight truncate">
                                             {games[currentIndex]?.title || 'Sorteando...'}
                                         </h3>
                                         {games[currentIndex]?.author_or_studio && (
                                             <p className="text-xs text-muted-foreground truncate">{games[currentIndex].author_or_studio}</p>
                                         )}
                                         {games[currentIndex]?.progress && (
-                                            <span className="inline-block mt-1 text-[10px] bg-indigo-500/20 text-indigo-300 px-2.5 py-0.5 rounded-full border border-indigo-500/30 font-semibold font-mono">
+                                            <span className="inline-block mt-1 text-[11px] bg-indigo-500/20 text-indigo-300 px-2.5 py-0.5 rounded-full border border-indigo-500/30 font-semibold font-mono">
                                                 Progreso: {games[currentIndex].progress}
                                             </span>
                                         )}
@@ -169,7 +169,7 @@ export function GameRouletteModal({
                                 <button
                                     type="button"
                                     onClick={startSpin}
-                                    className="flex-1 px-4 py-2.5 border border-white/10 hover:bg-white/10 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 text-white active:scale-95"
+                                    className="flex-1 px-4 py-2.5 border border-hairline hover:bg-white/10 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 text-white active:scale-95"
                                 >
                                     <RefreshCw className="w-4 h-4 text-indigo-400" />
                                     Volver a girar
@@ -177,7 +177,7 @@ export function GameRouletteModal({
                                 <button
                                     type="button"
                                     onClick={onClose}
-                                    className="flex-1 bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-1.5 active:scale-95"
+                                    className="flex-1 bg-raised text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95"
                                 >
                                     <Play className="w-4 h-4 fill-white" />
                                     ¡A jugar!
@@ -189,7 +189,7 @@ export function GameRouletteModal({
                             type="button"
                             onClick={startSpin}
                             disabled={games.length === 0}
-                            className="w-full py-3 bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+                            className="w-full py-3 bg-raised text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
                         >
                             <Dices className="w-4 h-4" />
                             ¡Girar Ruleta!

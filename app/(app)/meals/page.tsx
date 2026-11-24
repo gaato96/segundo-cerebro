@@ -1,35 +1,11 @@
-import { ModuleTabs } from '@/components/layout/ModuleTabs'
 import { getRecipes, getWeeklyMenu } from '@/lib/actions/meals'
 import MealsPageClient from './MealsPageClient'
-import { getLocalDateStr, getLocalDayOfWeek, addDaysToDateStr } from '@/lib/utils'
+import { getLocalDateStr, getWeekStartStr } from '@/lib/utils'
+
+export const dynamic = 'force-dynamic'
 
 export default async function MealsPage() {
-    const recipes = await getRecipes()
-
-    // Default to current week (Monday) - timezone-aware
-    const now = new Date()
-    const dow = getLocalDayOfWeek(now)          // 0 = Sun … 6 = Sat
-    const diffToMonday = dow === 0 ? -6 : 1 - dow
-    const todayStr = getLocalDateStr(now)
-    const startDate = addDaysToDateStr(todayStr, diffToMonday)
-
-    const weeklyMenu = await getWeeklyMenu(startDate)
-
-    return (
-        <>
-        <ModuleTabs module="nutricion" />
-        <main className="p-4 md:p-8 space-y-8 pb-20 md:pb-8 max-w-6xl mx-auto">
-            <header className="flex flex-col gap-2">
-                <h1 className="text-2xl md:text-[30px] font-semibold tracking-tight">Menú semanal y recetas</h1>
-                <p className="text-muted-foreground">Organiza tu semana y genera tu lista de compras con IA.</p>
-            </header>
-
-            <MealsPageClient
-                initialRecipes={recipes}
-                initialMenu={weeklyMenu}
-                startDate={startDate}
-            />
-        </main>
-        </>
-    )
+    const startDate = getWeekStartStr(getLocalDateStr())
+    const [recipes, weeklyMenu] = await Promise.all([getRecipes(), getWeeklyMenu(startDate)])
+    return <MealsPageClient initialRecipes={recipes} initialMenu={weeklyMenu} startDate={startDate} />
 }

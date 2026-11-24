@@ -1,479 +1,117 @@
 'use client'
 
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import {
-    Plus, Wand2, RefreshCw, ShoppingCart,
-    ChevronLeft, ChevronRight, X, Loader2,
-    Clock, Tag, ListChecks, Bike, ExternalLink, Sparkles
-} from 'lucide-react'
-import { generateWeeklyMenu, createRecipe, saveMenuState, importFrequentRecipes, updateSingleMeal } from '@/lib/actions/meals'
-import { format, addDays } from 'date-fns'
-import { es } from 'date-fns/locale'
-import { cn } from '@/lib/utils'
+import { useRouter } from 'next/navigation'
+import { Plus, Wand2, RefreshCw, ShoppingCart, Loader2, ListChecks, Bike, ExternalLink, Utensils } from 'lucide-react'
+import { generateWeeklyMenu, saveMenuState, importFrequentRecipes, updateSingleMeal } from '@/lib/actions/meals'
 import { RecipeForm } from './RecipeForm'
 import { RecipeManager } from './RecipeManager'
 import { ShoppingListModal } from './ShoppingListModal'
 import { ManualMealSelectorModal } from '@/components/meals/ManualMealSelectorModal'
 import { RecipeRecommenderWidget } from '@/components/meals/RecipeRecommenderWidget'
+import { ModuleTabs } from '@/components/layout/ModuleTabs'
+import { PageShell, PageHeader, Panel, SectionLabel, EmptyState, Check } from '@/components/ui/kit'
+import { Modal } from '@/components/ui/controls'
+import { addDaysToDateStr, getLocalDateStr, cn } from '@/lib/utils'
 
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+const NAMES = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+const DELIVERY = { recipe_id: 'delivery', name: 'Delivery' }
+const label = (r: any) => r?.recipe_id === 'delivery' ? 'Delivery' : r?.name || 'Sin asignar'
 
-interface Recipe {
-    id: string
-    name: string
-    description?: string
-    ingredients: any[]
-    steps?: string
-    complexity: string
-    link?: string
-}
-
-export default function MealsPageClient({ initialRecipes, initialMenu, startDate }: any) {
-    const [recipes, setRecipes] = useState<Recipe[]>(initialRecipes)
+export default function MealsPageClient({ initialRecipes: recipes, initialMenu, startDate }: any) {
+    const router = useRouter()
     const [menu, setMenu] = useState<any>(initialMenu)
-    const [isLoading, setIsLoading] = useState(false)
-    const [isRegeneratingDay, setIsRegeneratingDay] = useState(false)
-    const [selectedDay, setSelectedDay] = useState<string | null>(null)
-    const [isAddRecipeOpen, setIsAddRecipeOpen] = useState(false)
-    const [isManageRecipesOpen, setIsManageRecipesOpen] = useState(false)
-    const [isShoppingListOpen, setIsShoppingListOpen] = useState(false)
-    const [editingMealSlot, setEditingMealSlot] = useState<{ day: string, type: 'lunch' | 'dinner' | 'Almuerzo' | 'Cena' } | null>(null)
+    const [busy, setBusy] = useState<string | null>(null)
+    const [day, setDay] = useState<string | null>(null)
+    const [modal, setModal] = useState<'add' | 'manage' | 'shopping' | null>(null)
+    const [slot, setSlot] = useState<{ day: string; type: 'Almuerzo' | 'Cena' } | null>(null)
+    const today = getLocalDateStr()
+    const list: any[] = menu?.shopping_list || []
+    const pending = list.filter(i => !i.checked).length
 
-    async function handleManualSelectMeal(recipeId: string, recipeName: string) {
-        if (!editingMealSlot) return
-        const { day, type } = editingMealSlot
-        const slotType = type === 'Almuerzo' || type === 'lunch' ? 'lunch' : 'dinner'
-        
+    async function generate(only?: string) {
+        if (!only && menu && !confirm('Esto reemplaza todo el menú de la semana. ¿Seguimos?')) return
+        setBusy(only || 'all')
         try {
-            await updateSingleMeal(startDate, day, slotType, recipeId, recipeName)
-            
-            // Update local state menu
-            const currentDayData = menu?.menu_data?.[day] || {
-                lunch: { recipe_id: '', name: 'Sin asignar' },
-                dinner: { recipe_id: '', name: 'Sin asignar' }
-            }
-            
-            let updatedDayData = { ...currentDayData }
-            if (recipeId === 'delivery') {
-                updatedDayData = {
-                    lunch: { recipe_id: 'delivery', name: '🛵 Delivery / Pedir Comida' },
-                    dinner: { recipe_id: 'delivery', name: '🛵 Delivery / Pedir Comida' }
-                }
-            } else {
-                updatedDayData[slotType] = { recipe_id: recipeId, name: recipeName || 'Sin asignar' }
-            }
-
-            const updatedMenuData = {
-                ...menu?.menu_data,
-                [day]: updatedDayData
-            }
-
-            setMenu({
-                ...menu,
-                menu_data: updatedMenuData
-            })
-        } catch (e: any) {
-            alert('Error asignando comida: ' + e.message)
-        }
+            const res: any = only ? await generateWeeklyMenu(startDate, true, only) : await generateWeeklyMenu(startDate)
+            if (res.error) return alert(res.error)
+            if (!res.data) return
+            if (only) {
+                const data = { ...menu.menu_data, [only]: res.data.menu[only] }
+                setMenu({ ...menu, menu_data: data })
+                await saveMenuState(startDate, data, list)
+            } else setMenu({ menu_data: res.data.menu, shopping_list: res.data.shopping_list })
+        } catch (e: any) { alert(`No se pudo generar: ${e.message}`) } finally { setBusy(null) }
     }
-
-    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-
-    async function handleGenerateMenu() {
-        if (!confirm('Esto reemplazará todo tu menú de esta semana. ¿Continuar?')) return
-        setIsLoading(true)
+    async function delivery(d: string) {
+        const data = { ...menu?.menu_data, [d]: { lunch: DELIVERY, dinner: DELIVERY } }
+        setMenu({ ...menu, menu_data: data })
+        await saveMenuState(startDate, data, list)
+    }
+    async function choose(id: string, name: string) {
+        if (!slot) return
+        const type = slot.type === 'Almuerzo' ? 'lunch' : 'dinner'
         try {
-            const result = await generateWeeklyMenu(startDate)
-            if (result.error) {
-                alert(result.error)
-                return
-            }
-            if (result.data) {
-                setMenu({ menu_data: result.data.menu, shopping_list: result.data.shopping_list })
-            }
-        } catch (error: any) {
-            alert('Error crítico: ' + error.message)
-        } finally {
-            setIsLoading(false)
-        }
+            await updateSingleMeal(startDate, slot.day, type, id, name)
+            const cur = menu?.menu_data?.[slot.day] || {}
+            const next = id === 'delivery' ? { lunch: DELIVERY, dinner: DELIVERY } : { ...cur, [type]: { recipe_id: id, name: name || 'Sin asignar' } }
+            setMenu({ ...menu, menu_data: { ...menu?.menu_data, [slot.day]: next } })
+            setSlot(null)
+        } catch (e: any) { alert(`No se pudo asignar: ${e.message}`) }
     }
-
-    async function handleRegenerateDay(day: string) {
-        setIsRegeneratingDay(true)
-        try {
-            const result = await generateWeeklyMenu(startDate, true, day)
-            if (result.error) {
-                alert(result.error)
-                return
-            }
-            if (result.data) {
-                const newMenuData = { ...menu.menu_data, [day]: result.data.menu[day] }
-                setMenu({ ...menu, menu_data: newMenuData })
-                await saveMenuState(startDate, newMenuData, menu.shopping_list)
-            }
-        } catch (error: any) {
-            alert('Error crítico: ' + error.message)
-        } finally {
-            setIsRegeneratingDay(false)
-        }
+    async function toggle(item: string, checked: boolean) {
+        const next = list.map(i => i.item === item ? { ...i, checked } : i)
+        setMenu({ ...menu, shopping_list: next })
+        await saveMenuState(startDate, menu.menu_data, next)
     }
-
-    async function handleSetDelivery(day: string) {
-        const newMenuData = { ...menu.menu_data }
-        newMenuData[day] = {
-            lunch: { recipe_id: 'delivery', name: '🛵 Delivery / Pedir Comida' },
-            dinner: { recipe_id: 'delivery', name: '🛵 Delivery / Pedir Comida' }
-        }
-        setMenu({ ...menu, menu_data: newMenuData })
-        await saveMenuState(startDate, newMenuData, menu.shopping_list)
-    }
+    const selected = day ? menu?.menu_data?.[day] : null
 
     return (
-        <div className="space-y-8">
-            {/* Action Bar */}
-            <div className="flex flex-wrap gap-4 items-center justify-between">
-                <div className="flex gap-2">
-                    <button
-                        onClick={() => setIsAddRecipeOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-colors font-medium text-sm"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Nueva Receta
-                    </button>
-                    <button
-                        onClick={() => setIsManageRecipesOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl transition-colors font-medium text-sm"
-                    >
-                        <ListChecks className="w-4 h-4" />
-                        Mis Recetas
-                    </button>
+        <PageShell wide>
+            <PageHeader label="Cuerpo · menú" title="Menú semanal" subtitle="Qué se come cada día y qué falta comprar."
+                actions={<><ModuleTabs module="nutricion" /><button onClick={() => setModal('manage')} className="btn-secondary text-sm"><ListChecks className="w-4 h-4" /> Recetas <span className="font-mono text-xs text-muted-foreground">{recipes.length}</span></button><button onClick={() => setModal('add')} className="btn-secondary text-sm"><Plus className="w-4 h-4" /> Receta</button><button onClick={() => generate()} disabled={!!busy || !recipes.length} className="btn-primary text-sm">{busy === 'all' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />} {menu ? 'Rearmar semana' : 'Armar semana'}</button></>} />
 
-                    <button
-                        onClick={handleGenerateMenu}
-                        disabled={isLoading}
-                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 rounded-xl transition-all font-medium text-sm shadow-lg shadow-indigo-500/20 ml-4"
-                    >
-                        {isLoading ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                            <Wand2 className="w-4 h-4" />
-                        )}
-                        {menu ? 'Regenerar Toda la Semana' : 'Magic Generate'}
-                    </button>
-                </div>
-
-                {menu?.shopping_list && (
-                    <button
-                        onClick={() => setIsShoppingListOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2 glass hover:bg-white/10 border-indigo-500/30 text-indigo-300 rounded-xl transition-colors text-sm font-medium shadow-md shadow-indigo-500/10"
-                    >
-                        <ShoppingCart className="w-4 h-4" />
-                        Ver Lista de Compras ({(menu.shopping_list || []).filter((i: any) => !i.checked).length} pendientes)
-                    </button>
-                )}
-
-                <AnimatePresence>
-                    {isAddRecipeOpen && (
-                        <RecipeForm onClose={() => setIsAddRecipeOpen(false)} />
-                    )}
-                    {isManageRecipesOpen && (
-                        <RecipeManager recipes={recipes} onClose={() => setIsManageRecipesOpen(false)} />
-                    )}
-                    {isShoppingListOpen && (
-                        <ShoppingListModal
-                            shoppingList={menu?.shopping_list}
-                            onClose={() => setIsShoppingListOpen(false)}
-                            onToggleItem={async (itemName, checked) => {
-                                const updatedList = (menu.shopping_list || []).map((item: any) =>
-                                    item.item === itemName ? { ...item, checked } : item
+            {recipes.length === 0 ? <EmptyState icon={Utensils} title="Cargá tus comidas" hint="Con tus recetas la IA arma el menú. Podés empezar con 24 comidas frecuentes." action={<button disabled={!!busy} onClick={async () => { setBusy('import'); try { await importFrequentRecipes(); router.refresh() } catch (e: any) { alert(e.message) } finally { setBusy(null) } }} className="btn-primary text-sm">Cargar 24 recetas</button>} /> : (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <div className="lg:col-span-8 min-w-0">
+                        <div className="rounded-2xl bg-card border border-hairline divide-y divide-hairline overflow-hidden">
+                            {DAYS.map((d, i) => {
+                                const date = addDaysToDateStr(startDate, i), isToday = date === today, data = menu?.menu_data?.[d]
+                                const isDelivery = data?.lunch?.recipe_id === 'delivery' && data?.dinner?.recipe_id === 'delivery'
+                                return (
+                                    <div key={d} className={cn('relative grid sm:grid-cols-[110px_1fr_1fr] gap-x-5 gap-y-2 px-5 py-4', isToday && 'bg-amber-400/10', busy === d && 'animate-pulse')}>
+                                        {isToday && <span className="absolute left-0 inset-y-3 w-[2px] rounded-full bg-amber-400" />}
+                                        <button onClick={() => setDay(d)} className="text-left"><span className={cn('text-sm font-medium', isToday && 'text-amber-300')}>{NAMES[i]}</span><span className="block font-mono text-[11px] text-muted-foreground">{date.slice(8)}/{date.slice(5, 7)}{isToday ? ' · hoy' : ''}</span></button>
+                                        {isDelivery ? <button onClick={() => setDay(d)} className="sm:col-span-2 text-left text-sm text-muted-foreground inline-flex items-center gap-2"><Bike className="w-4 h-4" /> Día de delivery</button> : (['lunch', 'dinner'] as const).map(k => <button key={k} onClick={() => data ? setDay(d) : setSlot({ day: d, type: k === 'lunch' ? 'Almuerzo' : 'Cena' })} className="text-left min-w-0"><span className="label-caps !text-[10px] block">{k === 'lunch' ? 'Almuerzo' : 'Cena'}</span><span className={cn('text-sm leading-snug', !data?.[k]?.name && 'text-ink-faint')}>{label(data?.[k])}</span></button>)}
+                                    </div>
                                 )
-                                setMenu({ ...menu, shopping_list: updatedList })
-                                await saveMenuState(startDate, menu.menu_data, updatedList)
-                            }}
-                        />
-                    )}
-                    {editingMealSlot && (
-                        <ManualMealSelectorModal
-                            dayName={format(addDays(new Date(startDate), days.indexOf(editingMealSlot.day)), "EEEE d 'de' MMMM", { locale: es })}
-                            mealType={editingMealSlot.type as any}
-                            recipes={recipes}
-                            onClose={() => setEditingMealSlot(null)}
-                            onSelect={handleManualSelectMeal}
-                        />
-                    )}
-                </AnimatePresence>
-            </div>
-
-
-            {/* Weekly Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-                {days.map((day) => {
-                    const dayData = menu?.menu_data?.[day]
-                    const isDelivery = dayData?.lunch?.recipe_id === 'delivery'
-                    return (
-                        <div key={day} className="flex flex-col gap-3">
-                            <h3 className="font-heading font-semibold text-center text-sm text-muted-foreground uppercase tracking-wider">
-                                {format(addDays(new Date(startDate), days.indexOf(day)), 'EEEE', { locale: es })}
-                            </h3>
-
-                            <div className={`space-y-3 p-2 rounded-2xl ${isRegeneratingDay && selectedDay === day ? 'animate-pulse opacity-50 bg-indigo-500/10' : ''}`}>
-                                {isDelivery ? (
-                                    <MealCard
-                                        type="Almuerzo & Cena"
-                                        recipe={dayData?.lunch}
-                                        onClick={() => setSelectedDay(day)}
-                                        isDelivery={true}
-                                    />
-                                ) : (
-                                    <>
-                                        <MealCard
-                                            type="Almuerzo"
-                                            recipe={dayData?.lunch}
-                                            onClick={() => setSelectedDay(day)}
-                                        />
-                                        <MealCard
-                                            type="Cena"
-                                            recipe={dayData?.dinner}
-                                            onClick={() => setSelectedDay(day)}
-                                        />
-                                    </>
-                                )}
-                            </div>
+                            })}
                         </div>
-                    )
-                })}
-            </div>
-
-            {/* Recipe Modal */}
-            <AnimatePresence>
-                {selectedDay && menu?.menu_data?.[selectedDay] && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                        <motion.div
-                            initial={{ scale: 0.95, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.95, opacity: 0 }}
-                            className="bg-popover border border-white/10 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl p-8 relative flex flex-col"
-                        >
-                            <button
-                                onClick={() => setSelectedDay(null)}
-                                className="absolute top-6 right-6 p-2 hover:bg-white/10 rounded-full"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-
-                            <div className="space-y-6">
-                                <div className="flex justify-between items-end">
-                                    <div>
-                                        <h2 className="text-3xl font-heading font-bold mb-2">Detalles del Día</h2>
-                                        <p className="text-indigo-400 font-medium">
-                                            {format(addDays(new Date(startDate), days.indexOf(selectedDay)), "EEEE d 'de' MMMM", { locale: es })}
-                                        </p>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => handleSetDelivery(selectedDay)}
-                                            className="px-3 py-1.5 flex items-center gap-2 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 rounded-lg text-sm font-medium transition-colors"
-                                        >
-                                            <Bike className="w-4 h-4" />
-                                            Pedir Delivery
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                handleRegenerateDay(selectedDay)
-                                                setSelectedDay(null)
-                                            }}
-                                            className="px-3 py-1.5 flex items-center gap-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-lg text-sm font-medium transition-colors"
-                                        >
-                                            <RefreshCw className="w-4 h-4" />
-                                            Regenerar Día
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {menu.menu_data[selectedDay].lunch.recipe_id === 'delivery' ? (
-                                    <div className="p-10 text-center glass rounded-2xl border-dashed border-2 border-yellow-500/20">
-                                        <Bike className="w-12 h-12 text-yellow-500/50 mx-auto mb-4" />
-                                        <h3 className="text-xl font-bold text-yellow-500">Día de Delivery</h3>
-                                        <p className="text-muted-foreground mt-2">Relájate y pide algo rico para hoy.</p>
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white/5 p-6 rounded-2xl border border-white/5">
-                                        <RecipeSection 
-                                            title="Almuerzo" 
-                                            recipeData={menu.menu_data[selectedDay].lunch} 
-                                            recipes={recipes} 
-                                            onChangeMeal={() => setEditingMealSlot({ day: selectedDay, type: 'Almuerzo' })}
-                                        />
-                                        <RecipeSection 
-                                            title="Cena" 
-                                            recipeData={menu.menu_data[selectedDay].dinner} 
-                                            recipes={recipes} 
-                                            onChangeMeal={() => setEditingMealSlot({ day: selectedDay, type: 'Cena' })}
-                                        />
-                                    </div>
-                                )}
-                            </div>
-                        </motion.div>
                     </div>
-                )}
-            </AnimatePresence>
-
-            {/* Empty State */}
-            {recipes.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center space-y-6 glass rounded-3xl border-dashed border-2 border-white/10">
-                    <div className="p-4 rounded-full bg-indigo-600/10 text-indigo-400 animate-pulse">
-                        <Sparkles className="w-8 h-8" />
-                    </div>
-                    <div className="space-y-2 max-w-md px-4">
-                        <h3 className="text-2xl font-heading font-bold">Comienza cargando tus comidas</h3>
-                        <p className="text-muted-foreground text-sm">
-                            Necesitas recetas guardadas para que el planificador con IA pueda armar tu menú semanal. 
-                            Puedes cargar las 24 comidas que preparás con más frecuencia al instante.
-                        </p>
-                    </div>
-                    <button
-                        onClick={async () => {
-                            setIsLoading(true)
-                            try {
-                                const res = await importFrequentRecipes()
-                                if (res.success) {
-                                    alert(`¡Éxito! Se importaron ${res.count} recetas frecuentes.`);
-                                    window.location.reload()
-                                }
-                            } catch (err: any) {
-                                alert('Error al cargar recetas: ' + err.message)
-                            } finally {
-                                setIsLoading(false)
-                            }
-                        }}
-                        disabled={isLoading}
-                        className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition-all font-semibold shadow-lg shadow-indigo-600/20 flex items-center gap-2"
-                    >
-                        {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                        Cargar 24 Recetas Frecuentes
-                    </button>
-                </div>
-            ) : !menu && !isLoading && (
-                <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 glass rounded-3xl border-dashed border-2 border-white/10">
-                    <div className="p-4 rounded-full bg-indigo-600/10 text-indigo-400">
-                        <Wand2 className="w-8 h-8" />
-                    </div>
-                    <div>
-                        <h3 className="text-xl font-heading font-bold">Tu plan está vacío</h3>
-                        <p className="text-muted-foreground">Usa el botón Magic Generate para que la IA organice tu semana.</p>
-                    </div>
+                    <aside className="lg:col-span-4 min-w-0 space-y-4">
+                        <Panel>
+                            <SectionLabel right={list.length ? `${pending} de ${list.length} pendientes` : undefined}>Compras</SectionLabel>
+                            {list.length === 0 ? <p className="text-sm text-muted-foreground">Aparece sola al armar la semana.</p> : <><div className="divide-y divide-hairline">{[...list].sort((a, b) => Number(!!a.checked) - Number(!!b.checked)).slice(0, 8).map((i, n) => <button key={n} onClick={() => toggle(i.item, !i.checked)} className="w-full flex items-center gap-3 min-h-[44px] text-left text-sm"><Check done={!!i.checked} /><span className={cn('flex-1 truncate', i.checked && 'line-through text-muted-foreground')}>{i.item}</span><span className="font-mono text-xs text-muted-foreground">{[i.amount, i.unit].filter(Boolean).join(' ')}</span></button>)}</div><button onClick={() => setModal('shopping')} className="btn-secondary w-full text-sm mt-3"><ShoppingCart className="w-4 h-4" /> Lista completa</button></>}
+                        </Panel>
+                        <RecipeRecommenderWidget />
+                    </aside>
                 </div>
             )}
 
-            {/* AI Recommender section */}
-            <div className="pt-6 border-t border-white/5">
-                <RecipeRecommenderWidget />
-            </div>
-        </div>
-    )
-}
-
-function MealCard({ type, recipe, onClick, isDelivery }: any) {
-    return (
-        <button
-            onClick={onClick}
-            className={`w-full text-left p-4 rounded-2xl transition-all group border ${isDelivery ? 'bg-yellow-500/5 border-yellow-500/20 hover:bg-yellow-500/10' : 'glass border-white/10 hover:border-indigo-500/50'}`}
-        >
-            <span className={`text-[10px] font-bold uppercase tracking-widest block mb-2 ${isDelivery ? 'text-yellow-500' : 'text-indigo-400'}`}>
-                {type}
-            </span>
-            {recipe ? (
-                <div>
-                    <h4 className="font-heading font-bold text-sm group-hover:opacity-80 transition-colors line-clamp-2">
-                        {recipe.name}
-                    </h4>
-                </div>
-            ) : (
-                <span className="text-xs text-muted-foreground italic">Sin asignar</span>
-            )}
-        </button>
-    )
-}
-
-function RecipeSection({ title, recipeData, recipes, onChangeMeal }: any) {
-    const recipe = recipes.find((r: any) => r.id === recipeData?.recipe_id)
-
-    if (!recipe) return (
-        <div className="space-y-3 p-4 rounded-2xl border border-white/5 bg-white/5 flex flex-col items-center justify-center text-center">
-            <h3 className="font-heading font-bold text-sm text-indigo-300">{title}</h3>
-            <p className="text-muted-foreground italic text-xs">Sin asignar</p>
-            <button
-                onClick={onChangeMeal}
-                className="mt-2 text-xs px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 font-bold border border-indigo-500/20 rounded-xl transition-all"
-            >
-                Asignar comida
-            </button>
-        </div>
-    )
-
-    return (
-        <div className="space-y-4">
-            <div className="flex justify-between items-center">
-                <h3 className="font-heading font-bold text-xl flex items-center gap-2">
-                    <span className="w-1.5 h-6 bg-indigo-500 rounded-full" />
-                    {title}
-                </h3>
-                <button
-                    onClick={onChangeMeal}
-                    className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold hover:underline"
-                >
-                    Cambiar
-                </button>
-            </div>
-
-            <div className="space-y-1 relative group">
-                <p className="font-bold text-lg leading-tight pr-8">{recipe.name}</p>
-                {recipe.link && (
-                    <a
-                        href={recipe.link}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="absolute right-0 top-0 p-2 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500 hover:text-white rounded-lg transition-colors"
-                        title="Ver receta externa"
-                    >
-                        <ExternalLink className="w-4 h-4" />
-                    </a>
-                )}
-            </div>
-
-            <div className="flex gap-4">
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-white/5 px-2 py-1 rounded-lg">
-                    <Clock className="w-3 h-3" />
-                    {recipe.complexity}
-                </div>
-                {recipe.protein_type && (
-                    <div className="flex items-center gap-1.5 text-xs text-indigo-300 bg-indigo-500/10 px-2 py-1 rounded-lg">
-                        <Tag className="w-3 h-3" />
-                        {recipe.protein_type}
-                    </div>
-                )}
-            </div>
-
-            <div className="space-y-2">
-                <h4 className="text-xs font-bold uppercase text-muted-foreground tracking-widest">Ingredientes</h4>
-                <ul className="space-y-1">
-                    {recipe.ingredients.map((ing: any, i: number) => (
-                        <li key={i} className="text-sm flex justify-between border-b border-white/5 pb-1">
-                            <span>{ing.item}</span>
-                            <span className="text-indigo-400 font-medium">{ing.amount} {ing.unit}</span>
-                        </li>
-                    ))}
-                </ul>
-            </div>
-
-            {recipe.steps && (
-                <div className="space-y-2">
-                    <h4 className="text-xs font-bold uppercase text-muted-foreground tracking-widest">Pasos</h4>
-                    <p className="text-sm text-sidebar-foreground/80 leading-relaxed bg-black/20 p-3 rounded-lg border border-white/5">
-                        {recipe.steps}
-                    </p>
-                </div>
-            )}
-        </div>
+            <Modal open={!!day} wide title={day ? NAMES[DAYS.indexOf(day)] : ''} onClose={() => setDay(null)}>
+                {day && <div className="space-y-5">
+                    <div className="flex flex-wrap gap-2"><button onClick={() => delivery(day)} className="btn-secondary text-sm"><Bike className="w-4 h-4" /> Delivery</button><button disabled={!!busy || !menu} onClick={() => generate(day)} className="btn-secondary text-sm"><RefreshCw className={cn('w-4 h-4', busy === day && 'animate-spin')} /> Rearmar día</button></div>
+                    <div className="grid sm:grid-cols-2 gap-6">{(['lunch', 'dinner'] as const).map(k => {
+                        const r = recipes.find((x: any) => x.id === selected?.[k]?.recipe_id)
+                        return <section key={k}><SectionLabel right={<button onClick={() => { setSlot({ day, type: k === 'lunch' ? 'Almuerzo' : 'Cena' }); setDay(null) }} className="hover:text-foreground min-h-[32px]">cambiar</button>}>{k === 'lunch' ? 'Almuerzo' : 'Cena'}</SectionLabel><p className="font-medium">{r?.name || label(selected?.[k])}{r?.link && <a href={r.link} target="_blank" rel="noreferrer" aria-label="Ver receta" className="inline-flex ml-2 align-middle text-muted-foreground"><ExternalLink className="w-4 h-4" /></a>}</p>{r && <><p className="text-xs text-muted-foreground mt-1">{[r.complexity, r.protein_type].filter(Boolean).join(' · ')}</p><ul className="mt-3 divide-y divide-hairline text-sm">{(r.ingredients || []).map((g: any, i: number) => <li key={i} className="flex justify-between gap-3 py-1.5"><span>{g.item}</span><span className="font-mono text-xs text-muted-foreground">{g.amount} {g.unit}</span></li>)}</ul>{r.steps && <p className="text-sm text-muted-foreground mt-3 whitespace-pre-wrap">{r.steps}</p>}</>}</section>
+                    })}</div>
+                </div>}
+            </Modal>
+            {modal === 'add' && <RecipeForm onClose={() => { setModal(null); router.refresh() }} />}
+            {modal === 'manage' && <RecipeManager recipes={recipes} onClose={() => setModal(null)} />}
+            {modal === 'shopping' && <ShoppingListModal shoppingList={list} onClose={() => setModal(null)} onToggleItem={toggle} />}
+            {slot && <ManualMealSelectorModal dayName={NAMES[DAYS.indexOf(slot.day)]} mealType={slot.type as any} recipes={recipes} onClose={() => setSlot(null)} onSelect={choose} />}
+        </PageShell>
     )
 }

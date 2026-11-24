@@ -1,30 +1,17 @@
-import { ModuleTabs } from '@/components/layout/ModuleTabs'
 import { getNutritionProfile, getMonthlyPlan, getProgressHistory, getChatHistory } from '@/lib/actions/nutrition'
+import { getLocalMonthYearStr } from '@/lib/utils'
 import { NutritionPageClient } from './NutritionPageClient'
-import { format } from 'date-fns'
 
 export const dynamic = 'force-dynamic'
 
-export default async function NutritionPage() {
-    const currentMonth = format(new Date(), 'yyyy-MM')
-
-    const [profile, plan, progress, chat] = await Promise.all([
+export default async function NutritionPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+    const currentMonth = getLocalMonthYearStr()
+    const [profile, plan, progress, chat, params] = await Promise.all([
         getNutritionProfile().catch(() => null),
         getMonthlyPlan(currentMonth).catch(() => null),
         getProgressHistory().catch(() => []),
-        getChatHistory().catch(() => [])
+        getChatHistory().catch(() => []),
+        searchParams
     ])
-
-    return (
-        <>
-        <ModuleTabs module="nutricion" />
-        <NutritionPageClient
-            initialProfile={profile}
-            initialPlan={plan}
-            initialProgress={progress || []}
-            initialChat={chat || []}
-            currentMonth={currentMonth}
-        />
-        </>
-    )
+    return <NutritionPageClient initialProfile={profile} initialPlan={plan} initialProgress={progress || []} initialChat={chat || []} currentMonth={currentMonth} initialTab={params.tab === 'progress' ? 'progress' : 'plan'} />
 }

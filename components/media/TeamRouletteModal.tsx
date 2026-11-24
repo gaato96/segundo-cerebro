@@ -84,8 +84,8 @@ export function TeamRouletteModal({
     }, [teams.length, selectedLeagueFilter, selectedDivisionFilter])
 
     return (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-            <div className="bg-popover border border-emerald-500/20 w-full max-w-lg flex flex-col rounded-3xl relative overflow-hidden shadow-2xl p-6 text-center space-y-5">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80">
+            <div className="bg-popover border border-emerald-500/20 w-full max-w-lg flex flex-col rounded-2xl relative overflow-hidden shadow-2xl p-6 text-center space-y-5">
                 {/* Close Button */}
                 <button
                     onClick={onClose}
@@ -99,7 +99,7 @@ export function TeamRouletteModal({
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
                         <Trophy className="w-3.5 h-3.5" /> Selector de Modo Carrera
                     </div>
-                    <h2 className="text-2xl font-heading font-bold flex items-center justify-center gap-2 text-white">
+                    <h2 className="text-2xl font-semibold flex items-center justify-center gap-2 text-white">
                         <Dices className="w-6 h-6 text-emerald-400 animate-bounce" />
                         Ruleta de Equipos Aleatorios
                     </h2>
@@ -109,8 +109,8 @@ export function TeamRouletteModal({
                 </div>
 
                 {/* Filters */}
-                <div className="flex flex-wrap gap-2 justify-center items-center bg-black/30 p-2.5 rounded-2xl border border-white/5 text-xs">
-                    <div className="flex items-center gap-1.5 text-muted-foreground font-semibold pr-2 border-r border-white/10">
+                <div className="flex flex-wrap gap-2 justify-center items-center bg-black/30 p-2.5 rounded-2xl border border-hairline text-xs">
+                    <div className="flex items-center gap-1.5 text-muted-foreground font-semibold pr-2 border-r border-hairline">
                         <Filter className="w-3.5 h-3.5 text-emerald-400" />
                         Filtros:
                     </div>
@@ -118,7 +118,7 @@ export function TeamRouletteModal({
                     <select
                         value={selectedLeagueFilter}
                         onChange={(e) => setSelectedLeagueFilter(e.target.value)}
-                        className="bg-secondary text-foreground border border-border/60 rounded-xl px-2.5 py-1 text-xs outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                        className="bg-secondary text-foreground border border-border/60 rounded-xl px-2.5 py-1 text-xs outline-none focus:ring-1 focus:ring-amber-400/50 cursor-pointer"
                     >
                         <option value="All">Todas las Ligas ({teams.length})</option>
                         {LEAGUES.map(l => (
@@ -152,8 +152,8 @@ export function TeamRouletteModal({
                 </div>
 
                 {/* Spinning Wheel Container */}
-                <div className="h-56 flex items-center justify-center border border-white/10 bg-gradient-to-b from-black/60 to-black/30 rounded-2xl p-4 overflow-hidden relative shadow-inner">
-                    <div className="absolute inset-0 bg-gradient-to-t from-popover/70 via-transparent to-popover/70 pointer-events-none z-10" />
+                <div className="h-56 flex items-center justify-center border border-hairline rounded-2xl p-4 overflow-hidden relative shadow-inner">
+                    <div className="absolute inset-0 pointer-events-none z-10" />
 
                     {filteredTeams.length === 0 ? (
                         <div className="space-y-2 text-center p-4">
@@ -173,12 +173,12 @@ export function TeamRouletteModal({
                                     transition={{ duration: spinning ? 0.04 : 0.2 }}
                                     className="flex flex-col items-center gap-2.5 w-full"
                                 >
-                                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-indigo-500/20 border border-emerald-500/40 flex items-center justify-center text-3xl shadow-xl shadow-emerald-500/10">
+                                    <div className="w-20 h-20 rounded-2xl border border-emerald-500/40 flex items-center justify-center text-3xl">
                                         {filteredTeams[currentIndex]?.flag || '⚽'}
                                     </div>
 
                                     <div className="space-y-1 max-w-[340px]">
-                                        <h3 className="font-heading font-black text-2xl text-white leading-tight truncate">
+                                        <h3 className="font-heading font-semibold text-2xl text-white leading-tight truncate">
                                             {filteredTeams[currentIndex]?.name || 'Seleccionando...'}
                                         </h3>
                                         <div className="flex items-center justify-center gap-2">
@@ -186,7 +186,7 @@ export function TeamRouletteModal({
                                                 {filteredTeams[currentIndex]?.league}
                                             </span>
                                             <span className="text-white/20">•</span>
-                                            <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded text-muted-foreground font-semibold">
+                                            <span className="text-[11px] bg-white/10 px-2 py-0.5 rounded text-muted-foreground font-semibold">
                                                 {filteredTeams[currentIndex]?.division === '2nd' ? '2ª División' : '1ª División'}
                                             </span>
                                         </div>
@@ -218,7 +218,7 @@ export function TeamRouletteModal({
                                 <button
                                     type="button"
                                     onClick={startSpin}
-                                    className="px-4 py-2.5 border border-white/10 hover:bg-white/10 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 text-white active:scale-95"
+                                    className="px-4 py-2.5 border border-hairline hover:bg-white/10 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 text-white active:scale-95"
                                 >
                                     <RefreshCw className="w-4 h-4 text-emerald-400" />
                                     Tirar de nuevo
@@ -229,7 +229,7 @@ export function TeamRouletteModal({
                                         onSelectTeamForChallenge(selectedTeam)
                                         onClose()
                                     }}
-                                    className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 active:scale-95"
+                                    className="flex-1 bg-raised text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 active:scale-95"
                                 >
                                     <Sparkles className="w-4 h-4 fill-white" />
                                     Generar Reto IA con este equipo
@@ -241,7 +241,7 @@ export function TeamRouletteModal({
                             type="button"
                             onClick={startSpin}
                             disabled={filteredTeams.length === 0}
-                            className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+                            className="w-full py-3 bg-raised text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
                         >
                             <Dices className="w-4 h-4" />
                             ¡Girar Ruleta de Equipos!

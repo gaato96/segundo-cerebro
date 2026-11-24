@@ -66,26 +66,26 @@ export function ProgressTracker({ history = [], onAdded }: ProgressTrackerProps)
         <div className="space-y-6">
             {/* Top Stat Summary */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="glass p-5 rounded-2xl border border-emerald-500/20 text-center">
+                <div className="glass p-5 rounded-2xl border border-hairline text-center">
                     <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Último Peso Medido</span>
-                    <div className="text-3xl font-heading font-extrabold text-emerald-400 mt-1">
+                    <div className="text-3xl font-semibold text-emerald-400 mt-1">
                         {latestWeight ? `${latestWeight} kg` : '--'}
                     </div>
                 </div>
 
-                <div className="glass p-5 rounded-2xl border border-border/50 text-center">
+                <div className="glass p-5 rounded-2xl border border-hairline text-center">
                     <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Evolución Total</span>
-                    <div className={`text-3xl font-heading font-extrabold mt-1 ${
+                    <div className={`text-3xl font-semibold mt-1 ${
                         Number(weightDiff) < 0 ? 'text-green-400' : 'text-amber-400'
                     }`}>
                         {weightDiff ? `${weightDiff} kg` : '0 kg'}
                     </div>
                 </div>
 
-                <div className="glass p-5 rounded-2xl border border-border/50 text-center flex flex-col items-center justify-center">
+                <div className="glass p-5 rounded-2xl border border-hairline text-center flex flex-col items-center justify-center">
                     <button
                         onClick={() => setShowForm(!showForm)}
-                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition-all shadow-md flex items-center gap-1.5"
+                        className="px-4 py-2 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5"
                     >
                         <Plus className="w-4 h-4" />
                         Registrar Medición
@@ -99,7 +99,7 @@ export function ProgressTracker({ history = [], onAdded }: ProgressTrackerProps)
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     onSubmit={handleSubmit}
-                    className="glass p-6 rounded-2xl border border-emerald-500/30 space-y-4"
+                    className="glass p-6 rounded-2xl border border-hairline space-y-4"
                 >
                     <h4 className="text-sm font-bold text-foreground">Nuevo Registro de Progreso</h4>
 
@@ -113,7 +113,7 @@ export function ProgressTracker({ history = [], onAdded }: ProgressTrackerProps)
                                 onChange={(e) => setWeight(e.target.value === '' ? '' : Number(e.target.value))}
                                 required
                                 placeholder="Ej. 74.5"
-                                className="w-full bg-secondary/50 border border-border rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                className="w-full bg-secondary/50 border border-border rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                             />
                         </div>
 
@@ -125,7 +125,7 @@ export function ProgressTracker({ history = [], onAdded }: ProgressTrackerProps)
                                 value={waist}
                                 onChange={(e) => setWaist(e.target.value === '' ? '' : Number(e.target.value))}
                                 placeholder="Ej. 82"
-                                className="w-full bg-secondary/50 border border-border rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                className="w-full bg-secondary/50 border border-border rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                             />
                         </div>
                     </div>
@@ -166,7 +166,7 @@ export function ProgressTracker({ history = [], onAdded }: ProgressTrackerProps)
                         <button
                             type="submit"
                             disabled={loading}
-                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl shadow-md flex items-center gap-1.5"
+                            className="px-4 py-2 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white text-xs font-semibold rounded-xl flex items-center gap-1.5"
                         >
                             {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
                             Guardar Registro
@@ -177,7 +177,7 @@ export function ProgressTracker({ history = [], onAdded }: ProgressTrackerProps)
 
             {/* Custom SVG Weight Graph */}
             {history.length > 0 ? (
-                <div className="glass p-6 rounded-2xl border border-border/50 space-y-4">
+                <div className="glass p-6 rounded-2xl border border-hairline space-y-4">
                     <div className="flex items-center justify-between">
                         <h4 className="text-sm font-bold text-foreground">Evolución del Peso</h4>
                         <span className="text-xs text-muted-foreground">{history.length} registros</span>

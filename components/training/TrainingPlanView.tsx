@@ -1,523 +1,123 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import {
-    Dumbbell, Clock, Repeat, Check, RefreshCw, Shuffle,
-    Loader2, ChevronDown, Moon, Info, Zap, RotateCcw, SkipForward, CalendarClock, AlertTriangle
-} from 'lucide-react'
-import {
-    logTrainingSession, undoTrainingSession, regenerateWeek, swapExercise,
-    skipTrainingSession, restartTrainingPlan, setPlanProgressMode
-} from '@/lib/actions/training'
-import type { PlanProgress } from '@/lib/trainingProgress'
-import { cn } from '@/lib/utils'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Check as CheckIcon, RefreshCw, Shuffle, Loader2, ChevronDown, RotateCcw, SkipForward, AlertTriangle } from 'lucide-react'
+import { logTrainingSession, undoTrainingSession, regenerateWeek, swapExercise, skipTrainingSession, restartTrainingPlan, setPlanProgressMode } from '@/lib/actions/training'
+import type { PlanProgress } from '@/lib/trainingProgress'
+import { SectionLabel } from '@/components/ui/kit'
+import { cn } from '@/lib/utils'
 
-interface Props {
-    plan: any
-    logs: any[]
-    progress: PlanProgress
-}
+const DAYS = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
 
-const DAY_NAMES = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
-
-const BLOCK_STYLE: Record<string, { label: string; color: string; icon: any }> = {
-    calentamiento: { label: 'Entrada en calor', color: 'text-sky-400 border-sky-500/25 bg-sky-500/5', icon: Zap },
-    principal: { label: 'Bloque principal', color: 'text-emerald-400 border-emerald-500/25 bg-emerald-500/5', icon: Dumbbell },
-    soga: { label: 'Soga', color: 'text-amber-400 border-amber-500/25 bg-amber-500/5', icon: Repeat },
-    vuelta_calma: { label: 'Vuelta a la calma', color: 'text-violet-400 border-violet-500/25 bg-violet-500/5', icon: Moon }
-}
-
-export function TrainingPlanView({ plan, logs, progress }: Props) {
+/** La sesión que toca, iluminada, con series para tildar. Abajo, las 12 semanas. */
+export function TrainingPlanView({ plan, logs, progress }: { plan: any; logs: any[]; progress: PlanProgress }) {
     const router = useRouter()
-    const weeks = plan?.plan_data?.weeks || []
-    const stats = plan?.plan_data?.stats
-    const currentWeek = progress.currentWeek
-    const [selectedWeek, setSelectedWeek] = useState(currentWeek)
-    const [openDay, setOpenDay] = useState<number | null>(0)
+    const weeks: any[] = plan?.plan_data?.weeks || []
+    const [selected, setSelected] = useState(progress.currentWeek)
+    const [openDay, setOpenDay] = useState<number | null>(null)
     const [busy, setBusy] = useState<string | null>(null)
+    const [sets, setSets] = useState<Record<string, boolean>>({})
+    const key = `sc-sets-${plan.id}`
 
-    const week = useMemo(() => weeks.find((w: any) => w.week === selectedWeek), [weeks, selectedWeek])
+    useEffect(() => { try { setSets(JSON.parse(localStorage.getItem(key) || '{}')) } catch { } }, [key])
+    useEffect(() => { setSelected(progress.currentWeek) }, [progress.currentWeek])
+    const done = useMemo(() => new Set(logs.filter(l => l.completed).map(l => `${l.week_number}-${l.day_index}`)), [logs])
+    const skipped = useMemo(() => new Set(logs.filter(l => l.skipped && !l.completed).map(l => `${l.week_number}-${l.day_index}`)), [logs])
 
-    const doneSet = useMemo(
-        () => new Set(logs.filter(l => l.completed).map(l => `${l.week_number}-${l.day_index}`)),
-        [logs]
-    )
+    const week = weeks.find(w => w.week === selected)
+    if (!week) return <p className="text-sm text-muted-foreground">No se encontró la semana {selected} en el plan.</p>
+    const id = (d: any) => `${selected}-${d.index}`
+    const next = week.days.find((d: any) => !done.has(id(d)) && !skipped.has(id(d)))
 
-    const skippedSet = useMemo(
-        () => new Set(logs.filter(l => l.skipped && !l.completed).map(l => `${l.week_number}-${l.day_index}`)),
-        [logs]
-    )
-
-    const weekProgress = week
-        ? week.days.filter((d: any) => doneSet.has(`${selectedWeek}-${d.index}`)).length
-        : 0
-
-    async function toggleDone(dayIndex: number) {
-        const key = `${selectedWeek}-${dayIndex}`
-        setBusy(key)
-        try {
-            if (doneSet.has(key)) {
-                await undoTrainingSession(plan.id, selectedWeek, dayIndex)
-            } else {
-                await logTrainingSession({ planId: plan.id, weekNumber: selectedWeek, dayIndex })
-            }
-            router.refresh()
-        } catch (e: any) {
-            alert(e?.message)
-        } finally {
-            setBusy(null)
-        }
+    async function run(k: string, fn: () => Promise<unknown>) {
+        setBusy(k)
+        try { await fn(); router.refresh() } catch (e: any) { alert(e?.message || 'No se pudo guardar.') } finally { setBusy(null) }
+    }
+    function tick(k: string) {
+        setSets(s => { const n = { ...s, [k]: !s[k] }; try { localStorage.setItem(key, JSON.stringify(n)) } catch { } return n })
+    }
+    async function restart() {
+        if (!confirm('¿Reiniciar el plan desde hoy en la semana 1? Las sesiones registradas se conservan.')) return
+        await run('restart', () => restartTrainingPlan(plan.id, { startFrom: 'today', keepLogs: true }))
+        setSelected(1)
     }
 
-    async function handleRegenerate() {
-        if (!confirm(`¿Volver a sortear todos los ejercicios de la semana ${selectedWeek}? La estructura y la progresión se mantienen.`)) return
-        setBusy('regen')
-        try {
-            await regenerateWeek(plan.id, selectedWeek)
-            router.refresh()
-        } catch (e: any) {
-            alert(e?.message)
-        } finally {
-            setBusy(null)
-        }
-    }
-
-    async function handleSwap(dayIndex: number, blockIndex: number, itemIndex: number) {
-        const key = `swap-${dayIndex}-${blockIndex}-${itemIndex}`
-        setBusy(key)
-        try {
-            await swapExercise(plan.id, selectedWeek, dayIndex, blockIndex, itemIndex)
-            router.refresh()
-        } catch (e: any) {
-            alert(e?.message)
-        } finally {
-            setBusy(null)
-        }
-    }
-
-    async function handleUndo(dayIndex: number) {
-        const key = `${selectedWeek}-${dayIndex}`
-        setBusy(key)
-        try {
-            await undoTrainingSession(plan.id, selectedWeek, dayIndex)
-            router.refresh()
-        } catch (e: any) {
-            alert(e?.message)
-        } finally {
-            setBusy(null)
-        }
-    }
-
-    async function handleSkip(dayIndex: number) {
-        const key = `skip-${selectedWeek}-${dayIndex}`
-        setBusy(key)
-        try {
-            await skipTrainingSession(plan.id, selectedWeek, dayIndex)
-            router.refresh()
-        } catch (e: any) {
-            alert(e?.message)
-        } finally {
-            setBusy(null)
-        }
-    }
-
-    async function handleRestart() {
-        const keepLogs = confirm(
-            'Reiniciar el plan mueve el arranque a hoy y vuelve a la semana 1.\n\n' +
-            'Aceptar: conservar las sesiones que ya registraste.\n' +
-            'Cancelar: borrarlas y empezar de cero.'
-        )
-        if (!confirm(keepLogs ? '¿Reiniciamos conservando tu historial?' : '¿Reiniciamos borrando las sesiones registradas de este plan?')) return
-
-        setBusy('restart')
-        try {
-            await restartTrainingPlan(plan.id, { startFrom: 'today', keepLogs })
-            setSelectedWeek(1)
-            router.refresh()
-        } catch (e: any) {
-            alert(`No se pudo reiniciar: ${e?.message}`)
-        } finally {
-            setBusy(null)
-        }
-    }
-
-    async function handleToggleMode() {
-        const next = progress.mode === 'adaptive' ? 'calendar' : 'adaptive'
-        setBusy('mode')
-        try {
-            await setPlanProgressMode(plan.id, next)
-            router.refresh()
-        } catch (e: any) {
-            alert(e?.message)
-        } finally {
-            setBusy(null)
-        }
-    }
-
-    if (!week) {
-        return <p className="text-sm text-muted-foreground">No se encontró la semana {selectedWeek} en el plan.</p>
-    }
-
-    return (
-        <div className="space-y-5">
-            {/* Resumen del plan */}
-            <div className="glass p-4 rounded-2xl border border-emerald-500/20 bg-gradient-to-r from-emerald-950/20 to-secondary/20">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                        <h3 className="text-base font-heading font-bold text-foreground">{plan.name}</h3>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">
-                            {plan.start_date} → {plan.end_date} · {plan.days_per_week} días/semana · {plan.session_minutes} min
-                        </p>
-                    </div>
-                    {stats && (
-                        <div className="flex gap-4 text-center shrink-0">
-                            <Stat value={stats.total_sessions} label="sesiones" />
-                            <Stat value={stats.unique_exercises} label="ejercicios distintos" />
-                            {stats.total_rope_minutes > 0 && <Stat value={`${stats.total_rope_minutes}′`} label="de soga" />}
-                        </div>
-                    )}
-                </div>
-                {plan.plan_data?.summary && (
-                    <p className="text-[11px] text-muted-foreground mt-3 pt-3 border-t border-border/40 leading-relaxed">
-                        {plan.plan_data.summary}
-                    </p>
-                )}
-
-                <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-border/40">
-                    <button
-                        onClick={handleToggleMode}
-                        disabled={busy === 'mode'}
-                        title={
-                            progress.mode === 'adaptive'
-                                ? 'El plan espera a que completes cada semana. Tocá para que avance con el calendario.'
-                                : 'El plan avanza con las fechas aunque no entrenes. Tocá para que espere a que completes cada semana.'
-                        }
-                        className="px-2.5 py-1.5 glass border border-border/50 rounded-lg text-[10px] font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors"
-                    >
-                        {busy === 'mode' ? <Loader2 className="w-3 h-3 animate-spin" /> : <CalendarClock className="w-3 h-3" />}
-                        {progress.mode === 'adaptive' ? 'Avanza cuando completás' : 'Avanza con el calendario'}
-                    </button>
-                    <button
-                        onClick={handleRestart}
-                        disabled={busy === 'restart'}
-                        title="Mueve el arranque del plan a hoy y vuelve a la semana 1"
-                        className="px-2.5 py-1.5 glass border border-border/50 rounded-lg text-[10px] font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors"
-                    >
-                        {busy === 'restart' ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3" />}
-                        Reiniciar plan
-                    </button>
-                </div>
-            </div>
-
-            {/* Por qué estás en esta semana y no en otra */}
-            {progress.mode === 'adaptive' && progress.weeksBehind > 0 && (
-                <div className="glass p-3.5 rounded-2xl border border-amber-500/30 bg-amber-950/10 flex items-start gap-2.5">
-                    <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                    <div className="text-[11px] leading-relaxed">
-                        <p className="text-foreground font-semibold">
-                            Seguís en la semana {progress.currentWeek}, no en la {progress.calendarWeek}.
-                        </p>
-                        <p className="text-muted-foreground mt-0.5">
-                            Por fecha ya tendrías que estar {progress.weeksBehind === 1 ? 'una semana' : `${progress.weeksBehind} semanas`} más adelante,
-                            pero la semana {progress.currentWeek} todavía tiene días sin hacer y el plan no avanza sin vos.
-                            Hacelos, salteá los que no vas a hacer, o reiniciá el plan desde hoy.
-                        </p>
-                    </div>
-                </div>
-            )}
-
-            {progress.finished && (
-                <div className="glass p-3.5 rounded-2xl border border-emerald-500/30 bg-emerald-950/10 flex items-start gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <div className="text-[11px] leading-relaxed">
-                        <p className="text-foreground font-semibold">Terminaste las 12 semanas.</p>
-                        <p className="text-muted-foreground mt-0.5">
-                            Generá un plan nuevo con tu perfil actualizado, o reiniciá este desde hoy.
-                        </p>
-                    </div>
-                </div>
-            )}
-
-            {/* Selector de semanas */}
-            <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                        12 semanas · 3 bloques
-                    </span>
-                    <span className="text-[10px] text-muted-foreground">
-                        {progress.mode === 'adaptive' && progress.weeksBehind > 0
-                            ? `Vas por la semana ${currentWeek} · el calendario va por la ${progress.calendarWeek}`
-                            : `Hoy estás en la semana ${currentWeek}`}
-                    </span>
-                </div>
-                <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
-                    {weeks.map((w: any) => {
-                        const active = w.week === selectedWeek
-                        const done = w.days.filter((d: any) => doneSet.has(`${w.week}-${d.index}`)).length
-                        const complete = done === w.days.length
-                        return (
-                            <button
-                                key={w.week}
-                                onClick={() => { setSelectedWeek(w.week); setOpenDay(0) }}
-                                className={cn(
-                                    'relative shrink-0 w-[52px] py-2 rounded-xl border text-center transition-all',
-                                    active
-                                        ? 'bg-emerald-600 border-emerald-500 text-white'
-                                        : complete
-                                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-                                            : 'bg-secondary/40 border-border/50 text-muted-foreground hover:text-foreground',
-                                    w.week === currentWeek && !active && 'ring-1 ring-amber-500/50'
-                                )}
-                            >
-                                <span className="block text-[9px] opacity-70 leading-none">SEM</span>
-                                <span className="block text-sm font-bold leading-tight">{w.week}</span>
-                                {w.deload && <span className="block text-[8px] font-bold text-amber-400 leading-none">carga↓</span>}
-                            </button>
-                        )
-                    })}
-                </div>
-            </div>
-
-            {/* Cabecera de la semana */}
-            <div className={cn(
-                'glass p-4 rounded-2xl border space-y-2',
-                week.deload ? 'border-amber-500/30 bg-amber-950/10' : 'border-border/50'
-            )}>
-                <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="text-sm font-bold text-foreground">Semana {week.week} · {week.block}</h4>
-                            {week.deload && (
-                                <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                                    Descarga
-                                </span>
-                            )}
-                        </div>
-                        <p className="text-[11px] text-muted-foreground mt-1">{week.intensity}</p>
-                    </div>
-                    <button
-                        onClick={handleRegenerate}
-                        disabled={busy === 'regen'}
-                        title="Sortear otros ejercicios para esta semana"
-                        className="px-2.5 py-1.5 glass border border-border/50 rounded-lg text-[10px] font-semibold text-muted-foreground hover:text-foreground shrink-0 flex items-center gap-1.5 transition-colors"
-                    >
-                        {busy === 'regen' ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
-                        Otros ejercicios
-                    </button>
-                </div>
-
-                <p className="text-[11px] text-foreground/80 flex items-start gap-1.5">
-                    <Info className="w-3 h-3 text-emerald-400 shrink-0 mt-0.5" />
-                    {week.coach_note}
-                </p>
-
-                {week.rope && (
-                    <div className="flex items-start gap-1.5 text-[11px] text-amber-300/90 bg-amber-500/10 border border-amber-500/20 rounded-lg p-2.5">
-                        <Repeat className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                        <span>
-                            <strong>Soga esta semana:</strong> {week.rope.prescription}
-                            <span className="block text-amber-300/70 mt-0.5">Variantes: {week.rope.variations.join(' · ')}</span>
-                        </span>
-                    </div>
-                )}
-
-                <div className="flex items-center gap-2 pt-1">
-                    <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
-                        <motion.div
-                            className="h-full bg-emerald-500"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${(weekProgress / week.days.length) * 100}%` }}
-                        />
-                    </div>
-                    <span className="text-[10px] font-semibold text-muted-foreground shrink-0">
-                        {weekProgress}/{week.days.length}
-                    </span>
-                </div>
-            </div>
-
-            {/* Días */}
-            <div className="space-y-2.5">
-                {week.days.map((day: any) => {
-                    const key = `${selectedWeek}-${day.index}`
-                    const done = doneSet.has(key)
-                    const skipped = skippedSet.has(key)
-                    const isOpen = openDay === day.index
-
-                    return (
-                        <div
-                            key={day.index}
-                            className={cn(
-                                'glass rounded-2xl border overflow-hidden transition-colors',
-                                done
-                                    ? 'border-emerald-500/35 bg-emerald-950/10'
-                                    : skipped
-                                        ? 'border-border/40 bg-secondary/20'
-                                        : 'border-border/50'
-                            )}
-                        >
-                            <div className="p-4 flex items-center gap-3">
-                                <button
-                                    onClick={() => toggleDone(day.index)}
-                                    disabled={busy === key}
-                                    className={cn(
-                                        'w-8 h-8 rounded-xl border-2 flex items-center justify-center shrink-0 transition-all',
-                                        done
-                                            ? 'bg-emerald-500 border-emerald-500 text-white'
-                                            : 'border-border hover:border-emerald-500/60 text-transparent hover:text-emerald-500/40'
-                                    )}
-                                >
-                                    {busy === key ? <Loader2 className="w-4 h-4 animate-spin text-foreground" /> : <Check className="w-4 h-4" />}
-                                </button>
-
-                                <button
-                                    onClick={() => setOpenDay(isOpen ? null : day.index)}
-                                    className="flex-1 min-w-0 text-left"
-                                >
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                                            {DAY_NAMES[day.day_iso] || `Día ${day.index + 1}`}
-                                        </span>
-                                        <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                                            <Clock className="w-3 h-3" />{day.duration_min} min
-                                        </span>
-                                        {skipped && (
-                                            <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-secondary text-muted-foreground border border-border/60">
-                                                Salteada
-                                            </span>
-                                        )}
+    const Blocks = ({ day }: { day: any }) => (
+        <div className="space-y-6 mt-5">
+            {day.blocks.map((b: any, bi: number) => (
+                <section key={bi}>
+                    <SectionLabel>{b.name}</SectionLabel>
+                    {b.note && <p className="text-sm text-muted-foreground mb-3 max-w-[65ch]">{b.note}</p>}
+                    <ol className="divide-y divide-hairline rounded-xl bg-background/30 border border-hairline">
+                        {b.items.map((it: any, ii: number) => {
+                            const n = Math.min(8, Number(String(it.sets).match(/\d+/)?.[0]) || 1)
+                            const sk = `swap-${day.index}-${bi}-${ii}`
+                            return (
+                                <li key={ii} className="px-4 py-3">
+                                    <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
+                                        <span className="font-mono text-xs text-ink-faint pt-0.5">{String(ii + 1).padStart(2, '0')}</span>
+                                        <div className="flex-1 min-w-[170px]"><p className="text-sm font-medium">{it.name}</p><p className="font-mono text-xs text-muted-foreground mt-0.5">{it.sets} × {it.reps}{it.rest && it.rest !== '—' ? ` · pausa ${it.rest}` : ''}</p></div>
+                                        <div className="flex flex-wrap gap-1">{Array.from({ length: n }, (_, s) => { const k = `${id(day)}-${bi}-${ii}-${s}`; return <button key={s} onClick={() => tick(k)} aria-pressed={!!sets[k]} aria-label={`Serie ${s + 1}`} className={cn('h-9 min-w-[38px] px-2 rounded-lg border font-mono text-[11px]', sets[k] ? 'bg-emerald-400 border-emerald-400 text-background' : 'border-hairline text-muted-foreground')}>S{s + 1}</button> })}</div>
                                     </div>
-                                    <h5 className={cn('text-sm font-bold mt-1', done || skipped ? 'text-muted-foreground line-through' : 'text-foreground')}>
-                                        {day.title}
-                                    </h5>
-                                    <p className="text-[11px] text-muted-foreground">{day.focus}</p>
-                                </button>
-
-                                {!done && !skipped && (
-                                    <button
-                                        onClick={() => handleSkip(day.index)}
-                                        disabled={busy === `skip-${selectedWeek}-${day.index}`}
-                                        title="Darla por resuelta sin hacerla, para que el plan pueda avanzar"
-                                        className="p-1.5 rounded-lg text-muted-foreground hover:text-amber-400 hover:bg-amber-500/10 shrink-0 transition-colors"
-                                    >
-                                        {busy === `skip-${selectedWeek}-${day.index}`
-                                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                            : <SkipForward className="w-3.5 h-3.5" />}
-                                    </button>
-                                )}
-
-                                {skipped && (
-                                    <button
-                                        onClick={() => handleUndo(day.index)}
-                                        disabled={busy === key}
-                                        title="Deshacer: volver a dejarla pendiente"
-                                        className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground shrink-0 transition-colors"
-                                    >
-                                        {busy === key ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
-                                    </button>
-                                )}
-
-                                <ChevronDown
-                                    onClick={() => setOpenDay(isOpen ? null : day.index)}
-                                    className={cn('w-4 h-4 text-muted-foreground shrink-0 cursor-pointer transition-transform', isOpen && 'rotate-180')}
-                                />
-                            </div>
-
-                            <AnimatePresence initial={false}>
-                                {isOpen && (
-                                    <motion.div
-                                        initial={{ height: 0, opacity: 0 }}
-                                        animate={{ height: 'auto', opacity: 1 }}
-                                        exit={{ height: 0, opacity: 0 }}
-                                        className="overflow-hidden"
-                                    >
-                                        <div className="px-4 pb-4 space-y-3">
-                                            {day.blocks.map((block: any, blockIndex: number) => {
-                                                const style = BLOCK_STYLE[block.type] || BLOCK_STYLE.principal
-                                                const BlockIcon = style.icon
-                                                return (
-                                                    <div key={blockIndex} className={cn('rounded-xl border p-3 space-y-2', style.color)}>
-                                                        <div className="flex items-center gap-1.5">
-                                                            <BlockIcon className="w-3.5 h-3.5" />
-                                                            <span className="text-[11px] font-bold uppercase tracking-wider">{block.name}</span>
-                                                        </div>
-                                                        {block.note && (
-                                                            <p className="text-[10px] text-muted-foreground leading-relaxed">{block.note}</p>
-                                                        )}
-
-                                                        <div className="space-y-1.5">
-                                                            {block.items.map((item: any, itemIndex: number) => {
-                                                                const swapKey = `swap-${day.index}-${blockIndex}-${itemIndex}`
-                                                                const swappable = block.type === 'principal'
-                                                                return (
-                                                                    <div
-                                                                        key={itemIndex}
-                                                                        className="bg-background/50 rounded-lg p-2.5 border border-border/40"
-                                                                    >
-                                                                        <div className="flex items-start justify-between gap-2">
-                                                                            <span className="text-xs font-semibold text-foreground leading-snug">
-                                                                                {item.name}
-                                                                            </span>
-                                                                            <span className="text-[11px] font-bold text-emerald-400 shrink-0 whitespace-nowrap">
-                                                                                {item.sets} × {item.reps}
-                                                                            </span>
-                                                                        </div>
-
-                                                                        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 mt-1 text-[10px] text-muted-foreground">
-                                                                            <span>{item.muscles}</span>
-                                                                            {item.rest !== '—' && <span>· Pausa {item.rest}</span>}
-                                                                            <span className="text-emerald-400/70">· {item.equipment}</span>
-                                                                        </div>
-
-                                                                        <p className="text-[10px] text-foreground/60 mt-1 italic leading-relaxed">{item.cue}</p>
-
-                                                                        {swappable && (
-                                                                            <button
-                                                                                onClick={() => handleSwap(day.index, blockIndex, itemIndex)}
-                                                                                disabled={busy === swapKey}
-                                                                                className="mt-1.5 text-[10px] font-semibold text-muted-foreground hover:text-emerald-400 flex items-center gap-1 transition-colors"
-                                                                            >
-                                                                                {busy === swapKey
-                                                                                    ? <Loader2 className="w-3 h-3 animate-spin" />
-                                                                                    : <Shuffle className="w-3 h-3" />}
-                                                                                Cambiar por otro
-                                                                            </button>
-                                                                        )}
-                                                                    </div>
-                                                                )
-                                                            })}
-                                                        </div>
-                                                    </div>
-                                                )
-                                            })}
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </div>
-                    )
-                })}
-            </div>
-
-            {/* Días de descanso */}
-            <div className="glass p-3.5 rounded-xl border border-border/50 flex items-start gap-2.5 bg-secondary/20">
-                <Moon className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    <strong className="text-foreground">Los días que no aparecen son de descanso.</strong> Caminata, movilidad o nada.
-                    El músculo crece cuando descansás, no cuando entrenás. Y las semanas de descarga (4, 8 y 12) son parte del plan:
-                    si las saltás, llegás quemado a la semana 9.
-                </p>
-            </div>
+                                    <details className="mt-1 text-xs text-muted-foreground"><summary className="cursor-pointer min-h-[28px] flex items-center">Cómo se hace</summary><p className="max-w-[60ch] pb-1">{it.cue}</p><p>{it.muscles} · {it.equipment}</p>{b.type === 'principal' && <button onClick={() => run(sk, () => swapExercise(plan.id, selected, day.index, bi, ii))} disabled={busy === sk} className="mt-2 h-9 inline-flex items-center gap-1.5 hover:text-foreground">{busy === sk ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Shuffle className="w-3.5 h-3.5" />} Cambiar ejercicio</button>}</details>
+                                </li>
+                            )
+                        })}
+                    </ol>
+                </section>
+            ))}
         </div>
     )
-}
 
-function Stat({ value, label }: { value: any; label: string }) {
     return (
-        <div>
-            <span className="block text-base font-bold text-emerald-400 leading-none">{value}</span>
-            <span className="block text-[9px] text-muted-foreground uppercase tracking-wider mt-0.5">{label}</span>
+        <div className="space-y-8">
+            {progress.mode === 'adaptive' && progress.weeksBehind > 0 && <p className="flex gap-3 rounded-xl border border-hairline px-4 py-3 text-sm text-muted-foreground"><AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />Vas por la semana {progress.currentWeek}; por calendario tocaría la {progress.calendarWeek}. El plan te espera: hacé o salteá lo que falta.</p>}
+            {progress.finished && <p className="rounded-xl border border-hairline px-4 py-3 text-sm">Terminaste las 12 semanas. Generá un plan nuevo con tu perfil actualizado.</p>}
+
+            {next ? (
+                <section className="lamp rounded-2xl p-5 md:p-6">
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                        <div><p className="label-caps !text-amber-300">{selected === progress.currentWeek ? 'La sesión que sigue' : `Semana ${selected}`} · {DAYS[next.day_iso] || `día ${next.index + 1}`}</p><h2 className="text-xl font-semibold mt-1">{next.title} <span className="font-mono text-sm text-muted-foreground">{next.duration_min} min</span></h2><p className="text-sm text-muted-foreground mt-1">{next.focus}</p></div>
+                        <div className="flex gap-2"><button onClick={() => run(`skip-${next.index}`, () => skipTrainingSession(plan.id, selected, next.index))} disabled={!!busy} className="btn-secondary text-sm"><SkipForward className="w-4 h-4" /> Saltear</button><button onClick={() => run(id(next), () => logTrainingSession({ planId: plan.id, weekNumber: selected, dayIndex: next.index }))} disabled={!!busy} className="btn-primary text-sm">{busy === id(next) ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckIcon className="w-4 h-4" />} Sesión hecha</button></div>
+                    </div>
+                    <Blocks day={next} />
+                </section>
+            ) : <p className="rounded-2xl border border-hairline bg-card px-5 py-6 text-sm">Semana {selected} resuelta. {selected < weeks.length ? 'Elegí la próxima abajo.' : ''}</p>}
+
+            <section>
+                <SectionLabel right={`semana ${selected} de ${weeks.length}`}>Las 12 semanas</SectionLabel>
+                <div className="grid grid-cols-6 lg:grid-cols-12 gap-1.5">
+                    {weeks.map(w => {
+                        const n = w.days.filter((d: any) => done.has(`${w.week}-${d.index}`)).length
+                        return <button key={w.week} onClick={() => { setSelected(w.week); setOpenDay(null) }} aria-pressed={w.week === selected} className={cn('rounded-lg p-2 text-left border', w.week === selected ? 'border-[hsl(var(--hairline-strong))] bg-raised' : 'border-transparent hover:bg-card')}><span className={cn('block h-1.5 rounded-full mb-1.5', n === w.days.length ? 'bg-emerald-400' : w.week === progress.currentWeek ? 'bg-amber-400' : n > 0 ? 'bg-emerald-400/50' : 'bg-raised')} /><span className="font-mono text-[11px] text-muted-foreground block">S{String(w.week).padStart(2, '0')}</span><span className="font-mono text-[10px] text-ink-faint">{n}/{w.days.length}{w.deload ? ' · desc.' : ''}</span></button>
+                    })}
+                </div>
+            </section>
+
+            <section>
+                <SectionLabel right={<button onClick={() => { if (confirm(`¿Sortear otros ejercicios para la semana ${selected}?`)) run('regen', () => regenerateWeek(plan.id, selected)) }} disabled={!!busy} className="inline-flex items-center gap-1.5 hover:text-foreground min-h-[32px]"><RefreshCw className={cn('w-3.5 h-3.5', busy === 'regen' && 'animate-spin')} /> otros ejercicios</button>}>Semana {week.week} · {week.block}</SectionLabel>
+                <p className="text-sm text-muted-foreground max-w-[70ch] mb-3">{week.intensity} {week.coach_note}</p>
+                {week.rope && <p className="text-sm text-muted-foreground max-w-[70ch] mb-3"><span className="text-foreground">Soga:</span> {week.rope.prescription}</p>}
+                <div className="rounded-2xl bg-card border border-hairline divide-y divide-hairline">
+                    {week.days.map((d: any) => {
+                        const k = id(d), isDone = done.has(k), isSkip = skipped.has(k), open = openDay === d.index
+                        return <div key={d.index} className="px-4">
+                            <div className="flex items-center gap-3 min-h-[60px]">
+                                <button onClick={() => run(k, () => isDone || isSkip ? undoTrainingSession(plan.id, selected, d.index) : logTrainingSession({ planId: plan.id, weekNumber: selected, dayIndex: d.index }))} disabled={!!busy} aria-label={isDone ? 'Desmarcar' : isSkip ? 'Volver a pendiente' : 'Marcar hecha'} className={cn('w-6 h-6 rounded-md border flex items-center justify-center', isDone ? 'bg-emerald-400 border-emerald-400 text-background' : 'border-[hsl(var(--hairline-strong))]')}>{busy === k ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : isDone ? <CheckIcon className="w-3.5 h-3.5" /> : isSkip ? <RotateCcw className="w-3 h-3 text-muted-foreground" /> : null}</button>
+                                <button onClick={() => setOpenDay(open ? null : d.index)} aria-expanded={open} className="flex-1 min-w-0 text-left flex items-center gap-3 py-3"><span className="flex-1 min-w-0"><span className={cn('block text-sm truncate', (isDone || isSkip) && 'text-muted-foreground line-through')}>{d.title}</span><span className="block font-mono text-[11px] text-muted-foreground">{DAYS[d.day_iso] || `Día ${d.index + 1}`} · {d.duration_min} min{isSkip ? ' · salteada' : ''}</span></span><ChevronDown className={cn('w-4 h-4 text-muted-foreground transition-transform', open && 'rotate-180')} /></button>
+                            </div>
+                            {open && <div className="pb-5"><Blocks day={d} /></div>}
+                        </div>
+                    })}
+                </div>
+            </section>
+
+            <div className="flex flex-wrap gap-2 pt-4 border-t border-hairline text-xs text-muted-foreground">
+                <button onClick={() => run('mode', () => setPlanProgressMode(plan.id, progress.mode === 'adaptive' ? 'calendar' : 'adaptive'))} disabled={!!busy} className="h-10 px-3 rounded-lg border border-hairline hover:text-foreground">{progress.mode === 'adaptive' ? 'Avanza cuando completás' : 'Avanza con el calendario'}</button>
+                <button onClick={restart} disabled={!!busy} className="h-10 px-3 rounded-lg border border-hairline hover:text-foreground">Reiniciar plan</button>
+                <span className="self-center">Los días que no aparecen son de descanso.</span>
+            </div>
         </div>
     )
 }

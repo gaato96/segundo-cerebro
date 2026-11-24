@@ -1,157 +1,66 @@
 'use client'
 
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { Sparkles, Utensils, MessageSquare, TrendingUp, Dumbbell, UserCheck, Scale, ArrowLeft } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Loader2, Sparkles, UserCheck } from 'lucide-react'
 import { NutritionProfileForm } from '@/components/nutrition/NutritionProfileForm'
-import { NutritionDashboard } from '@/components/nutrition/NutritionDashboard'
 import { MonthlyPlanView } from '@/components/nutrition/MonthlyPlanView'
 import { ProgressTracker } from '@/components/nutrition/ProgressTracker'
 import { ExerciseRoutine } from '@/components/nutrition/ExerciseRoutine'
 import { NutritionChat } from '@/components/nutrition/NutritionChat'
 import { generateMonthlyPlan } from '@/lib/actions/nutrition'
-import Link from 'next/link'
+import { ModuleTabs } from '@/components/layout/ModuleTabs'
+import { PageShell, PageHeader, Panel, SectionLabel } from '@/components/ui/kit'
+import { Segmented, StatStrip } from '@/components/ui/controls'
+import { LineChart } from '@/components/ui/LineChart'
 
-interface NutritionPageClientProps {
-    initialProfile: any
-    initialPlan: any
-    initialProgress: any[]
-    initialChat: any[]
-    currentMonth: string
-}
+type Tab = 'plan' | 'progress' | 'exercise'
+const GOAL: Record<string, string> = { lose_weight: 'Bajar de peso', maintain: 'Mantenimiento', gain_muscle: 'Ganar músculo' }
 
-export function NutritionPageClient({
-    initialProfile,
-    initialPlan,
-    initialProgress,
-    initialChat,
-    currentMonth
-}: NutritionPageClientProps) {
-    const [profile, setProfile] = useState(initialProfile)
+export function NutritionPageClient({ initialProfile: profile, initialPlan, initialProgress, initialChat, currentMonth, initialTab }: {
+    initialProfile: any; initialPlan: any; initialProgress: any[]; initialChat: any[]; currentMonth: string; initialTab: Tab
+}) {
+    const router = useRouter()
     const [plan, setPlan] = useState(initialPlan)
-    const [progressHistory, setProgressHistory] = useState(initialProgress)
-    const [activeTab, setActiveTab] = useState<'dashboard' | 'plan' | 'progress' | 'exercise' | 'chat'>(
-        initialProfile ? 'dashboard' : 'profile' as any
-    )
-    const [editingProfile, setEditingProfile] = useState(!initialProfile)
+    const [tab, setTab] = useState<Tab>(initialTab)
+    const [editing, setEditing] = useState(!profile)
     const [generating, setGenerating] = useState(false)
+    useEffect(() => { setPlan(initialPlan) }, [initialPlan])
 
-    async function handleGeneratePlan() {
+    async function generate() {
+        if (plan && !confirm('Esto reemplaza el plan de este mes. ¿Seguimos?')) return
         setGenerating(true)
-        try {
-            const newPlan = await generateMonthlyPlan(currentMonth)
-            setPlan(newPlan)
-            setActiveTab('plan')
-        } catch (err: any) {
-            console.error(err)
-            alert(`Error al generar el plan: ${err?.message || 'Reintentá en unos momentos.'}`)
-        } finally {
-            setGenerating(false)
-        }
+        try { setPlan(await generateMonthlyPlan(currentMonth)); setTab('plan') } catch (e: any) { alert(`No se pudo generar: ${e?.message || 'reintentá en unos momentos.'}`) } finally { setGenerating(false) }
     }
-
-    if (editingProfile || !profile) {
-        return (
-            <div className="px-4 md:px-8 py-6 md:py-8 max-w-5xl mx-auto space-y-6 animate-fade-in">
-                <div className="flex items-center justify-between">
-                    <Link
-                        href="/meals"
-                        className="text-xs font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        Volver a Nutrición
-                    </Link>
-                </div>
-                <NutritionProfileForm
-                    initialProfile={profile}
-                    onSuccess={() => {
-                        setEditingProfile(false)
-                        window.location.reload()
-                    }}
-                />
-            </div>
-        )
-    }
+    if (editing || !profile) return (
+        <PageShell className="max-w-[760px]">
+            <PageHeader label="Cuerpo" title="Perfil nutricional" subtitle="Con esto se calculan tus calorías y macros." actions={profile ? <button onClick={() => setEditing(false)} className="btn-secondary text-sm">Volver</button> : undefined} />
+            <NutritionProfileForm initialProfile={profile} onSuccess={() => { setEditing(false); router.refresh() }} />
+        </PageShell>
+    )
+    const weights = initialProgress.filter(h => Number(h.weight_kg) > 0).map(h => ({ label: `${String(h.date).slice(8, 10)}/${String(h.date).slice(5, 7)}`, value: Number(h.weight_kg) }))
 
     return (
-        <div className="px-4 md:px-8 py-6 md:py-8 max-w-5xl mx-auto space-y-6 animate-fade-in relative pb-20 md:pb-8">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl md:text-[30px] font-semibold tracking-tight">Asistente Nutricionista</h1>
-                    <p className="text-muted-foreground text-sm mt-0.5">
-                        Tu plan mensual inteligente y seguimiento personalizado para Tucumán
-                    </p>
+        <PageShell wide>
+            <PageHeader label={`Cuerpo · ${GOAL[profile.goal] || profile.goal}`} title="Nutrición" subtitle="Tu plan del mes y el nutricionista, en una sola pantalla."
+                actions={<><ModuleTabs module="nutricion" /><button onClick={() => setEditing(true)} className="btn-secondary text-sm"><UserCheck className="w-4 h-4" /> Perfil</button><button onClick={generate} disabled={generating} className={plan ? 'btn-secondary text-sm' : 'btn-primary text-sm'}>{generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />} {plan ? 'Regenerar' : 'Generar plan'}</button></>} />
+            <div className="mb-6"><StatStrip items={[
+                { label: 'Energía diaria', value: `${profile.target_calories} kcal`, hint: `gastás unas ${profile.tdee_calories}` },
+                { label: 'Proteína', value: `${profile.target_protein_g} g` }, { label: 'Carbos', value: `${profile.target_carbs_g} g` }, { label: 'Grasas', value: `${profile.target_fat_g} g` }, { label: 'Agua', value: `${profile.water_liters} L`, hint: `${Math.round(profile.water_liters * 4)} vasos` }
+            ]} /></div>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div className="lg:col-span-8 min-w-0 space-y-5">
+                    <Segmented value={tab} onChange={setTab} options={[{ id: 'plan', label: 'Plan del mes' }, { id: 'progress', label: 'Progreso' }, { id: 'exercise', label: 'Rutina corta' }]} />
+                    {tab === 'plan' && <MonthlyPlanView plan={plan} />}
+                    {tab === 'progress' && <ProgressTracker history={initialProgress} onAdded={() => router.refresh()} />}
+                    {tab === 'exercise' && <ExerciseRoutine exercisePlan={plan?.exercise_plan} />}
                 </div>
-
-                <button
-                    onClick={() => setEditingProfile(true)}
-                    className="px-3.5 py-2 glass hover:bg-secondary/60 border border-border/50 text-xs font-semibold text-foreground rounded-xl transition-all flex items-center gap-1.5 shrink-0"
-                >
-                    <UserCheck className="w-4 h-4 text-emerald-400" />
-                    Editar Perfil Nutricional
-                </button>
+                <aside className="lg:col-span-4 min-w-0 space-y-4">
+                    <NutritionChat initialMessages={initialChat} />
+                    {weights.length > 0 && <Panel><SectionLabel right={`${weights[weights.length - 1].value} kg`}>Peso</SectionLabel><LineChart points={weights.slice(-12)} unit="kg" /></Panel>}
+                    {profile.supplements_recommended?.length > 0 && <Panel><SectionLabel>Suplementos sugeridos</SectionLabel><ul className="divide-y divide-hairline text-sm">{profile.supplements_recommended.map((s: string) => <li key={s} className="py-2">{s}</li>)}</ul></Panel>}
+                </aside>
             </div>
-
-            {/* Navigation Tabs */}
-            <div className="flex items-center p-1 bg-secondary/50 rounded-xl border border-border/50 overflow-x-auto no-scrollbar">
-                {[
-                    { id: 'dashboard', label: 'Panel', icon: Sparkles },
-                    { id: 'plan', label: 'Mi Plan Mensual', icon: Utensils },
-                    { id: 'progress', label: 'Progreso', icon: TrendingUp },
-                    { id: 'exercise', label: 'Entrenamiento', icon: Dumbbell },
-                    { id: 'chat', label: 'Chat Nutricionista', icon: MessageSquare }
-                ].map((tab) => {
-                    const Icon = tab.icon
-                    const isActive = activeTab === tab.id
-                    return (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id as any)}
-                            className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex-1 min-w-[120px] ${
-                                isActive
-                                    ? 'bg-emerald-600 text-white shadow-md'
-                                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/40'
-                            }`}
-                        >
-                            <Icon className="w-4 h-4" />
-                            {tab.label}
-                        </button>
-                    )
-                })}
-            </div>
-
-            {/* Tab Views */}
-            {activeTab === 'dashboard' && (
-                <NutritionDashboard
-                    profile={profile}
-                    onGeneratePlan={handleGeneratePlan}
-                    generating={generating}
-                />
-            )}
-
-            {activeTab === 'plan' && (
-                <MonthlyPlanView
-                    plan={plan}
-                />
-            )}
-
-            {activeTab === 'progress' && (
-                <ProgressTracker
-                    history={progressHistory}
-                    onAdded={() => {
-                        window.location.reload()
-                    }}
-                />
-            )}
-
-            {activeTab === 'exercise' && (
-                <ExerciseRoutine exercisePlan={plan?.exercise_plan} />
-            )}
-
-            {activeTab === 'chat' && (
-                <NutritionChat initialMessages={initialChat} />
-            )}
-        </div>
+        </PageShell>
     )
 }

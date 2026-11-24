@@ -31,7 +31,7 @@ export function MinimalModeToggle({ enabled, variant = 'chip' }: { enabled: bool
 
     if (variant === 'card') {
         return (
-            <div className="glass p-5 rounded-2xl border border-border/50 flex items-start justify-between gap-4">
+            <div className="glass p-5 rounded-2xl border border-hairline flex items-start justify-between gap-4">
                 <div className="space-y-1">
                     <p className="text-sm font-semibold text-white flex items-center gap-2"><Feather className="w-4 h-4 text-teal-300" /> Modo mínimo</p>
                     <p className="text-xs text-muted-foreground leading-relaxed">

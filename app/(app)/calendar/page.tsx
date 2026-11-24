@@ -1,4 +1,3 @@
-import { ModuleTabs } from '@/components/layout/ModuleTabs'
 import { getEvents } from '@/lib/actions/events'
 import { CalendarClient } from './page.client'
 import { getLocalMonthYearStr } from '@/lib/utils'
@@ -11,7 +10,6 @@ export default async function CalendarPage() {
 
     return (
         <>
-            <ModuleTabs module="agenda" />
             <CalendarClient initialEvents={events} initialMonthYear={monthYear} />
         </>
     )

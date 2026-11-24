@@ -86,7 +86,7 @@ export default function ResetPasswordPage() {
                     <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 mb-4">
                         <Brain className="w-7 h-7 text-indigo-400" />
                     </div>
-                    <h1 className="text-2xl font-heading font-bold gradient-text">Nueva Contraseña</h1>
+                    <h1 className="text-2xl font-semibold gradient-text">Nueva Contraseña</h1>
                     <p className="text-muted-foreground text-sm mt-1">Elegí una contraseña segura para tu cuenta</p>
                 </div>
 
@@ -109,7 +109,7 @@ export default function ResetPasswordPage() {
                             <p className="text-sm text-muted-foreground">{error}</p>
                             <button
                                 onClick={() => router.push('/login')}
-                                className="mt-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-xl transition-all"
+                                className="mt-2 px-5 py-2.5 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white text-sm font-medium rounded-xl transition-all"
                             >
                                 Volver al login
                             </button>
@@ -134,7 +134,7 @@ export default function ResetPasswordPage() {
                                         required
                                         autoFocus
                                         placeholder="Mínimo 6 caracteres"
-                                        className="w-full bg-secondary border border-border rounded-xl pl-10 pr-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                                        className="w-full bg-secondary border border-border rounded-xl pl-10 pr-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                                     />
                                     <button
                                         type="button"
@@ -156,7 +156,7 @@ export default function ResetPasswordPage() {
                                         onChange={(e) => setConfirm(e.target.value)}
                                         required
                                         placeholder="Repetí tu contraseña"
-                                        className="w-full bg-secondary border border-border rounded-xl pl-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                                        className="w-full bg-secondary border border-border rounded-xl pl-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                                     />
                                 </div>
                             </div>
@@ -170,7 +170,7 @@ export default function ResetPasswordPage() {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-medium rounded-xl transition-all shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2"
+                                className="w-full py-3 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] disabled:opacity-50 text-white font-medium rounded-xl transition-all flex items-center justify-center gap-2"
                             >
                                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
                                 Guardar nueva contraseña

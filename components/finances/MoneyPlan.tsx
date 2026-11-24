@@ -171,9 +171,9 @@ export function MoneyPlan({ plan, context, records, today }: Props) {
     return (
         <div className="space-y-5">
             {/* Datos base */}
-            <div className="glass rounded-3xl p-5 border border-border/50 space-y-4">
+            <div className="glass rounded-2xl p-5 border border-hairline space-y-4">
                 <div>
-                    <h3 className="font-heading font-bold text-base text-white">Tu punto de partida</h3>
+                    <h3 className="font-semibold text-base text-white">Tu punto de partida</h3>
                     <p className="text-[11px] text-muted-foreground mt-0.5">
                         {context?.incomeSource === 'fuentes' && !plan?.monthly_income
                             ? 'El ingreso viene de tus fuentes confirmadas (pestaña Ingresos). Cambialo si querés planificar con otro número.'
@@ -186,7 +186,7 @@ export function MoneyPlan({ plan, context, records, today }: Props) {
                     <MoneyField label="Ya tenés invertido" value={invested} onChange={setInvested} />
                 </div>
                 <div>
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1.5">Perfil de riesgo</label>
+                    <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block mb-1.5">Perfil de riesgo</label>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         {(Object.keys(RISK_INFO) as Risk[]).map(r => (
                             <button
@@ -194,11 +194,11 @@ export function MoneyPlan({ plan, context, records, today }: Props) {
                                 onClick={() => setRisk(r)}
                                 className={cn(
                                     'text-left p-2.5 rounded-xl border transition-all',
-                                    risk === r ? 'bg-indigo-600/20 border-indigo-400' : 'bg-black/20 border-white/10 hover:bg-white/5'
+                                    risk === r ? 'bg-indigo-600/20 border-indigo-400' : 'bg-black/20 border-hairline hover:bg-white/5'
                                 )}
                             >
                                 <p className="text-xs font-bold text-white capitalize">{r}</p>
-                                <p className="text-[10px] text-muted-foreground leading-snug">{RISK_INFO[r]}</p>
+                                <p className="text-[11px] text-muted-foreground leading-snug">{RISK_INFO[r]}</p>
                             </button>
                         ))}
                     </div>
@@ -207,12 +207,12 @@ export function MoneyPlan({ plan, context, records, today }: Props) {
 
             {/* Etapa */}
             {rec && phase && (
-                <div className="glass rounded-3xl p-5 border border-amber-500/25 bg-gradient-to-br from-amber-950/15 to-transparent space-y-3">
+                <div className="glass rounded-2xl p-5 border border-amber-500/25 space-y-3">
                     <div className="flex items-start gap-3">
                         <div className="p-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 shrink-0"><Compass className="w-4 h-4" /></div>
                         <div>
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Tu etapa hoy</p>
-                            <h3 className="font-heading font-bold text-white">{phase.label}</h3>
+                            <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Tu etapa hoy</p>
+                            <h3 className="font-semibold text-white">{phase.label}</h3>
                             <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{phase.summary}</p>
                         </div>
                     </div>
@@ -221,9 +221,9 @@ export function MoneyPlan({ plan, context, records, today }: Props) {
                             <li key={i} className="text-[11px] text-white/85 flex gap-1.5"><ArrowRight className="w-3 h-3 text-amber-400 shrink-0 mt-0.5" />{r}</li>
                         ))}
                     </ul>
-                    <div className="flex flex-wrap gap-1.5 text-[10px] text-muted-foreground pt-1">
+                    <div className="flex flex-wrap gap-1.5 text-[11px] text-muted-foreground pt-1">
                         {(['supervivencia', 'deuda_cara', 'deuda_barata', 'colchon', 'crecer'] as const).map((p, i) => (
-                            <span key={p} className={cn('px-2 py-0.5 rounded-lg border', p === rec.phase ? 'border-amber-400 text-amber-200 bg-amber-500/10' : 'border-white/10')}>
+                            <span key={p} className={cn('px-2 py-0.5 rounded-lg border', p === rec.phase ? 'border-amber-400 text-amber-200 bg-amber-500/10' : 'border-hairline')}>
                                 {i + 1}. {PHASE_INFO[p].label}
                             </span>
                         ))}
@@ -232,22 +232,22 @@ export function MoneyPlan({ plan, context, records, today }: Props) {
             )}
 
             {/* Reparto */}
-            <div className="glass rounded-3xl p-5 border border-border/50 space-y-4">
+            <div className="glass rounded-2xl p-5 border border-hairline space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                        <h3 className="font-heading font-bold text-base text-white">Cómo repartir cada sueldo</h3>
+                        <h3 className="font-semibold text-base text-white">Cómo repartir cada sueldo</h3>
                         <p className="text-[11px] text-muted-foreground mt-0.5">Movelo a tu gusto. Tiene que sumar 100%.</p>
                     </div>
                     <div className="flex items-center gap-2">
                         {rec && !usingRecommended && (
-                            <button onClick={() => setBuckets(rec.buckets)} className="px-3 py-2 rounded-xl text-[11px] font-semibold border border-white/10 text-muted-foreground hover:text-white flex items-center gap-1">
+                            <button onClick={() => setBuckets(rec.buckets)} className="px-3 py-2 rounded-xl text-[11px] font-semibold border border-hairline text-muted-foreground hover:text-white flex items-center gap-1">
                                 <RotateCcw className="w-3.5 h-3.5" /> Usar recomendado
                             </button>
                         )}
                         <button
                             onClick={handleSave}
                             disabled={saving || total !== 100}
-                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 disabled:opacity-50"
+                            className="px-4 py-2 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 disabled:opacity-50"
                         >
                             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Guardar plan
                         </button>
@@ -273,18 +273,18 @@ export function MoneyPlan({ plan, context, records, today }: Props) {
                         const real = actual[b.id]
                         const recPct = rec?.buckets.find(r => r.id === b.id)?.pct
                         return (
-                            <div key={b.id} className="p-3 rounded-2xl bg-black/20 border border-white/5 space-y-2">
+                            <div key={b.id} className="p-3 rounded-2xl bg-black/20 border border-hairline space-y-2">
                                 <div className="flex items-center justify-between gap-2">
                                     <div className="min-w-0">
                                         <p className="text-xs font-bold text-white flex items-center gap-1.5">
                                             <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: def.color }} />
                                             {def.emoji} {def.label}
                                         </p>
-                                        <p className="text-[10px] text-muted-foreground">{def.description}</p>
+                                        <p className="text-[11px] text-muted-foreground">{def.description}</p>
                                     </div>
                                     <div className="text-right shrink-0">
                                         <p className="text-sm font-bold font-mono text-white">{formatCurrency(amount)}</p>
-                                        <p className="text-[10px] text-muted-foreground">por mes</p>
+                                        <p className="text-[11px] text-muted-foreground">por mes</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
@@ -294,7 +294,7 @@ export function MoneyPlan({ plan, context, records, today }: Props) {
                                         max={90}
                                         value={b.pct}
                                         onChange={(e) => setPct(b.id, Number(e.target.value))}
-                                        className="flex-1 accent-indigo-500"
+                                        className="flex-1 accent-amber-400"
                                         aria-label={`Porcentaje para ${def.label}`}
                                     />
                                     <div className="flex items-center gap-0.5 shrink-0">
@@ -304,12 +304,12 @@ export function MoneyPlan({ plan, context, records, today }: Props) {
                                             max={100}
                                             value={b.pct}
                                             onChange={(e) => setPct(b.id, Number(e.target.value))}
-                                            className="w-12 bg-black/30 border border-white/10 rounded-lg px-1.5 py-1 text-xs text-white font-mono text-right"
+                                            className="w-12 bg-black/30 border border-hairline rounded-lg px-1.5 py-1 text-xs text-white font-mono text-right"
                                         />
                                         <span className="text-xs text-muted-foreground">%</span>
                                     </div>
                                 </div>
-                                <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
+                                <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
                                     {recPct !== undefined && recPct !== b.pct && <span>Recomendado: {recPct}%</span>}
                                     {real !== undefined && real > 0 && (
                                         <span className={cn(incomeValue > 0 && real > amount * 1.05 ? 'text-red-300' : '')}>
@@ -333,8 +333,8 @@ export function MoneyPlan({ plan, context, records, today }: Props) {
 
             {/* Pagate primero */}
             {incomeValue > 0 && (
-                <div className="glass rounded-3xl p-5 border border-emerald-500/25 space-y-3">
-                    <h3 className="font-heading font-bold text-base text-white flex items-center gap-2">
+                <div className="glass rounded-2xl p-5 border border-hairline space-y-3">
+                    <h3 className="font-semibold text-base text-white flex items-center gap-2">
                         <ListChecks className="w-4 h-4 text-emerald-400" /> El día que cobrás: pagate primero
                     </h3>
                     <p className="text-[11px] text-muted-foreground">
@@ -349,10 +349,10 @@ export function MoneyPlan({ plan, context, records, today }: Props) {
                             { text: `El resto (${formatCurrency(amountOf('necesidades'))}) es para vivir`, sub: `Tu presupuesto de necesidades: ~${formatCurrency(amountOf('necesidades') / 30)} por día.` }
                         ].filter(Boolean).map((step: any, i) => (
                             <li key={i} className="flex gap-2.5">
-                                <span className="w-5 h-5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] font-bold flex items-center justify-center shrink-0">{i + 1}</span>
+                                <span className="w-5 h-5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-bold flex items-center justify-center shrink-0">{i + 1}</span>
                                 <div>
                                     <p className="text-xs font-semibold text-white">{step.text}</p>
-                                    <p className="text-[10px] text-muted-foreground">{step.sub}</p>
+                                    <p className="text-[11px] text-muted-foreground">{step.sub}</p>
                                 </div>
                             </li>
                         ))}
@@ -362,17 +362,17 @@ export function MoneyPlan({ plan, context, records, today }: Props) {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 {/* Deuda vs inversión */}
-                <div className="glass rounded-3xl p-5 border border-border/50 space-y-3">
-                    <h3 className="font-heading font-bold text-sm text-white flex items-center gap-2"><Landmark className="w-4 h-4 text-red-400" /> ¿Pagar deuda o invertir?</h3>
+                <div className="glass rounded-2xl p-5 border border-hairline space-y-3">
+                    <h3 className="font-semibold text-sm text-white flex items-center gap-2"><Landmark className="w-4 h-4 text-red-400" /> ¿Pagar deuda o invertir?</h3>
                     {hasDebt ? (
                         <>
                             <div className="grid grid-cols-2 gap-2">
                                 <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20">
-                                    <p className="text-[10px] text-muted-foreground">Tu deuda más cara</p>
-                                    <p className="text-lg font-bold text-red-300 font-heading">{maxRate > 0 ? `${maxRate.toFixed(1)}%` : '¿?'}<span className="text-[10px] font-normal text-muted-foreground"> /mes</span></p>
+                                    <p className="text-[11px] text-muted-foreground">Tu deuda más cara</p>
+                                    <p className="text-lg font-bold text-red-300 font-heading">{maxRate > 0 ? `${maxRate.toFixed(1)}%` : '¿?'}<span className="text-[11px] font-normal text-muted-foreground"> /mes</span></p>
                                 </div>
                                 <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                                    <p className="text-[10px] text-muted-foreground">Invertir seguro rinde</p>
+                                    <p className="text-[11px] text-muted-foreground">Invertir seguro rinde</p>
                                     <p className="text-lg font-bold text-emerald-300 font-heading">~inflación</p>
                                 </div>
                             </div>
@@ -390,8 +390,8 @@ export function MoneyPlan({ plan, context, records, today }: Props) {
                 </div>
 
                 {/* Interés compuesto */}
-                <div className="glass rounded-3xl p-5 border border-border/50 space-y-3">
-                    <h3 className="font-heading font-bold text-sm text-white flex items-center gap-2"><TrendingUp className="w-4 h-4 text-amber-400" /> Si invertís {formatCurrency(investMonthly)} por mes</h3>
+                <div className="glass rounded-2xl p-5 border border-hairline space-y-3">
+                    <h3 className="font-semibold text-sm text-white flex items-center gap-2"><TrendingUp className="w-4 h-4 text-amber-400" /> Si invertís {formatCurrency(investMonthly)} por mes</h3>
                     {investMonthly > 0 ? (
                         <>
                             <div className="overflow-x-auto">
@@ -404,14 +404,14 @@ export function MoneyPlan({ plan, context, records, today }: Props) {
                                     </thead>
                                     <tbody>
                                         {[1, 5, 10, 20].map(y => (
-                                            <tr key={y} className="border-t border-white/5">
+                                            <tr key={y} className="border-t border-hairline">
                                                 <td className="py-1.5 text-white">{y}</td>
                                                 {SCENARIOS.map(s => {
                                                     const fv = futureValue(investMonthly, y, s.pct)
                                                     return (
                                                         <td key={s.pct} className="py-1.5 text-right">
                                                             <span className="font-mono text-white">{formatCurrency(fv)}</span>
-                                                            <span className="block text-[9px] text-emerald-300/80">{formatCurrency(passiveIncome(fv))}/mes</span>
+                                                            <span className="block text-[11px] text-emerald-300/80">{formatCurrency(passiveIncome(fv))}/mes</span>
                                                         </td>
                                                     )
                                                 })}
@@ -420,7 +420,7 @@ export function MoneyPlan({ plan, context, records, today }: Props) {
                                     </tbody>
                                 </table>
                             </div>
-                            <p className="text-[10px] text-muted-foreground leading-relaxed flex gap-1">
+                            <p className="text-[11px] text-muted-foreground leading-relaxed flex gap-1">
                                 <Info className="w-3 h-3 shrink-0 mt-0.5" />
                                 En pesos de hoy (rendimiento real anual, ya sin inflación). Abajo de cada capital, el ingreso pasivo que podría darte retirando 4% al año. Lo que más mueve estos números es subir el aporte, no la tasa.
                             </p>
@@ -432,10 +432,10 @@ export function MoneyPlan({ plan, context, records, today }: Props) {
             </div>
 
             {/* Asesor IA */}
-            <div className="glass rounded-3xl p-5 border border-violet-500/25 bg-gradient-to-br from-violet-950/20 to-transparent space-y-4">
+            <div className="glass rounded-2xl p-5 border border-hairline space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                        <h3 className="font-heading font-bold text-base text-white flex items-center gap-2">
+                        <h3 className="font-semibold text-base text-white flex items-center gap-2">
                             <Sparkles className="w-4 h-4 text-violet-400" /> Plan de inversión personalizado
                         </h3>
                         <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -446,7 +446,7 @@ export function MoneyPlan({ plan, context, records, today }: Props) {
                     <button
                         onClick={handleAdvice}
                         disabled={advising}
-                        className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-violet-600/20 disabled:opacity-60 self-start"
+                        className="px-4 py-2 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 disabled:opacity-60 self-start"
                     >
                         {advising ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                         {advice ? 'Actualizar plan' : 'Armar mi plan'}
@@ -470,9 +470,9 @@ export function MoneyPlan({ plan, context, records, today }: Props) {
                         )}
                         {advice.where_to_put.length > 0 && (
                             <div className="space-y-2">
-                                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Dónde va cada peso</p>
+                                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Dónde va cada peso</p>
                                 {advice.where_to_put.map((w, i) => (
-                                    <div key={i} className="p-3 rounded-2xl bg-black/20 border border-white/5">
+                                    <div key={i} className="p-3 rounded-2xl bg-black/20 border border-hairline">
                                         <div className="flex items-start justify-between gap-2">
                                             <p className="text-xs font-bold text-white">{w.bucket}: <span className="text-violet-200">{w.instrument}</span></p>
                                             {w.amount > 0 && <span className="text-[11px] font-mono text-emerald-300 shrink-0">{formatCurrency(w.amount)}/mes</span>}
@@ -484,23 +484,23 @@ export function MoneyPlan({ plan, context, records, today }: Props) {
                         )}
                         {advice.first_steps.length > 0 && (
                             <div className="space-y-1.5">
-                                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Este mes</p>
+                                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Este mes</p>
                                 {advice.first_steps.map((s, i) => (
                                     <p key={i} className="text-xs text-white flex gap-2">
-                                        <span className="w-4 h-4 rounded-full bg-violet-500/20 text-violet-200 text-[9px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>{s}
+                                        <span className="w-4 h-4 rounded-full bg-violet-500/20 text-violet-200 text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>{s}
                                     </p>
                                 ))}
                             </div>
                         )}
                         {advice.passive_income_reality && (
                             <div className="p-3 rounded-2xl bg-amber-500/5 border border-amber-500/15">
-                                <p className="text-[10px] font-bold uppercase tracking-wider text-amber-300 mb-0.5">Ingreso pasivo, en serio</p>
+                                <p className="text-[11px] font-bold uppercase tracking-wider text-amber-300 mb-0.5">Ingreso pasivo, en serio</p>
                                 <p className="text-xs text-white/90 leading-relaxed">{advice.passive_income_reality}</p>
                             </div>
                         )}
                         {advice.income_ideas.length > 0 && (
                             <div className="space-y-1.5">
-                                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">La palanca más grande: subir el ingreso</p>
+                                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">La palanca más grande: subir el ingreso</p>
                                 {advice.income_ideas.map((s, i) => (
                                     <p key={i} className="text-xs text-white flex gap-1.5"><Lightbulb className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />{s}</p>
                                 ))}
@@ -518,10 +518,10 @@ export function MoneyPlan({ plan, context, records, today }: Props) {
             </div>
 
             {/* Catálogo */}
-            <div className="glass rounded-3xl p-5 border border-border/50 space-y-4">
+            <div className="glass rounded-2xl p-5 border border-hairline space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                        <h3 className="font-heading font-bold text-base text-white flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-emerald-400" /> Opciones en Argentina</h3>
+                        <h3 className="font-semibold text-base text-white flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-emerald-400" /> Opciones en Argentina</h3>
                         <p className="text-[11px] text-muted-foreground mt-0.5">De menor a mayor riesgo. El colchón va siempre en lo de arriba.</p>
                     </div>
                     <div className="flex gap-1.5">
@@ -531,7 +531,7 @@ export function MoneyPlan({ plan, context, records, today }: Props) {
                                 onClick={() => setCatalogFilter(f)}
                                 className={cn(
                                     'px-3 py-1.5 rounded-xl text-[11px] font-semibold border transition-all',
-                                    catalogFilter === f ? 'bg-white/15 border-white/40 text-white' : 'bg-black/20 border-white/10 text-muted-foreground hover:text-white'
+                                    catalogFilter === f ? 'bg-white/15 border-white/40 text-white' : 'bg-black/20 border-hairline text-muted-foreground hover:text-white'
                                 )}
                             >
                                 {f === 'todos' ? 'Todas' : f === 'colchon' ? 'Para el colchón' : 'Para invertir'}
@@ -543,12 +543,12 @@ export function MoneyPlan({ plan, context, records, today }: Props) {
                     {INVESTMENT_OPTIONS
                         .filter(o => catalogFilter === 'todos' || o.bucket === catalogFilter || o.bucket === 'ambos')
                         .map(o => (
-                            <div key={o.id} className="p-3.5 rounded-2xl bg-black/20 border border-white/5 space-y-1.5">
+                            <div key={o.id} className="p-3.5 rounded-2xl bg-black/20 border border-hairline space-y-1.5">
                                 <div className="flex items-start justify-between gap-2">
                                     <p className="text-xs font-bold text-white">{o.name}</p>
-                                    <span className="text-[9px] font-bold text-muted-foreground border border-white/10 rounded px-1.5 py-0.5 shrink-0">{o.currency}</span>
+                                    <span className="text-[11px] font-bold text-muted-foreground border border-hairline rounded px-1.5 py-0.5 shrink-0">{o.currency}</span>
                                 </div>
-                                <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                                <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
                                     <span className="flex items-center gap-1" title={`Riesgo ${o.risk} de 5`}>
                                         Riesgo
                                         {[1, 2, 3, 4, 5].map(i => (
@@ -561,11 +561,11 @@ export function MoneyPlan({ plan, context, records, today }: Props) {
                                 <p className="text-[11px] text-white/85">{o.what}</p>
                                 <p className="text-[11px] text-emerald-300/90 flex gap-1"><Check className="w-3 h-3 shrink-0 mt-0.5" />{o.goodFor}</p>
                                 <p className="text-[11px] text-amber-200/80 flex gap-1"><AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />{o.watchOut}</p>
-                                <p className="text-[10px] text-muted-foreground">Dónde: {o.where}</p>
+                                <p className="text-[11px] text-muted-foreground">Dónde: {o.where}</p>
                             </div>
                         ))}
                 </div>
-                <p className="text-[10px] text-muted-foreground leading-relaxed flex gap-1">
+                <p className="text-[11px] text-muted-foreground leading-relaxed flex gap-1">
                     <Info className="w-3 h-3 shrink-0 mt-0.5" />
                     Es orientación general, no asesoramiento financiero regulado. Las tasas cambian todo el tiempo: antes de invertir compará la tasa del día contra la inflación esperada y operá solo con bancos y ALyCs registradas en la CNV.
                 </p>
@@ -577,8 +577,8 @@ export function MoneyPlan({ plan, context, records, today }: Props) {
 function MoneyField({ label, value, onChange, hint }: { label: string; value: string; onChange: (v: string) => void; hint?: string }) {
     return (
         <div>
-            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">{label}</label>
-            <div className="flex items-center gap-1 bg-black/30 border border-white/10 rounded-xl px-3 py-2 focus-within:ring-2 focus-within:ring-indigo-500/60">
+            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">{label}</label>
+            <div className="flex items-center gap-1 bg-black/30 border border-hairline rounded-xl px-3 py-2 focus-within:ring-2 focus-within:ring-indigo-500/60">
                 <span className="text-muted-foreground text-sm">$</span>
                 <input
                     type="number"
@@ -590,7 +590,7 @@ function MoneyField({ label, value, onChange, hint }: { label: string; value: st
                     className="flex-1 min-w-0 bg-transparent text-sm text-white font-mono focus:outline-none"
                 />
             </div>
-            {hint && <p className="text-[10px] text-muted-foreground mt-0.5">{hint}</p>}
+            {hint && <p className="text-[11px] text-muted-foreground mt-0.5">{hint}</p>}
         </div>
     )
 }

@@ -31,10 +31,10 @@ export function TaskForm({ onClose, initialDate }: TaskFormProps) {
     }
 
     return (
-        <div className="flex flex-col h-full bg-background/95 backdrop-blur-xl">
+        <div className="flex flex-col h-full bg-background/95">
             <div className="flex items-center justify-between p-6 border-b border-border">
                 <div>
-                    <h2 className="text-xl font-heading font-bold">Nueva Tarea</h2>
+                    <h2 className="text-xl font-semibold">Nueva Tarea</h2>
                     <p className="text-sm text-muted-foreground mt-1">¿Qué tenés en mente?</p>
                 </div>
                 <button
@@ -59,7 +59,7 @@ export function TaskForm({ onClose, initialDate }: TaskFormProps) {
                             type="text"
                             required
                             placeholder="Ej. Revisar presupuesto Q3..."
-                            className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-base"
+                            className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition-all text-base"
                         />
                     </div>
 
@@ -73,7 +73,7 @@ export function TaskForm({ onClose, initialDate }: TaskFormProps) {
                             name="description"
                             rows={3}
                             placeholder="Detalles adicionales, links, contexto..."
-                            className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all resize-none text-sm"
+                            className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition-all resize-none text-sm"
                         />
                     </div>
 
@@ -89,7 +89,7 @@ export function TaskForm({ onClose, initialDate }: TaskFormProps) {
                                     id="priority"
                                     name="priority"
                                     defaultValue="2"
-                                    className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 appearance-none text-foreground"
+                                    className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/50 appearance-none text-foreground"
                                 >
                                     <option value="1">Alta (Urgente)</option>
                                     <option value="2">Media (Normal)</option>
@@ -109,7 +109,7 @@ export function TaskForm({ onClose, initialDate }: TaskFormProps) {
                                     id="category"
                                     name="category"
                                     defaultValue="Personal"
-                                    className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 appearance-none text-foreground"
+                                    className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/50 appearance-none text-foreground"
                                 >
                                     <option value="Work">Trabajo</option>
                                     <option value="Personal">Personal</option>
@@ -128,7 +128,7 @@ export function TaskForm({ onClose, initialDate }: TaskFormProps) {
                                     id="energy_level"
                                     name="energy_level"
                                     defaultValue="Deep Work"
-                                    className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 appearance-none text-foreground"
+                                    className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/50 appearance-none text-foreground"
                                 >
                                     <option value="Deep Work">Deep Work (Alta Energía)</option>
                                     <option value="Low Energy">Low Energy (Baja Energía)</option>
@@ -153,7 +153,7 @@ export function TaskForm({ onClose, initialDate }: TaskFormProps) {
                                 setDueDate(e.target.value)
                                 if (!e.target.value) setReminderEnabled(false)
                             }}
-                            className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-foreground [color-scheme:dark]"
+                            className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition-all text-foreground [color-scheme:dark]"
                         />
                     </div>
 
@@ -192,7 +192,7 @@ export function TaskForm({ onClose, initialDate }: TaskFormProps) {
                                         name="reminder_time"
                                         type="time"
                                         defaultValue="09:00"
-                                        className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-foreground [color-scheme:dark]"
+                                        className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition-all text-foreground [color-scheme:dark]"
                                     />
                                 </div>
                             )}
@@ -212,7 +212,7 @@ export function TaskForm({ onClose, initialDate }: TaskFormProps) {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-lg hover:shadow-indigo-500/25 flex items-center justify-center min-w-[120px]"
+                        className="bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center min-w-[120px]"
                     >
                         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Guardar'}
                     </button>

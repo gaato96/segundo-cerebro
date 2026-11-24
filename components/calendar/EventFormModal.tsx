@@ -112,19 +112,19 @@ export function EventFormModal({ isOpen, onClose, eventToEdit, defaultDate }: Ev
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        className="absolute inset-0 bg-black/60"
                     />
 
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: 10 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                        className="glass border border-border/50 w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl relative z-10 flex flex-col max-h-[90vh]"
+                        className="glass border border-hairline w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl relative z-10 flex flex-col max-h-[90vh]"
                     >
-                        <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                        <div className="p-6 border-b border-hairline flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <CalendarIcon className="w-5 h-5 text-indigo-400" />
-                                <h3 className="font-heading font-bold text-lg text-white">
+                                <h3 className="font-semibold text-lg text-white">
                                     {eventToEdit ? 'Editar Evento / Reunión' : 'Nuevo Evento / Reunión'}
                                 </h3>
                             </div>
@@ -147,7 +147,7 @@ export function EventFormModal({ isOpen, onClose, eventToEdit, defaultDate }: Ev
                                     value={title}
                                     onChange={(e) => setTitle(e.target.value)}
                                     placeholder="Ej: Reunión de equipo / Consulta médica"
-                                    className="w-full bg-black/20 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    className="w-full bg-black/20 border border-hairline rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                                 />
                             </div>
 
@@ -159,7 +159,7 @@ export function EventFormModal({ isOpen, onClose, eventToEdit, defaultDate }: Ev
                                     <select
                                         value={eventType}
                                         onChange={(e: any) => setEventType(e.target.value)}
-                                        className="w-full bg-black/20 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                        className="w-full bg-black/20 border border-hairline rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                                     >
                                         <option value="meeting">👥 Reunión</option>
                                         <option value="event">📅 Evento</option>
@@ -198,7 +198,7 @@ export function EventFormModal({ isOpen, onClose, eventToEdit, defaultDate }: Ev
                                         required
                                         value={eventDate}
                                         onChange={(e) => setEventDate(e.target.value)}
-                                        className="w-full bg-black/20 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                        className="w-full bg-black/20 border border-hairline rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                                     />
                                 </div>
                                 {!isAllDay && (
@@ -211,7 +211,7 @@ export function EventFormModal({ isOpen, onClose, eventToEdit, defaultDate }: Ev
                                                 type="time"
                                                 value={startTime}
                                                 onChange={(e) => setStartTime(e.target.value)}
-                                                className="w-full bg-black/20 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                className="w-full bg-black/20 border border-hairline rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                                             />
                                         </div>
                                         <div>
@@ -222,7 +222,7 @@ export function EventFormModal({ isOpen, onClose, eventToEdit, defaultDate }: Ev
                                                 type="time"
                                                 value={endTime}
                                                 onChange={(e) => setEndTime(e.target.value)}
-                                                className="w-full bg-black/20 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                className="w-full bg-black/20 border border-hairline rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                                             />
                                         </div>
                                     </>
@@ -235,7 +235,7 @@ export function EventFormModal({ isOpen, onClose, eventToEdit, defaultDate }: Ev
                                     id="is_all_day"
                                     checked={isAllDay}
                                     onChange={(e) => setIsAllDay(e.target.checked)}
-                                    className="rounded border-white/20 bg-black/20 text-indigo-600 focus:ring-indigo-500"
+                                    className="rounded border-white/20 bg-black/20 text-indigo-600 focus:ring-amber-400/50"
                                 />
                                 <label htmlFor="is_all_day" className="text-xs font-medium text-white/80 cursor-pointer">
                                     Todo el día
@@ -253,7 +253,7 @@ export function EventFormModal({ isOpen, onClose, eventToEdit, defaultDate }: Ev
                                         value={location}
                                         onChange={(e) => setLocation(e.target.value)}
                                         placeholder="Google Meet, Zoom, Dirección..."
-                                        className="w-full bg-black/20 border border-white/10 rounded-xl pl-9 pr-3.5 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                        className="w-full bg-black/20 border border-hairline rounded-xl pl-9 pr-3.5 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                                     />
                                 </div>
                             </div>
@@ -267,7 +267,7 @@ export function EventFormModal({ isOpen, onClose, eventToEdit, defaultDate }: Ev
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
                                     placeholder="Detalles importantes..."
-                                    className="w-full bg-black/20 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                                    className="w-full bg-black/20 border border-hairline rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50 resize-none"
                                 />
                             </div>
 
@@ -284,7 +284,7 @@ export function EventFormModal({ isOpen, onClose, eventToEdit, defaultDate }: Ev
                             )}
                         </form>
 
-                        <div className="p-4 border-t border-white/5 flex items-center justify-between bg-black/10">
+                        <div className="p-4 border-t border-hairline flex items-center justify-between bg-black/10">
                             {eventToEdit ? (
                                 <button
                                     type="button"
@@ -300,7 +300,7 @@ export function EventFormModal({ isOpen, onClose, eventToEdit, defaultDate }: Ev
                                 <button
                                     type="button"
                                     onClick={onClose}
-                                    className="px-4 py-2 border border-white/10 rounded-xl text-xs text-muted-foreground hover:text-white"
+                                    className="px-4 py-2 border border-hairline rounded-xl text-xs text-muted-foreground hover:text-white"
                                 >
                                     Cancelar
                                 </button>
@@ -308,7 +308,7 @@ export function EventFormModal({ isOpen, onClose, eventToEdit, defaultDate }: Ev
                                     type="button"
                                     onClick={handleSubmit}
                                     disabled={loading}
-                                    className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-lg shadow-indigo-600/20 transition-all disabled:opacity-50"
+                                    className="px-5 py-2 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-50"
                                 >
                                     {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (eventToEdit ? 'Guardar Cambios' : 'Crear Evento')}
                                 </button>

@@ -1,35 +1,15 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import {
-    Send, Loader2, User, Sparkles, Plus, CheckCircle2,
-    HeartHandshake, Flame, Coffee, Briefcase, Target, Apple
-} from 'lucide-react'
+import { ArrowUp, Plus, Check, Loader2, Mic, MicOff } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { PERSONA_LIST, getPersona, type PersonaId } from '@/lib/assistantPersonas'
 import { sendAssistantMessage, createTaskFromAssistant } from '@/lib/actions/assistant'
 import { cn } from '@/lib/utils'
 
-const ICONS: Record<string, any> = { HeartHandshake, Flame, Coffee, Briefcase, Target, Apple }
+export interface ChatMessage { id: string; role: string; content: string; persona?: string | null }
 
-const ACCENT: Record<string, { text: string; bg: string; border: string; solid: string; ring: string }> = {
-    violet: { text: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/30', solid: 'bg-violet-600', ring: 'focus:ring-violet-500/50' },
-    amber: { text: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30', solid: 'bg-amber-600', ring: 'focus:ring-amber-500/50' },
-    sky: { text: 'text-sky-400', bg: 'bg-sky-500/10', border: 'border-sky-500/30', solid: 'bg-sky-600', ring: 'focus:ring-sky-500/50' },
-    emerald: { text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', solid: 'bg-emerald-600', ring: 'focus:ring-emerald-500/50' },
-    indigo: { text: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/30', solid: 'bg-indigo-600', ring: 'focus:ring-indigo-500/50' },
-    lime: { text: 'text-lime-400', bg: 'bg-lime-500/10', border: 'border-lime-500/30', solid: 'bg-lime-600', ring: 'focus:ring-lime-500/50' }
-}
-
-export interface ChatMessage {
-    id: string
-    role: string
-    content: string
-    persona?: string | null
-}
-
-interface AssistantChatProps {
+interface Props {
     sessionId?: string | null
     persona: PersonaId
     initialMessages?: ChatMessage[]
@@ -37,261 +17,119 @@ interface AssistantChatProps {
     onSessionCreated?: (sessionId: string) => void
     /** Avisa cada cambio del hilo, para que el padre lo conserve si el chat se desmonta. */
     onMessagesChange?: (messages: ChatMessage[]) => void
-    /** Mensaje inyectado desde afuera (ej: el briefing diario). Se agrega al hilo. */
+    /** Mensaje inyectado desde afuera (el briefing diario). */
     injectedMessage?: ChatMessage | null
-    /** Oculta el selector de personas (cuando ya está arriba en la página). */
     hidePersonaPicker?: boolean
     className?: string
 }
 
-export function AssistantChat({
-    sessionId,
-    persona,
-    initialMessages = [],
-    onPersonaChange,
-    onSessionCreated,
-    onMessagesChange,
-    injectedMessage = null,
-    hidePersonaPicker = false,
-    className
-}: AssistantChatProps) {
+/**
+ * Conversación como texto, sin globos para el copiloto. Escucha el evento
+ * `sc:assistant-ask` para que los atajos de la página manden una pregunta.
+ */
+export function AssistantChat({ sessionId, persona, initialMessages = [], onPersonaChange, onSessionCreated, onMessagesChange, injectedMessage = null, hidePersonaPicker, className }: Props) {
     const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
     const [input, setInput] = useState('')
     const [loading, setLoading] = useState(false)
     const [savedTasks, setSavedTasks] = useState<Set<string>>(new Set())
+    const [listening, setListening] = useState(false)
+    const [canDictate, setCanDictate] = useState(false)
     const scrollRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLTextAreaElement>(null)
-
+    const rec = useRef<any>(null)
     const p = getPersona(persona)
-    const accent = ACCENT[p.accent] || ACCENT.indigo
 
-    // El hilo NO se reinicia cuando cambia sessionId: en una charla nueva el id
-    // llega recién con la primera respuesta, y reiniciar ahí borraba la
-    // conversación en pantalla. Para cambiar de charla, el padre cambia la `key`.
-
+    useEffect(() => { setCanDictate(!!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)); return () => rec.current?.stop?.() }, [])
     useEffect(() => {
-        if (!injectedMessage) return
-        setMessages(prev => (prev.some(m => m.id === injectedMessage.id) ? prev : [...prev, injectedMessage]))
-    }, [injectedMessage?.id])
+        if (injectedMessage) setMessages(prev => prev.some(m => m.id === injectedMessage.id) ? prev : [...prev, injectedMessage])
+    }, [injectedMessage?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+    useEffect(() => { onMessagesChange?.(messages) }, [messages]) // eslint-disable-line react-hooks/exhaustive-deps
+    // Se scrollea solo la lista, no la página entera.
+    useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }) }, [messages, loading])
 
-    useEffect(() => {
-        onMessagesChange?.(messages)
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [messages])
-
-    // Se scrollea solo la lista de mensajes. scrollIntoView movía también la
-    // página entera (y en el celular parecía que el chat se cerraba).
-    useEffect(() => {
-        const el = scrollRef.current
-        if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
-    }, [messages, loading])
-
-    async function handleSend(preset?: string) {
+    async function send(preset?: string) {
         const text = (preset ?? input).trim()
         if (!text || loading) return
-
+        rec.current?.stop?.()
         setMessages(prev => [...prev, { id: `local-${Date.now()}`, role: 'user', content: text }])
         if (!preset) setInput('')
         setLoading(true)
-
         try {
             const res = await sendAssistantMessage({ sessionId, persona, message: text })
             setMessages(prev => [...prev, { id: `local-${Date.now()}-a`, role: 'assistant', content: res.reply, persona }])
             if (!sessionId && res.sessionId) onSessionCreated?.(res.sessionId)
         } catch (err: any) {
-            setMessages(prev => [...prev, {
-                id: `err-${Date.now()}`,
-                role: 'assistant',
-                content: `No pude responder: ${err?.message || 'error desconocido'}. Reintentá en unos segundos.`
-            }])
+            setMessages(prev => [...prev, { id: `err-${Date.now()}`, role: 'assistant', content: `No pude responder: ${err?.message || 'error desconocido'}. Reintentá en unos segundos.` }])
         } finally {
             setLoading(false)
             inputRef.current?.focus()
         }
     }
+    const sendRef = useRef(send)
+    sendRef.current = send
+    useEffect(() => {
+        const ask = (e: Event) => sendRef.current(String((e as CustomEvent).detail || ''))
+        window.addEventListener('sc:assistant-ask', ask)
+        return () => window.removeEventListener('sc:assistant-ask', ask)
+    }, [])
 
-    async function handleMakeTask(content: string) {
-        const firstLine = content.split('\n').find(l => l.trim().length > 10)?.replace(/^[-*\d.\s]+/, '').trim()
-        const title = (firstLine || content).slice(0, 120)
-        try {
-            await createTaskFromAssistant(title)
-            setSavedTasks(prev => new Set(prev).add(content))
-        } catch (e: any) {
-            alert(`No se pudo crear la tarea: ${e?.message}`)
-        }
+    function dictate() {
+        if (listening) return rec.current?.stop()
+        const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+        const r = new SR()
+        r.lang = 'es-AR'
+        r.interimResults = true
+        const base = input ? `${input.trim()} ` : ''
+        r.onresult = (ev: any) => setInput(base + Array.from(ev.results as any[]).map((x: any) => x[0].transcript).join(''))
+        r.onend = r.onerror = () => setListening(false)
+        rec.current = r
+        setListening(true)
+        r.start()
+    }
+    async function makeTask(id: string, content: string) {
+        const line = content.split('\n').find(l => l.trim().length > 10)?.replace(/^[-*\d.\s]+/, '').replace(/\*\*/g, '').trim()
+        try { await createTaskFromAssistant((line || content).slice(0, 120)); setSavedTasks(prev => new Set(prev).add(id)) } catch (e: any) { alert(`No se pudo crear la tarea: ${e?.message}`) }
     }
 
     return (
         <div className={cn('flex flex-col h-full min-h-0', className)}>
-            {/* Selector de personalidad */}
             {!hidePersonaPicker && (
-                <div className="flex gap-1.5 overflow-x-auto no-scrollbar p-2 border-b border-border/50 shrink-0">
-                    {PERSONA_LIST.map(item => {
-                        const Icon = ICONS[item.icon] || Sparkles
-                        const a = ACCENT[item.accent] || ACCENT.indigo
-                        const active = item.id === persona
-                        return (
-                            <button
-                                key={item.id}
-                                onClick={() => onPersonaChange(item.id)}
-                                title={item.tagline}
-                                className={cn(
-                                    'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold whitespace-nowrap border transition-all',
-                                    active
-                                        ? `${a.bg} ${a.text} ${a.border}`
-                                        : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary/60'
-                                )}
-                            >
-                                <Icon className="w-3.5 h-3.5" />
-                                {item.label}
-                            </button>
-                        )
-                    })}
+                <div className="flex gap-1 overflow-x-auto no-scrollbar py-2 border-b border-hairline shrink-0">
+                    {PERSONA_LIST.map(i => <button key={i.id} onClick={() => onPersonaChange(i.id)} title={i.tagline} aria-pressed={i.id === persona} className={cn('h-9 px-3 rounded-lg text-xs whitespace-nowrap', i.id === persona ? 'bg-raised text-foreground' : 'text-muted-foreground hover:text-foreground')}>{i.label}</button>)}
                 </div>
             )}
-
-            {/* Mensajes */}
-            <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+            <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0 py-6 px-1 space-y-7">
                 {messages.length === 0 && (
-                    <div className="text-center py-6 space-y-3">
-                        <div className={cn('w-12 h-12 rounded-2xl flex items-center justify-center mx-auto', accent.bg, accent.text)}>
-                            {(() => { const Icon = ICONS[p.icon] || Sparkles; return <Icon className="w-6 h-6" /> })()}
-                        </div>
-                        <div>
-                            <h4 className="text-sm font-semibold text-foreground">{p.label}</h4>
-                            <p className="text-xs text-muted-foreground max-w-sm mx-auto mt-1">{p.tagline}</p>
-                            <p className="text-[11px] text-muted-foreground/70 mt-2">
-                                Ya tengo tus tareas, hábitos, finanzas, comidas, entrenamientos y journal a la vista.
-                            </p>
-                        </div>
-
-                        <div className="pt-2 space-y-1.5 max-w-md mx-auto">
-                            {p.openers.map((op, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => handleSend(op)}
-                                    className={cn(
-                                        'w-full text-left p-2.5 rounded-xl bg-secondary/50 border border-border/50 text-xs text-foreground/80 transition-all hover:bg-secondary hover:text-foreground',
-                                        accent.border
-                                    )}
-                                >
-                                    {op}
-                                </button>
-                            ))}
-                        </div>
+                    <div>
+                        <p className="label-caps">{p.label}</p>
+                        <p className="text-xl font-semibold mt-1 max-w-[30ch]">{p.tagline}</p>
+                        <p className="text-sm text-muted-foreground mt-2 max-w-[55ch]">Ya tengo a la vista tus tareas, hábitos, plata, comidas, entrenamientos y journal.</p>
+                        <div className="mt-6 divide-y divide-hairline border-y border-hairline">{p.openers.map(o => <button key={o} onClick={() => send(o)} className="w-full text-left text-sm py-3 text-muted-foreground hover:text-foreground">{o}</button>)}</div>
                     </div>
                 )}
-
-                <AnimatePresence initial={false}>
-                    {messages.map(msg => {
-                        const isUser = msg.role === 'user'
-                        const msgPersona = getPersona(msg.persona || persona)
-                        const msgAccent = ACCENT[msgPersona.accent] || ACCENT.indigo
-                        const Icon = ICONS[msgPersona.icon] || Sparkles
-
-                        return (
-                            <motion.div
-                                key={msg.id}
-                                initial={{ opacity: 0, y: 6 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className={cn('flex gap-2.5', isUser ? 'justify-end' : 'justify-start')}
-                            >
-                                {!isUser && (
-                                    <div className={cn('w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5', msgAccent.bg, msgAccent.text)}>
-                                        <Icon className="w-4 h-4" />
-                                    </div>
-                                )}
-
-                                <div className="max-w-[82%] space-y-1.5">
-                                    <div className={cn(
-                                        'rounded-2xl p-3.5 text-xs leading-relaxed',
-                                        isUser
-                                            ? 'bg-indigo-600 text-white rounded-tr-none shadow-md'
-                                            : 'bg-secondary/80 border border-border/60 text-foreground rounded-tl-none'
-                                    )}>
-                                        {isUser ? (
-                                            <span className="whitespace-pre-wrap">{msg.content}</span>
-                                        ) : (
-                                            <div className="prose prose-invert prose-xs max-w-none prose-p:my-1.5 prose-ul:my-1.5 prose-li:my-0.5 prose-strong:text-foreground">
-                                                <ReactMarkdown>{msg.content}</ReactMarkdown>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {!isUser && msg.content.length > 40 && (
-                                        <button
-                                            onClick={() => handleMakeTask(msg.content)}
-                                            disabled={savedTasks.has(msg.content)}
-                                            className="text-[10px] font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors disabled:text-emerald-400"
-                                        >
-                                            {savedTasks.has(msg.content)
-                                                ? <><CheckCircle2 className="w-3 h-3" /> Tarea creada</>
-                                                : <><Plus className="w-3 h-3" /> Convertir en tarea</>}
-                                        </button>
-                                    )}
-                                </div>
-
-                                {isUser && (
-                                    <div className="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0 mt-0.5">
-                                        <User className="w-4 h-4" />
-                                    </div>
-                                )}
-                            </motion.div>
-                        )
-                    })}
-                </AnimatePresence>
-
-                {loading && (
-                    <div className="flex gap-2.5">
-                        <div className={cn('w-7 h-7 rounded-lg flex items-center justify-center shrink-0', accent.bg, accent.text)}>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                        </div>
-                        <div className="bg-secondary/80 border border-border/60 rounded-2xl rounded-tl-none p-3.5 text-xs text-muted-foreground">
-                            Leyendo tu Segundo Cerebro…
-                        </div>
+                {messages.map(m => m.role === 'user' ? (
+                    <div key={m.id} className="flex justify-end"><p className="max-w-[80%] rounded-2xl rounded-br-md bg-raised border border-hairline px-4 py-3 text-[15px] leading-relaxed whitespace-pre-wrap">{m.content}</p></div>
+                ) : (
+                    <div key={m.id}>
+                        <p className="label-caps !text-[10px] mb-2">{getPersona((m.persona || persona) as PersonaId).label}</p>
+                        <div className="prose-note text-[15px] leading-relaxed max-w-[65ch]"><ReactMarkdown>{m.content}</ReactMarkdown></div>
+                        {m.content.length > 40 && !m.id.startsWith('err') && <button onClick={() => makeTask(m.id, m.content)} disabled={savedTasks.has(m.id)} className="mt-2 min-h-[36px] text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 disabled:text-emerald-300">{savedTasks.has(m.id) ? <><Check className="w-3.5 h-3.5" /> Tarea creada</> : <><Plus className="w-3.5 h-3.5" /> Convertir en tarea</>}</button>}
                     </div>
-                )}
+                ))}
+                {loading && <p role="status" className="text-sm text-muted-foreground flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Leyendo tu Segundo Cerebro…</p>}
             </div>
-
-            {/* Input */}
-            <div className="p-3 border-t border-border/50 bg-secondary/20 shrink-0">
-                <div className="flex gap-2 items-end">
-                    <textarea
-                        ref={inputRef}
-                        rows={1}
-                        value={input}
-                        onChange={e => {
-                            setInput(e.target.value)
-                            e.target.style.height = 'auto'
-                            e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`
-                        }}
-                        onKeyDown={e => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault()
-                                handleSend()
-                            }
-                        }}
-                        disabled={loading}
-                        placeholder={`Contale algo a tu ${p.label.toLowerCase()}…`}
-                        className={cn(
-                            'flex-1 bg-secondary/60 border border-border rounded-xl px-4 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 resize-none transition-all',
-                            accent.ring
-                        )}
-                    />
-                    <button
-                        onClick={() => handleSend()}
-                        disabled={!input.trim() || loading}
-                        className={cn(
-                            'p-2.5 text-white rounded-xl transition-all shadow-md shrink-0 flex items-center justify-center disabled:opacity-40',
-                            accent.solid
-                        )}
-                    >
-                        <Send className="w-4 h-4" />
-                    </button>
+            <div className="shrink-0 pb-1">
+                <div className="rounded-2xl bg-raised border border-hairline focus-within:ring-2 focus-within:ring-amber-400/50 p-2">
+                    <textarea ref={inputRef} rows={1} value={input} disabled={loading} aria-label="Mensaje" placeholder="Escribí o dictá lo que tengas en la cabeza…"
+                        onChange={e => { setInput(e.target.value); e.target.style.height = 'auto'; e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px` }}
+                        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
+                        className="w-full bg-transparent resize-none px-2 py-2 text-[15px] focus:outline-none placeholder:text-ink-faint" />
+                    <div className="flex items-center gap-2">
+                        {canDictate && <button onClick={dictate} aria-label={listening ? 'Dejar de dictar' : 'Dictar'} className={cn('w-10 h-10 rounded-xl flex items-center justify-center', listening ? 'text-red-300' : 'text-muted-foreground hover:text-foreground')}>{listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}</button>}
+                        <span className="hidden sm:block font-mono text-[10px] text-ink-faint">Enter envía · Shift Enter baja de línea</span>
+                        <button onClick={() => send()} disabled={!input.trim() || loading} aria-label="Enviar" className="ml-auto w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-40"><ArrowUp className="w-4 h-4" /></button>
+                    </div>
                 </div>
-                <p className="text-[10px] text-muted-foreground/60 mt-1.5 px-1">
-                    Enter para enviar · Shift+Enter para salto de línea
-                </p>
             </div>
         </div>
     )

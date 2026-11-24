@@ -202,7 +202,7 @@ export function QuickExpenseButton() {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setOpen(false)}
-                            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+                            className="absolute inset-0 bg-background/80"
                         />
 
                         <motion.div
@@ -210,13 +210,13 @@ export function QuickExpenseButton() {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 40 }}
                             transition={{ type: 'spring', damping: 30, stiffness: 320 }}
-                            className="relative w-full sm:max-w-lg max-h-[92vh] overflow-y-auto bg-popover border border-emerald-500/25 shadow-2xl rounded-t-3xl sm:rounded-3xl"
+                            className="relative w-full sm:max-w-lg max-h-[92vh] overflow-y-auto bg-popover border border-emerald-500/25 shadow-2xl rounded-t-3xl sm:rounded-2xl"
                             style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
                         >
                             {/* Header */}
-                            <div className="sticky top-0 z-10 bg-popover/95 backdrop-blur px-5 pt-4 pb-3 border-b border-white/5 flex items-start justify-between gap-3">
+                            <div className="sticky top-0 z-10 bg-popover/95 px-5 pt-4 pb-3 border-b border-hairline flex items-start justify-between gap-3">
                                 <div className="min-w-0">
-                                    <div className="flex items-center gap-1 bg-black/30 border border-white/10 rounded-xl p-0.5 w-fit">
+                                    <div className="flex items-center gap-1 bg-black/30 border border-hairline rounded-xl p-0.5 w-fit">
                                         {(['expense', 'income'] as const).map(k => (
                                             <button
                                                 key={k}
@@ -249,7 +249,7 @@ export function QuickExpenseButton() {
                             >
                                 {/* Monto */}
                                 <div>
-                                    <div className="flex items-center gap-2 bg-black/30 border border-white/10 rounded-2xl px-4 py-2 focus-within:ring-2 focus-within:ring-emerald-500/60">
+                                    <div className="flex items-center gap-2 bg-black/30 border border-hairline rounded-2xl px-4 py-2 focus-within:ring-2 focus-within:ring-emerald-500/60">
                                         <span className="text-2xl font-bold text-muted-foreground">$</span>
                                         <input
                                             ref={amountRef}
@@ -263,7 +263,7 @@ export function QuickExpenseButton() {
                                         />
                                     </div>
                                     {amount > 0 && amountRaw.replace(/\D/g, '').length > 3 && (
-                                        <p className="text-[10px] text-muted-foreground mt-1 pl-1">{formatCurrency(amount)}</p>
+                                        <p className="text-[11px] text-muted-foreground mt-1 pl-1">{formatCurrency(amount)}</p>
                                     )}
                                 </div>
 
@@ -272,14 +272,14 @@ export function QuickExpenseButton() {
                                         {/* Repetir uno frecuente */}
                                         {ctx && ctx.templates.length > 0 && (
                                             <div>
-                                                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1.5">Frecuentes</label>
+                                                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block mb-1.5">Frecuentes</label>
                                                 <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
                                                     {ctx.templates.map(t => (
                                                         <button
                                                             key={`${t.description}-${t.category}`}
                                                             type="button"
                                                             onClick={() => applyTemplate(t)}
-                                                            className="shrink-0 px-2.5 py-1.5 rounded-xl text-[11px] bg-white/5 border border-white/10 text-white/90 hover:bg-emerald-500/15 hover:border-emerald-500/30 transition-all whitespace-nowrap"
+                                                            className="shrink-0 px-2.5 py-1.5 rounded-xl text-[11px] bg-white/5 border border-hairline text-white/90 hover:bg-emerald-500/15 hover:border-emerald-500/30 transition-all whitespace-nowrap"
                                                         >
                                                             {getCategory(t.category).emoji} {t.description} · <span className="font-mono text-muted-foreground">{formatCurrency(t.amount)}</span>
                                                         </button>
@@ -290,7 +290,7 @@ export function QuickExpenseButton() {
 
                                         {/* Categoría */}
                                         <div>
-                                            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1.5">Categoría</label>
+                                            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block mb-1.5">Categoría</label>
                                             <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5">
                                                 {categories.map(c => (
                                                     <button
@@ -299,10 +299,10 @@ export function QuickExpenseButton() {
                                                         onClick={() => pickCategory(c.id)}
                                                         title={c.hint}
                                                         className={cn(
-                                                            'flex flex-col items-center justify-center gap-0.5 py-2 px-1 rounded-xl border text-[10px] font-semibold transition-all',
+                                                            'flex flex-col items-center justify-center gap-0.5 py-2 px-1 rounded-xl border text-[11px] font-semibold transition-all',
                                                             category === c.id
                                                                 ? 'bg-emerald-500/20 border-emerald-400 text-white'
-                                                                : 'bg-black/20 border-white/10 text-muted-foreground hover:bg-white/5 hover:text-white'
+                                                                : 'bg-black/20 border-hairline text-muted-foreground hover:bg-white/5 hover:text-white'
                                                         )}
                                                     >
                                                         <span className="text-lg leading-none">{c.emoji}</span>
@@ -314,7 +314,7 @@ export function QuickExpenseButton() {
                                     </>
                                 ) : (
                                     <div>
-                                        <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1.5">De dónde viene</label>
+                                        <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block mb-1.5">De dónde viene</label>
                                         <div className="flex flex-wrap gap-1.5">
                                             {INCOME_SOURCES.map(s => (
                                                 <button
@@ -325,7 +325,7 @@ export function QuickExpenseButton() {
                                                         'px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all',
                                                         incomeSource === s
                                                             ? 'bg-indigo-600/30 border-indigo-400 text-white'
-                                                            : 'bg-black/20 border-white/10 text-muted-foreground hover:bg-white/5'
+                                                            : 'bg-black/20 border-hairline text-muted-foreground hover:bg-white/5'
                                                     )}
                                                 >
                                                     {s}
@@ -343,12 +343,12 @@ export function QuickExpenseButton() {
                                     placeholder={kind === 'income'
                                         ? 'Detalle (opcional): cliente, concepto...'
                                         : selectedCat?.hint ? `Detalle (opcional): ${selectedCat.hint}` : 'Detalle (opcional)'}
-                                    className="w-full bg-black/30 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
+                                    className="w-full bg-black/30 border border-hairline rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                                 />
 
                                 {/* Medio de pago */}
                                 <div>
-                                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1.5">
+                                    <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block mb-1.5">
                                         {kind === 'income' ? 'Cómo entró' : 'Cómo pagaste'}
                                     </label>
                                     <div className="flex flex-wrap gap-1.5">
@@ -361,7 +361,7 @@ export function QuickExpenseButton() {
                                                     'px-2.5 py-1.5 rounded-xl text-[11px] font-semibold border transition-all',
                                                     method === p.id
                                                         ? 'bg-white/15 border-white/40 text-white'
-                                                        : 'bg-black/20 border-white/10 text-muted-foreground hover:bg-white/5'
+                                                        : 'bg-black/20 border-hairline text-muted-foreground hover:bg-white/5'
                                                 )}
                                             >
                                                 {p.emoji} {p.label}
@@ -373,7 +373,7 @@ export function QuickExpenseButton() {
                                 {/* ¿Era necesario? */}
                                 {kind === 'expense' && (
                                     <div>
-                                        <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1.5">¿Era necesario?</label>
+                                        <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block mb-1.5">¿Era necesario?</label>
                                         <div className="grid grid-cols-3 gap-1.5">
                                             {NECESSITY_LEVELS.map(lvl => {
                                                 const active = (necessity || (category ? defaultNecessity(category) : null)) === lvl.id
@@ -385,7 +385,7 @@ export function QuickExpenseButton() {
                                                         title={lvl.description}
                                                         className={cn(
                                                             'px-2 py-1.5 rounded-xl text-[11px] font-semibold border transition-all',
-                                                            active ? 'text-white' : 'bg-black/20 border-white/10 text-muted-foreground hover:bg-white/5'
+                                                            active ? 'text-white' : 'bg-black/20 border-hairline text-muted-foreground hover:bg-white/5'
                                                         )}
                                                         style={active ? { backgroundColor: `${lvl.color}33`, borderColor: lvl.color } : undefined}
                                                     >
@@ -408,7 +408,7 @@ export function QuickExpenseButton() {
                                                 'px-3 py-1.5 rounded-xl text-[11px] font-semibold border transition-all',
                                                 date === d.value && !showDate
                                                     ? 'bg-white/15 border-white/40 text-white'
-                                                    : 'bg-black/20 border-white/10 text-muted-foreground hover:bg-white/5'
+                                                    : 'bg-black/20 border-hairline text-muted-foreground hover:bg-white/5'
                                             )}
                                         >
                                             {d.label}
@@ -426,7 +426,7 @@ export function QuickExpenseButton() {
                                         <button
                                             type="button"
                                             onClick={() => setShowDate(true)}
-                                            className="px-2.5 py-1.5 rounded-xl text-[11px] font-semibold border bg-black/20 border-white/10 text-muted-foreground hover:bg-white/5 flex items-center gap-1"
+                                            className="px-2.5 py-1.5 rounded-xl text-[11px] font-semibold border bg-black/20 border-hairline text-muted-foreground hover:bg-white/5 flex items-center gap-1"
                                         >
                                             <CalendarDays className="w-3.5 h-3.5" /> Otra fecha
                                         </button>
@@ -441,7 +441,7 @@ export function QuickExpenseButton() {
                                                 'ml-auto px-2.5 py-1.5 rounded-xl text-[11px] font-semibold border transition-all flex items-center gap-1',
                                                 recurring
                                                     ? 'bg-indigo-500/20 border-indigo-400 text-white'
-                                                    : 'bg-black/20 border-white/10 text-muted-foreground hover:bg-white/5'
+                                                    : 'bg-black/20 border-hairline text-muted-foreground hover:bg-white/5'
                                             )}
                                         >
                                             <Repeat className="w-3.5 h-3.5" /> Fijo mensual
@@ -476,12 +476,12 @@ export function QuickExpenseButton() {
                                 </AnimatePresence>
 
                                 {/* Acciones: siempre a la vista, aunque el formulario no entre en la pantalla */}
-                                <div className="sticky bottom-0 -mx-5 px-5 py-3 bg-popover/95 backdrop-blur border-t border-white/5 flex items-center gap-2">
+                                <div className="sticky bottom-0 -mx-5 px-5 py-3 bg-popover/95 border-t border-hairline flex items-center gap-2">
                                     <button
                                         type="button"
                                         disabled={saving}
                                         onClick={() => save(true)}
-                                        className="px-4 py-3 rounded-2xl text-xs font-bold border border-white/10 text-muted-foreground hover:text-white hover:bg-white/5 disabled:opacity-50"
+                                        className="px-4 py-3 rounded-2xl text-xs font-bold border border-hairline text-muted-foreground hover:text-white hover:bg-white/5 disabled:opacity-50"
                                     >
                                         Guardar y otro
                                     </button>
@@ -489,10 +489,10 @@ export function QuickExpenseButton() {
                                         type="submit"
                                         disabled={saving}
                                         className={cn(
-                                            'flex-1 py-3 rounded-2xl text-sm font-bold text-white shadow-lg flex items-center justify-center gap-2 disabled:opacity-60',
+                                            'flex-1 py-3 rounded-2xl text-sm font-bold text-white flex items-center justify-center gap-2 disabled:opacity-60',
                                             kind === 'expense'
-                                                ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/25'
-                                                : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/25'
+                                                ? 'bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))]'
+                                                : 'bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))]'
                                         )}
                                     >
                                         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
@@ -532,7 +532,7 @@ export function QuickExpenseTrigger({
             <Receipt className="w-4 h-4 text-emerald-400 shrink-0" />
             <span>{label}</span>
             {typeof todayTotal === 'number' && (
-                <span className="text-[10px] font-mono text-emerald-200/80 bg-emerald-500/10 px-1.5 py-0.5 rounded-lg">
+                <span className="text-[11px] font-mono text-emerald-200/80 bg-emerald-500/10 px-1.5 py-0.5 rounded-lg">
                     hoy {formatCurrency(todayTotal)}
                 </span>
             )}

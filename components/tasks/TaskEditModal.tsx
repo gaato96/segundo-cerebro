@@ -102,7 +102,7 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     onClick={onClose}
-                    className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+                    className="absolute inset-0 bg-background/80"
                 />
 
                 <motion.div
@@ -145,7 +145,7 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
                                 onChange={(e) => setTitle(e.target.value)}
                                 required
                                 placeholder="Título de la tarea..."
-                                className="w-full bg-secondary/40 border border-border rounded-xl px-4 py-2.5 text-base font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                                className="w-full bg-secondary/40 border border-border rounded-xl px-4 py-2.5 text-base font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                             />
                         </div>
 
@@ -156,7 +156,7 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
                                 onChange={(e) => setDescription(e.target.value)}
                                 rows={3}
                                 placeholder="Descripción (opcional)..."
-                                className="w-full bg-secondary/40 border border-border rounded-xl px-4 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
+                                className="w-full bg-secondary/40 border border-border rounded-xl px-4 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-amber-400/50 resize-none"
                             />
                         </div>
 
@@ -169,7 +169,7 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
                                 <select
                                     value={priority}
                                     onChange={(e) => setPriority(Number(e.target.value))}
-                                    className="w-full bg-secondary/40 border border-border rounded-xl px-2.5 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                                    className="w-full bg-secondary/40 border border-border rounded-xl px-2.5 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                                 >
                                     <option value={1}>Alta</option>
                                     <option value={2}>Media</option>
@@ -184,7 +184,7 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
                                 <select
                                     value={category}
                                     onChange={(e) => setCategory(e.target.value)}
-                                    className="w-full bg-secondary/40 border border-border rounded-xl px-2.5 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                                    className="w-full bg-secondary/40 border border-border rounded-xl px-2.5 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                                 >
                                     <option value="Work">Trabajo</option>
                                     <option value="Personal">Personal</option>
@@ -198,7 +198,7 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
                                 <select
                                     value={energyLevel}
                                     onChange={(e) => setEnergyLevel(e.target.value)}
-                                    className="w-full bg-secondary/40 border border-border rounded-xl px-2.5 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                                    className="w-full bg-secondary/40 border border-border rounded-xl px-2.5 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                                 >
                                     <option value="Deep Work">Deep</option>
                                     <option value="Low Energy">Low</option>
@@ -217,7 +217,7 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
                                     type="date"
                                     value={dueDate}
                                     onChange={(e) => setDueDate(e.target.value)}
-                                    className="w-full bg-secondary/40 border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50 [color-scheme:dark]"
+                                    className="w-full bg-secondary/40 border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-amber-400/50 [color-scheme:dark]"
                                 />
                             </div>
 
@@ -229,7 +229,7 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
                                     type="time"
                                     value={reminderTime}
                                     onChange={(e) => setReminderTime(e.target.value)}
-                                    className="w-full bg-secondary/40 border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50 [color-scheme:dark]"
+                                    className="w-full bg-secondary/40 border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-amber-400/50 [color-scheme:dark]"
                                 />
                             </div>
                         </div>
@@ -266,7 +266,7 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
                                 type="submit"
                                 form="edit-task-form"
                                 disabled={loading}
-                                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-medium transition-all shadow-md flex items-center gap-1.5"
+                                className="px-4 py-2 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white rounded-xl text-xs font-medium transition-all flex items-center gap-1.5"
                             >
                                 {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                                 Guardar

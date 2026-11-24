@@ -49,7 +49,7 @@ export function StickyNotesWidget({ initialNotes }: StickyNotesWidgetProps) {
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h3 className="text-xl font-heading font-semibold">Post-its</h3>
+                <h3 className="text-xl font-semibold">Post-its</h3>
                 <button
                     onClick={handleAddNote}
                     disabled={isCreating}
@@ -117,7 +117,7 @@ function StickyNoteItem({ note, onDelete }: { note: StickyNote, onDelete: (id: s
     return (
         <div
             className={cn(
-                "relative flex flex-col p-3 rounded-lg shadow-md hover:shadow-lg transition-all min-h-[140px] border",
+                "relative flex flex-col p-3 rounded-lg hover:shadow-lg transition-all min-h-[140px] border",
                 color,
                 isDeleting && "opacity-50 pointer-events-none"
             )}
@@ -141,7 +141,7 @@ function StickyNoteItem({ note, onDelete }: { note: StickyNote, onDelete: (id: s
                         <Palette className="w-4 h-4" />
                     </button>
                     {/* Color picker dropdown on hover over toolbar button */}
-                    <div className="absolute bottom-full right-0 mb-1 hidden group-hover/color:flex bg-white rounded-full shadow-lg p-1 gap-1 border">
+                    <div className="absolute bottom-full right-0 mb-1 hidden group-hover/color:flex bg-white rounded-full p-1 gap-1 border">
                         {COLORS.map(c => (
                             <button
                                 key={c}

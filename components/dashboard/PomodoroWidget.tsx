@@ -108,13 +108,13 @@ export function PomodoroWidget({ tasks, userId }: PomodoroWidgetProps) {
     const activeTask = tasks.find(t => t.id === selectedTaskId)
 
     return (
-        <div className="glass rounded-2xl p-6 border border-border/50 shadow-xl flex flex-col items-center h-[500px]">
+        <div className="glass rounded-2xl p-6 border border-hairline flex flex-col items-center h-[500px]">
             {/* Mode Switches */}
             <div className="flex bg-secondary/50 rounded-xl p-1 mb-8 w-full max-w-[240px]">
                 <button
                     onClick={() => switchMode('focus')}
                     className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-all ${mode === 'focus'
-                            ? 'bg-indigo-600 text-white shadow-md'
+                            ? 'bg-indigo-600 text-white'
                             : 'text-muted-foreground hover:text-foreground'
                         }`}
                 >
@@ -124,7 +124,7 @@ export function PomodoroWidget({ tasks, userId }: PomodoroWidgetProps) {
                 <button
                     onClick={() => switchMode('break')}
                     className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-all ${mode === 'break'
-                            ? 'bg-green-600 text-white shadow-md'
+                            ? 'bg-green-600 text-white'
                             : 'text-muted-foreground hover:text-foreground'
                         }`}
                 >
@@ -166,7 +166,7 @@ export function PomodoroWidget({ tasks, userId }: PomodoroWidgetProps) {
                 </svg>
 
                 <div className="absolute flex flex-col items-center justify-center z-20">
-                    <span className="text-5xl font-heading font-bold font-tabular-nums text-foreground tracking-tight">
+                    <span className="text-5xl font-semibold font-tabular-nums text-foreground tracking-tight">
                         {formatTime(timeLeft)}
                     </span>
                     <span className="text-xs text-muted-foreground mt-1 uppercase tracking-wider font-semibold">
@@ -180,7 +180,7 @@ export function PomodoroWidget({ tasks, userId }: PomodoroWidgetProps) {
                 {!isActive ? (
                     <button
                         onClick={toggleTimer}
-                        className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white transition-all hover:scale-105 active:scale-95 shadow-lg ${mode === 'focus' ? 'bg-indigo-600 hover:bg-indigo-500 hover:shadow-indigo-500/25' : 'bg-green-600 hover:bg-green-500 hover:shadow-green-500/25'
+                        className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white transition-all hover:scale-105 active:scale-95 ${mode === 'focus' ? 'bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))]' : 'bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))]'
                             }`}
                     >
                         <Play className="w-6 h-6 ml-1" />
@@ -239,7 +239,7 @@ export function PomodoroWidget({ tasks, userId }: PomodoroWidgetProps) {
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
-                            className="absolute bottom-full left-0 right-0 mb-2 p-2 bg-popover border border-border shadow-xl rounded-xl z-50 max-h-48 overflow-y-auto"
+                            className="absolute bottom-full left-0 right-0 mb-2 p-2 bg-popover border border-border rounded-xl z-50 max-h-48 overflow-y-auto"
                         >
                             <div className="space-y-1">
                                 <button

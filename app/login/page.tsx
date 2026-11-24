@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Brain, Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react'
+import { Lamp, Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
@@ -69,7 +69,7 @@ export default function LoginPage() {
                 redirectTo: `${window.location.origin}/login`
             })
             if (error) throw error
-            setMessage({ type: 'success', text: '✅ Email enviado. Revisá tu bandeja de entrada y hacé click en el link.' })
+            setMessage({ type: 'success', text: 'Email enviado. Revisá tu bandeja de entrada y hacé click en el link.' })
         } catch (err: any) {
             setMessage({ type: 'error', text: err.message || 'Error al enviar email' })
         } finally {
@@ -79,30 +79,23 @@ export default function LoginPage() {
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-            {/* Animated background orbs */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute -top-40 -right-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl animate-pulse" />
-                <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl animate-pulse delay-1000" />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-blue-600/10 rounded-full blur-3xl animate-pulse delay-500" />
-            </div>
-
             <div className="w-full max-w-md relative z-10">
                 {/* Logo */}
                 <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 mb-4 glow-primary">
-                        <Brain className="w-8 h-8 text-indigo-400" />
+                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-amber-400/10 border border-amber-400/25 mb-4">
+                        <Lamp className="w-7 h-7 text-amber-400" />
                     </div>
                     <h1 className="text-2xl md:text-[30px] font-semibold tracking-tight">Segundo Cerebro</h1>
-                    <p className="text-muted-foreground mt-1 text-sm">Tu Life OS personal</p>
+                    <p className="text-muted-foreground mt-1 text-sm">Capturar, planificar, hacer y cerrar el día.</p>
                 </div>
 
                 {/* Card */}
-                <div className="glass rounded-2xl p-8 shadow-2xl">
+                <div className="glass rounded-2xl p-6 sm:p-8">
                     <div className="flex gap-2 mb-6 bg-secondary rounded-xl p-1">
                         <button
                             onClick={() => setMode('login')}
                             className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${mode === 'login'
-                                    ? 'bg-indigo-600 text-white shadow-md'
+                                    ? 'bg-card text-foreground'
                                     : 'text-muted-foreground hover:text-foreground'
                                 }`}
                         >
@@ -111,7 +104,7 @@ export default function LoginPage() {
                         <button
                             onClick={() => setMode('register')}
                             className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${mode === 'register'
-                                    ? 'bg-indigo-600 text-white shadow-md'
+                                    ? 'bg-card text-foreground'
                                     : 'text-muted-foreground hover:text-foreground'
                                 }`}
                         >
@@ -128,7 +121,7 @@ export default function LoginPage() {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
-                                className="w-full bg-secondary border border-border rounded-xl pl-10 pr-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+                                className="field pl-10 pr-4"
                             />
                         </div>
 
@@ -140,7 +133,7 @@ export default function LoginPage() {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
-                                className="w-full bg-secondary border border-border rounded-xl pl-10 pr-12 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+                                className="field pl-10 pr-12"
                             />
                             <button
                                 type="button"
@@ -163,7 +156,7 @@ export default function LoginPage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-indigo-500/25 flex items-center justify-center gap-2"
+                            className="w-full bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-all hover:shadow-lg flex items-center justify-center gap-2"
                         >
                             {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                             {mode === 'login' ? 'Entrar' : 'Crear cuenta'}

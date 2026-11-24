@@ -52,8 +52,8 @@ export function MediaRouletteModal({
     }, [])
 
     return (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-            <div className="bg-popover border border-white/10 w-full max-w-md flex flex-col rounded-3xl relative overflow-hidden shadow-2xl p-6 text-center space-y-6">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80">
+            <div className="bg-popover border border-hairline w-full max-w-md flex flex-col rounded-2xl relative overflow-hidden shadow-2xl p-6 text-center space-y-6">
                 <button
                     onClick={onClose}
                     className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-full transition-colors"
@@ -62,7 +62,7 @@ export function MediaRouletteModal({
                 </button>
 
                 <div className="space-y-1">
-                    <h2 className="text-2xl font-heading font-bold flex items-center justify-center gap-2">
+                    <h2 className="text-2xl font-semibold flex items-center justify-center gap-2">
                         <Dices className="w-6 h-6 text-pink-500 animate-bounce" />
                         Ruleta del Backlog
                     </h2>
@@ -72,8 +72,8 @@ export function MediaRouletteModal({
                 </div>
 
                 {/* Spinning display */}
-                <div className="h-60 flex items-center justify-center border border-white/5 bg-black/30 rounded-2xl p-4 overflow-hidden relative">
-                    <div className="absolute inset-0 bg-gradient-to-t from-popover/50 via-transparent to-popover/50 pointer-events-none z-10" />
+                <div className="h-60 flex items-center justify-center border border-hairline bg-black/30 rounded-2xl p-4 overflow-hidden relative">
+                    <div className="absolute inset-0 pointer-events-none z-10" />
                     
                     {items.length === 0 ? (
                         <p className="text-sm text-muted-foreground">No tienes películas ni series pendientes en tus filtros actuales.</p>
@@ -92,19 +92,19 @@ export function MediaRouletteModal({
                                         <img
                                             src={items[currentIndex].cover_url}
                                             alt={items[currentIndex].title}
-                                            className="w-24 h-36 rounded-xl object-cover shadow-lg border border-white/10"
+                                            className="w-24 h-36 rounded-xl object-cover border border-hairline"
                                         />
                                     ) : (
-                                        <div className="w-24 h-36 rounded-xl bg-secondary flex items-center justify-center text-muted-foreground shadow-lg border border-white/10">
+                                        <div className="w-24 h-36 rounded-xl bg-secondary flex items-center justify-center text-muted-foreground border border-hairline">
                                             {items[currentIndex].type === 'Series' ? <Tv className="w-10 h-10" /> : <Clapperboard className="w-10 h-10" />}
                                         </div>
                                     )}
 
                                     <div className="space-y-1">
-                                        <h3 className="font-heading font-bold text-lg text-white leading-tight truncate max-w-[280px]">
+                                        <h3 className="font-semibold text-lg text-white leading-tight truncate max-w-[280px]">
                                             {items[currentIndex].title}
                                         </h3>
-                                        <span className="text-[10px] bg-secondary px-2 py-0.5 rounded-full text-muted-foreground border border-border">
+                                        <span className="text-[11px] bg-secondary px-2 py-0.5 rounded-full text-muted-foreground border border-border">
                                             {items[currentIndex].type === 'Series' ? 'Serie' : 'Película'}
                                         </span>
                                     </div>
@@ -125,7 +125,7 @@ export function MediaRouletteModal({
                         <div className="flex gap-2">
                             <button
                                 onClick={startSpin}
-                                className="flex-1 px-4 py-2.5 border border-white/10 hover:bg-white/5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5"
+                                className="flex-1 px-4 py-2.5 border border-hairline hover:bg-white/5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5"
                             >
                                 <RefreshCw className="w-4 h-4" />
                                 Tirar de nuevo
@@ -135,7 +135,7 @@ export function MediaRouletteModal({
                                     await onStartItem(selectedItem.id)
                                     onClose()
                                 }}
-                                className="flex-1 bg-pink-600 hover:bg-pink-500 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-pink-500/25 flex items-center justify-center gap-1.5"
+                                className="flex-1 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-1.5"
                             >
                                 <Play className="w-4 h-4" />
                                 Empezar a ver

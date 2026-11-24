@@ -88,11 +88,11 @@ export function BudgetProjections({ projections: initialProjections, monthYear }
     return (
         <div className="space-y-6 animate-fade-in">
             {/* KPI Balance Banner */}
-            <div className="glass p-6 rounded-3xl border border-indigo-500/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="glass p-6 rounded-2xl border border-hairline flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div>
                     <div className="flex items-center gap-2">
                         <Sparkles className="w-5 h-5 text-indigo-400" />
-                        <h3 className="font-heading font-bold text-lg text-white">Proyección de Presupuesto ({monthYear})</h3>
+                        <h3 className="font-semibold text-lg text-white">Proyección de Presupuesto ({monthYear})</h3>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
                         Planificá tus ingresos y gastos estimados para este mes en Pesos Argentinos (ARS).
@@ -101,7 +101,7 @@ export function BudgetProjections({ projections: initialProjections, monthYear }
 
                 <div className="flex items-center gap-4 text-right">
                     <div>
-                        <span className="text-[10px] uppercase font-semibold text-muted-foreground block">Balance Proyectado</span>
+                        <span className="text-[11px] uppercase font-semibold text-muted-foreground block">Balance Proyectado</span>
                         <span className={`text-xl font-bold font-mono ${projectedBalance >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                             {formatCurrency(projectedBalance)}
                         </span>
@@ -111,7 +111,7 @@ export function BudgetProjections({ projections: initialProjections, monthYear }
                         <button
                             onClick={handleGenerateEnvelopes}
                             disabled={generatingEnvelopes}
-                            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-lg shadow-indigo-600/20 transition-all disabled:opacity-50"
+                            className="px-4 py-2.5 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition-all disabled:opacity-50"
                         >
                             {generatingEnvelopes ? <Loader2 className="w-4 h-4 animate-spin" /> : <Layers className="w-4 h-4" />}
                             Generar Sobres ({expenses.length})
@@ -121,11 +121,11 @@ export function BudgetProjections({ projections: initialProjections, monthYear }
             </div>
 
             {/* Quick Add Form */}
-            <form onSubmit={handleAddProjection} className="glass p-4 rounded-2xl border border-border/50 grid grid-cols-1 sm:grid-cols-5 gap-3 items-center">
+            <form onSubmit={handleAddProjection} className="glass p-4 rounded-2xl border border-hairline grid grid-cols-1 sm:grid-cols-5 gap-3 items-center">
                 <select
                     value={type}
                     onChange={e => setType(e.target.value as any)}
-                    className="bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="bg-black/30 border border-hairline rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-400/50"
                 >
                     <option value="expense">🔴 Gasto Proyectado</option>
                     <option value="income">🟢 Ingreso Proyectado</option>
@@ -137,7 +137,7 @@ export function BudgetProjections({ projections: initialProjections, monthYear }
                     value={desc}
                     onChange={e => setDesc(e.target.value)}
                     placeholder="Descripción (ej: Sueldo, Alquiler...)"
-                    className="bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:col-span-2"
+                    className="bg-black/30 border border-hairline rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-400/50 sm:col-span-2"
                 />
 
                 <input
@@ -147,13 +147,13 @@ export function BudgetProjections({ projections: initialProjections, monthYear }
                     value={amount}
                     onChange={e => setAmount(e.target.value)}
                     placeholder="Monto ($ ARS)"
-                    className="bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
+                    className="bg-black/30 border border-hairline rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-400/50 font-mono"
                 />
 
                 <button
                     type="submit"
                     disabled={loading}
-                    className="py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-md transition-all"
+                    className="py-2 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all"
                 >
                     {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4" /> Agregar</>}
                 </button>
@@ -162,11 +162,11 @@ export function BudgetProjections({ projections: initialProjections, monthYear }
             {/* Projections Grid: 2 Columns */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Income Column */}
-                <div className="glass p-5 rounded-3xl border border-emerald-500/20 space-y-4">
-                    <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                <div className="glass p-5 rounded-2xl border border-hairline space-y-4">
+                    <div className="flex items-center justify-between border-b border-hairline pb-3">
                         <div className="flex items-center gap-2">
                             <TrendingUp className="w-5 h-5 text-emerald-400" />
-                            <h4 className="font-heading font-bold text-base text-white">Ingresos Proyectados</h4>
+                            <h4 className="font-semibold text-base text-white">Ingresos Proyectados</h4>
                         </div>
                         <span className="text-sm font-bold font-mono text-emerald-400">
                             {formatCurrency(totalIncome)}
@@ -181,7 +181,7 @@ export function BudgetProjections({ projections: initialProjections, monthYear }
                                 <div key={p.id} className="flex items-center justify-between p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20 text-xs">
                                     <div>
                                         <p className="font-bold text-white">{p.description}</p>
-                                        <span className="text-[10px] text-muted-foreground">{p.category}</span>
+                                        <span className="text-[11px] text-muted-foreground">{p.category}</span>
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <span className="font-mono font-bold text-emerald-400">{formatCurrency(p.amount)}</span>
@@ -196,11 +196,11 @@ export function BudgetProjections({ projections: initialProjections, monthYear }
                 </div>
 
                 {/* Expense Column */}
-                <div className="glass p-5 rounded-3xl border border-red-500/20 space-y-4">
-                    <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                <div className="glass p-5 rounded-2xl border border-red-500/20 space-y-4">
+                    <div className="flex items-center justify-between border-b border-hairline pb-3">
                         <div className="flex items-center gap-2">
                             <TrendingDown className="w-5 h-5 text-red-400" />
-                            <h4 className="font-heading font-bold text-base text-white">Gastos Proyectados</h4>
+                            <h4 className="font-semibold text-base text-white">Gastos Proyectados</h4>
                         </div>
                         <span className="text-sm font-bold font-mono text-red-400">
                             {formatCurrency(totalExpenses)}
@@ -215,7 +215,7 @@ export function BudgetProjections({ projections: initialProjections, monthYear }
                                 <div key={p.id} className="flex items-center justify-between p-3 rounded-xl bg-red-500/5 border border-red-500/20 text-xs">
                                     <div>
                                         <p className="font-bold text-white">{p.description}</p>
-                                        <span className="text-[10px] text-muted-foreground">{p.category}</span>
+                                        <span className="text-[11px] text-muted-foreground">{p.category}</span>
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <span className="font-mono font-bold text-red-400">{formatCurrency(p.amount)}</span>

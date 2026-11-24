@@ -408,3 +408,12 @@
   .prose-note strong { font-weight: 600; color: hsl(var(--foreground)); }
   .prose-note hr { border-color: hsl(var(--hairline)); }
 }
+
+/* Iconos-caja de las tarjetas viejas: neutros, el ámbar queda para lo importante. */
+@layer utilities {
+  .glass { border-radius: 1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}

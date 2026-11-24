@@ -1,283 +1,102 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import {
-    Plus, Trash2, UserCog, MessagesSquare,
-    Loader2, Sun, Database, ChevronLeft
-} from 'lucide-react'
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { ArrowRight, Loader2, Plus, Sun, Trash2 } from 'lucide-react'
 import { AssistantChat, type ChatMessage } from '@/components/assistant/AssistantChat'
 import { ContextProfileForm } from '@/components/assistant/ContextProfileForm'
-import { PERSONA_LIST, getPersona, type PersonaId } from '@/lib/assistantPersonas'
-import {
-    getSessionMessages, deleteAssistantSession, getDailyBriefing, previewBrainSnapshot
-} from '@/lib/actions/assistant'
-import { cn } from '@/lib/utils'
+import { getPersona, type PersonaId } from '@/lib/assistantPersonas'
+import { getSessionMessages, deleteAssistantSession, getDailyBriefing, previewBrainSnapshot } from '@/lib/actions/assistant'
+import type { TodayData } from '@/lib/actions/today'
+import { PageShell, PageHeader, Panel, SectionLabel } from '@/components/ui/kit'
+import { Segmented } from '@/components/ui/controls'
+import { formatCurrency, cn } from '@/lib/utils'
 
-interface Props {
-    initialSessions: any[]
-    initialContext: any
-}
+const ASKS = ['¿Qué hago ahora?', 'Armame la semana', '¿Cómo vengo con mis objetivos?', '¿Qué estoy postergando?']
 
-type Tab = 'chat' | 'perfil' | 'contexto'
-
-export function AsistentePageClient({ initialSessions, initialContext }: Props) {
-    const [sessions, setSessions] = useState<any[]>(initialSessions)
+export function AsistentePageClient({ initialSessions, initialContext, today }: { initialSessions: any[]; initialContext: any; today: TodayData | null }) {
+    const [sessions, setSessions] = useState(initialSessions)
     const [sessionId, setSessionId] = useState<string | null>(null)
     const [messages, setMessages] = useState<ChatMessage[]>([])
     const [persona, setPersona] = useState<PersonaId>('terapeuta')
-    const [tab, setTab] = useState<Tab>('chat')
-    const [loadingSession, setLoadingSession] = useState(false)
+    const [tab, setTab] = useState<'chat' | 'perfil' | 'contexto'>('chat')
+    const [loading, setLoading] = useState(false)
     const [briefing, setBriefing] = useState<ChatMessage | null>(null)
     const [briefingLoading, setBriefingLoading] = useState(false)
-    const [snapshot, setSnapshot] = useState<string>('')
-    const [snapshotLoading, setSnapshotLoading] = useState(false)
-    const [showSidebar, setShowSidebar] = useState(false)
-    // Cambia solo cuando el usuario abre otra charla o empieza una nueva.
-    // No depende de sessionId: la sesión nueva se crea con el primer mensaje
-    // y remontar el chat en ese momento borraba la conversación.
+    const [snapshot, setSnapshot] = useState('')
+    // Cambia solo al abrir otra charla: remontar con el primer mensaje borraba la conversación.
     const [chatKey, setChatKey] = useState(0)
 
-    // Desde el panel flotante, "pantalla completa" abre la misma charla.
     useEffect(() => {
         const id = new URLSearchParams(window.location.search).get('sesion')
-        if (!id) return
-        const found = initialSessions.find(s => s.id === id)
-        openSession(found || { id, persona: 'terapeuta' }).catch(() => { /* sesión inexistente: queda una charla nueva */ })
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+        if (id) open(initialSessions.find(s => s.id === id) || { id, persona: 'terapeuta' }).catch(() => { })
+    }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-    async function openSession(s: any) {
-        setLoadingSession(true)
-        setShowSidebar(false)
+    async function open(s: any) {
+        setLoading(true)
+        setTab('chat')
         try {
             const msgs = await getSessionMessages(s.id)
             setSessionId(s.id)
             setPersona(s.persona)
             setMessages(msgs.map((m: any) => ({ id: m.id, role: m.role, content: m.content, persona: m.persona })))
+            setBriefing(null)
             setChatKey(k => k + 1)
-            setTab('chat')
-        } finally {
-            setLoadingSession(false)
-        }
+        } finally { setLoading(false) }
     }
-
-    function newSession(p?: PersonaId) {
+    function fresh() {
         setSessionId(null)
         setMessages([])
         setBriefing(null)
         setChatKey(k => k + 1)
-        if (p) setPersona(p)
         setTab('chat')
-        setShowSidebar(false)
     }
-
-    async function removeSession(id: string, e: React.MouseEvent) {
-        e.stopPropagation()
+    async function remove(id: string) {
         if (!confirm('¿Borrar esta conversación? No se puede deshacer.')) return
         await deleteAssistantSession(id)
-        setSessions(prev => prev.filter(s => s.id !== id))
-        if (sessionId === id) newSession()
+        setSessions(p => p.filter(s => s.id !== id))
+        if (sessionId === id) fresh()
     }
-
-    async function handleBriefing() {
+    async function brief() {
         setBriefingLoading(true)
-        try {
-            const text = await getDailyBriefing(persona)
-            setBriefing({ id: `brief-${Date.now()}`, role: 'assistant', content: text, persona })
-        } catch (e: any) {
-            setBriefing({ id: `brief-err-${Date.now()}`, role: 'assistant', content: `No pude armar el briefing: ${e?.message}` })
-        } finally {
-            setBriefingLoading(false)
-        }
+        setTab('chat')
+        try { setBriefing({ id: `brief-${Date.now()}`, role: 'assistant', content: await getDailyBriefing(persona), persona }) }
+        catch (e: any) { setBriefing({ id: `err-${Date.now()}`, role: 'assistant', content: `No pude armar el briefing: ${e?.message}` }) }
+        finally { setBriefingLoading(false) }
+    }
+    async function loadSnapshot() {
+        setSnapshot('Leyendo…')
+        try { setSnapshot(await previewBrainSnapshot()) } catch (e: any) { setSnapshot(`Error: ${e?.message}`) }
     }
 
-    async function loadSnapshot() {
-        setSnapshotLoading(true)
-        try {
-            setSnapshot(await previewBrainSnapshot())
-        } catch (e: any) {
-            setSnapshot(`Error: ${e?.message}`)
-        } finally {
-            setSnapshotLoading(false)
-        }
-    }
+    const overdue = today?.otherTasks.filter((t: any) => t.due_date && String(t.due_date).slice(0, 10) < today.today).length ?? 0
+    const done = today?.focusTasks.filter((t: any) => t.status === 'Done').length ?? 0
 
     return (
-        <div className="px-4 md:px-8 py-6 md:py-8 max-w-7xl mx-auto space-y-5 animate-fade-in pb-24">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                    <h1 className="text-2xl md:text-[30px] font-semibold tracking-tight">Copiloto</h1>
-                    <p className="text-muted-foreground text-sm mt-0.5">
-                        Terapeuta, coach, amigo, socio. El mismo que ya conoce toda tu vida cargada acá.
-                    </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={handleBriefing}
-                        disabled={briefingLoading}
-                        className="px-3.5 py-2 glass hover:bg-secondary/60 border border-amber-500/30 text-xs font-semibold text-amber-300 rounded-xl transition-all flex items-center gap-1.5"
-                    >
-                        {briefingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sun className="w-4 h-4" />}
-                        Briefing de hoy
-                    </button>
-                    <button
-                        onClick={() => newSession()}
-                        className="px-3.5 py-2 bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Nueva charla
-                    </button>
-                </div>
-            </div>
-
-            {/* Tabs */}
-            <div className="flex items-center p-1 bg-secondary/50 rounded-xl border border-border/50 overflow-x-auto no-scrollbar">
-                {[
-                    { id: 'chat', label: 'Conversación', icon: MessagesSquare },
-                    { id: 'perfil', label: 'Sobre mí', icon: UserCog },
-                    { id: 'contexto', label: 'Qué está viendo', icon: Database }
-                ].map(t => {
-                    const Icon = t.icon
-                    const active = tab === t.id
-                    return (
-                        <button
-                            key={t.id}
-                            onClick={() => { setTab(t.id as Tab); if (t.id === 'contexto' && !snapshot) loadSnapshot() }}
-                            className={cn(
-                                'flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex-1 min-w-[130px]',
-                                active ? 'bg-violet-600 text-white shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/40'
-                            )}
-                        >
-                            <Icon className="w-4 h-4" />
-                            {t.label}
-                        </button>
-                    )
-                })}
-            </div>
-
-            {tab === 'chat' && (
-                <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4">
-                    {/* Lista de conversaciones */}
-                    <div className="space-y-3">
-                        <button
-                            onClick={() => setShowSidebar(v => !v)}
-                            className="lg:hidden w-full px-3 py-2 glass border border-border/50 rounded-xl text-xs font-semibold text-foreground flex items-center justify-between"
-                        >
-                            <span>Conversaciones ({sessions.length})</span>
-                            <ChevronLeft className={cn('w-4 h-4 transition-transform', showSidebar && '-rotate-90')} />
-                        </button>
-
-                        <div className={cn('space-y-3', !showSidebar && 'hidden lg:block')}>
-                            <div className="glass rounded-2xl border border-border/50 p-2 space-y-1">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2 py-1 block">
-                                    Empezar como…
-                                </span>
-                                {PERSONA_LIST.map(p => (
-                                    <button
-                                        key={p.id}
-                                        onClick={() => newSession(p.id)}
-                                        className="w-full text-left px-2.5 py-2 rounded-lg hover:bg-secondary/60 transition-colors"
-                                    >
-                                        <span className="text-xs font-semibold text-foreground block">{p.label}</span>
-                                        <span className="text-[10px] text-muted-foreground block leading-tight">{p.tagline}</span>
-                                    </button>
-                                ))}
-                            </div>
-
-                            {sessions.length > 0 && (
-                                <div className="glass rounded-2xl border border-border/50 p-2 space-y-1 max-h-[340px] overflow-y-auto">
-                                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2 py-1 block">
-                                        Historial
-                                    </span>
-                                    {sessions.map(s => (
-                                        <div
-                                            key={s.id}
-                                            onClick={() => openSession(s)}
-                                            className={cn(
-                                                'group px-2.5 py-2 rounded-lg cursor-pointer transition-colors flex items-start justify-between gap-2',
-                                                sessionId === s.id ? 'bg-violet-500/15 border border-violet-500/30' : 'hover:bg-secondary/60'
-                                            )}
-                                        >
-                                            <div className="min-w-0">
-                                                <span className="text-xs font-medium text-foreground block truncate">{s.title}</span>
-                                                <span className="text-[10px] text-muted-foreground">{getPersona(s.persona).label}</span>
-                                            </div>
-                                            <button
-                                                onClick={e => removeSession(s.id, e)}
-                                                className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-400 transition-all shrink-0 p-1"
-                                            >
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+        <PageShell wide>
+            <PageHeader label="Hoy · asistencia" title="Copiloto" subtitle="Pensá en voz alta, despejá dudas y convertí la respuesta en una tarea."
+                actions={<><button onClick={brief} disabled={briefingLoading} className="btn-secondary text-sm">{briefingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sun className="w-4 h-4" />} Briefing</button><button onClick={fresh} className="btn-secondary text-sm"><Plus className="w-4 h-4" /> Nueva charla</button></>} />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                <div className="lg:col-span-8 min-w-0">
+                    <Segmented value={tab} onChange={v => { setTab(v); if (v === 'contexto' && !snapshot) loadSnapshot() }} options={[{ id: 'chat', label: 'Conversación' }, { id: 'perfil', label: 'Sobre mí' }, { id: 'contexto', label: 'Qué está viendo' }]} />
+                    <div className={cn('h-[calc(100dvh-330px)] min-h-[460px] max-w-[760px]', tab !== 'chat' && 'hidden')}>
+                        {loading ? <p className="py-10 text-sm text-muted-foreground flex gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Abriendo la charla…</p> : <AssistantChat key={chatKey} sessionId={sessionId} persona={persona} initialMessages={messages} injectedMessage={briefing} onPersonaChange={setPersona} onMessagesChange={setMessages} onSessionCreated={id => { setSessionId(id); setSessions(p => [{ id, persona, title: 'Nueva conversación' }, ...p]) }} />}
                     </div>
-
-                    {/* Chat */}
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="glass rounded-2xl border border-violet-500/20 shadow-xl h-[70vh] min-h-[520px] flex flex-col overflow-hidden"
-                    >
-                        {loadingSession ? (
-                            <div className="flex-1 flex items-center justify-center text-muted-foreground text-xs gap-2">
-                                <Loader2 className="w-4 h-4 animate-spin" /> Cargando conversación…
-                            </div>
-                        ) : (
-                            <AssistantChat
-                                key={chatKey}
-                                sessionId={sessionId}
-                                persona={persona}
-                                initialMessages={messages}
-                                injectedMessage={briefing}
-                                onPersonaChange={setPersona}
-                                onMessagesChange={setMessages}
-                                onSessionCreated={id => {
-                                    setSessionId(id)
-                                    setSessions(prev => [
-                                        { id, persona, title: 'Nueva conversación', last_message_at: new Date().toISOString() },
-                                        ...prev
-                                    ])
-                                }}
-                                className="flex-1 min-h-0"
-                            />
-                        )}
-                    </motion.div>
+                    {tab === 'perfil' && <div className="max-w-[760px] mt-6"><ContextProfileForm initial={initialContext} /></div>}
+                    {tab === 'contexto' && <div className="mt-6"><p className="text-sm text-muted-foreground max-w-[65ch] mb-3">Esto es lo que lee de tu sistema antes de cada respuesta. Se manda al modelo de IA para poder contestarte. <button onClick={loadSnapshot} className="underline underline-offset-4">Actualizar</button></p><pre className="rounded-2xl bg-card border border-hairline p-5 text-xs whitespace-pre-wrap max-h-[65vh] overflow-y-auto font-mono leading-relaxed">{snapshot}</pre></div>}
                 </div>
-            )}
-
-            {tab === 'perfil' && (
-                <div className="max-w-2xl">
-                    <ContextProfileForm initial={initialContext} />
-                </div>
-            )}
-
-            {tab === 'contexto' && (
-                <div className="space-y-3">
-                    <div className="flex items-center justify-between gap-3">
-                        <p className="text-xs text-muted-foreground">
-                            Esto es exactamente lo que el asistente lee de tu Segundo Cerebro antes de cada respuesta.
-                            Nada sale de tu cuenta salvo este texto, que se manda al modelo para responderte.
-                        </p>
-                        <button
-                            onClick={loadSnapshot}
-                            disabled={snapshotLoading}
-                            className="px-3 py-1.5 glass border border-border/50 rounded-lg text-xs font-semibold text-foreground shrink-0 flex items-center gap-1.5"
-                        >
-                            {snapshotLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Database className="w-3.5 h-3.5" />}
-                            Actualizar
-                        </button>
-                    </div>
-                    <pre className="glass rounded-2xl border border-border/50 p-4 text-[11px] text-foreground/80 whitespace-pre-wrap overflow-x-auto max-h-[70vh] overflow-y-auto font-mono leading-relaxed">
-                        {snapshotLoading && !snapshot ? 'Leyendo tu Segundo Cerebro…' : snapshot || 'Tocá "Actualizar" para verlo.'}
-                    </pre>
-                </div>
-            )}
-        </div>
+                <aside className="lg:col-span-4 min-w-0 space-y-4">
+                    {today && <Panel>
+                        <SectionLabel>Lo que sabe hoy</SectionLabel>
+                        <dl className="divide-y divide-hairline text-sm">
+                            <div className="py-2.5"><dt className="text-muted-foreground flex justify-between">Foco <span className="font-mono">{today.planned ? `${done}/${today.focusTasks.length}` : 'sin plan'}</span></dt><dd className="mt-0.5">{today.planned ? today.focus || today.focusTasks[0]?.title : <Link href="/ritual" className="underline underline-offset-4">Planificar el día</Link>}</dd></div>
+                            {([['Tareas vencidas', overdue, overdue > 0], ['Hábitos', `${today.habits.filter((h: any) => h.done_today).length}/${today.habits.length}`, false], ['Inbox', today.inbox.count, false], ['Eventos de hoy', today.events.length, false], ['Balance del mes', formatCurrency(today.money.balance), today.money.balance < 0]] as [string, React.ReactNode, boolean][]).map(([l, v, bad]) => <div key={l} className="flex justify-between py-2.5"><dt className="text-muted-foreground">{l}</dt><dd className={cn('font-mono', bad && 'text-red-300')}>{v}</dd></div>)}
+                        </dl>
+                    </Panel>}
+                    <div className="divide-y divide-hairline border-y border-hairline">{ASKS.map(q => <button key={q} onClick={() => { setTab('chat'); window.dispatchEvent(new CustomEvent('sc:assistant-ask', { detail: q })) }} className="w-full min-h-[48px] flex items-center justify-between text-sm text-muted-foreground hover:text-foreground">{q}<ArrowRight className="w-4 h-4" /></button>)}</div>
+                    {sessions.length > 0 && <Panel><SectionLabel right={sessions.length}>Charlas</SectionLabel><div className="-mx-2 max-h-[300px] overflow-y-auto">{sessions.map(s => <div key={s.id} className={cn('flex items-center rounded-lg', sessionId === s.id && 'bg-raised')}><button onClick={() => open(s)} className="flex-1 min-w-0 text-left px-2 py-2"><span className="block text-sm truncate">{s.title}</span><span className="text-xs text-muted-foreground">{getPersona(s.persona).label}</span></button><button onClick={() => remove(s.id)} aria-label="Borrar charla" className="w-10 h-10 text-ink-faint hover:text-red-300 flex items-center justify-center"><Trash2 className="w-3.5 h-3.5" /></button></div>)}</div></Panel>}
+                </aside>
+            </div>
+        </PageShell>
     )
 }

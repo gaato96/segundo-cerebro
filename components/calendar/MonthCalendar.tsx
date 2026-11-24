@@ -94,9 +94,9 @@ export function MonthCalendar({
     return (
         <div className="space-y-6">
             {/* Header & Month Selector */}
-            <div className="glass p-4 rounded-2xl border border-border/50 flex flex-wrap items-center justify-between gap-4">
+            <div className="glass p-4 rounded-2xl border border-hairline flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                    <h2 className="text-xl font-heading font-bold text-white capitalize">
+                    <h2 className="text-xl font-semibold text-white capitalize">
                         {monthNames[month]} {year}
                     </h2>
                     <div className="flex items-center gap-1 bg-secondary/50 rounded-xl p-1 border border-border">
@@ -123,7 +123,7 @@ export function MonthCalendar({
 
                 <button
                     onClick={() => onAddEvent(selectedDate)}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-lg shadow-indigo-600/20 transition-all"
+                    className="px-4 py-2 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all"
                 >
                     <Plus className="w-4 h-4" />
                     Nuevo Evento
@@ -131,7 +131,7 @@ export function MonthCalendar({
             </div>
 
             {/* Grid Calendar */}
-            <div className="glass rounded-3xl p-4 md:p-6 border border-border/50 shadow-xl overflow-hidden">
+            <div className="glass rounded-2xl p-4 md:p-6 border border-hairline overflow-hidden">
                 {/* Days of week header */}
                 <div className="grid grid-cols-7 gap-1 md:gap-2 mb-2 text-center">
                     {daysOfWeek.map((d) => (
@@ -157,7 +157,7 @@ export function MonthCalendar({
                                 }}
                                 className={`min-h-[70px] md:min-h-[90px] p-1.5 md:p-2 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between group ${
                                     isSelected
-                                        ? 'bg-indigo-600/20 border-indigo-500/50 shadow-lg'
+                                        ? 'bg-indigo-600/20 border-indigo-500/50'
                                         : isToday
                                         ? 'bg-indigo-500/10 border-indigo-500/30'
                                         : cell.isCurrentMonth
@@ -167,12 +167,12 @@ export function MonthCalendar({
                             >
                                 <div className="flex items-center justify-between">
                                     <span className={`text-xs font-bold font-mono rounded-lg w-6 h-6 flex items-center justify-center ${
-                                        isToday ? 'bg-indigo-600 text-white shadow-md' : isSelected ? 'text-indigo-300' : 'text-white/80'
+                                        isToday ? 'bg-indigo-600 text-white' : isSelected ? 'text-indigo-300' : 'text-white/80'
                                     }`}>
                                         {cell.day}
                                     </span>
                                     {dayEvents.length > 0 && (
-                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                                        <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
                                             {dayEvents.length}
                                         </span>
                                     )}
@@ -183,14 +183,14 @@ export function MonthCalendar({
                                     {dayEvents.slice(0, 2).map((ev) => (
                                         <div
                                             key={ev.id}
-                                            className="text-[10px] font-semibold truncate px-1.5 py-0.5 rounded text-white"
+                                            className="text-[11px] font-semibold truncate px-1.5 py-0.5 rounded text-white"
                                             style={{ backgroundColor: `${ev.color_hex}40`, borderLeft: `3px solid ${ev.color_hex}` }}
                                         >
                                             {ev.title}
                                         </div>
                                     ))}
                                     {dayEvents.length > 2 && (
-                                        <span className="text-[9px] text-muted-foreground block text-right font-semibold">
+                                        <span className="text-[11px] text-muted-foreground block text-right font-semibold">
                                             +{dayEvents.length - 2} más
                                         </span>
                                     )}
@@ -202,9 +202,9 @@ export function MonthCalendar({
             </div>
 
             {/* Selected Date Details */}
-            <div className="glass p-6 rounded-3xl border border-border/50 space-y-4">
+            <div className="glass p-6 rounded-2xl border border-hairline space-y-4">
                 <div className="flex items-center justify-between">
-                    <h3 className="font-heading font-bold text-base text-white">
+                    <h3 className="font-semibold text-base text-white">
                         Eventos del día ({selectedDate})
                     </h3>
                     <button

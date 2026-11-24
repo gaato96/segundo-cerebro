@@ -89,13 +89,13 @@ export function TrainingProfileForm({ initial, onSaved }: Props) {
     }
 
     return (
-        <div className="glass p-5 md:p-6 rounded-2xl border border-emerald-500/20 space-y-6">
+        <div className="glass p-5 md:p-6 rounded-2xl border border-hairline space-y-6">
             <div className="flex items-center gap-3">
                 <div className="p-2.5 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
                     <Dumbbell className="w-5 h-5" />
                 </div>
                 <div>
-                    <h2 className="text-lg font-heading font-bold text-foreground">Perfil de entrenamiento</h2>
+                    <h2 className="text-lg font-semibold text-foreground">Perfil de entrenamiento</h2>
                     <p className="text-xs text-muted-foreground">
                         Con esto se arma tu plan de 12 semanas. El equipamiento define qué ejercicios entran.
                     </p>
@@ -117,7 +117,7 @@ export function TrainingProfileForm({ initial, onSaved }: Props) {
                             )}
                         >
                             <span className="block text-xs font-bold">{l.label}</span>
-                            <span className="block text-[10px] mt-0.5 opacity-80">{l.desc}</span>
+                            <span className="block text-[11px] mt-0.5 opacity-80">{l.desc}</span>
                         </button>
                     ))}
                 </div>
@@ -170,7 +170,7 @@ export function TrainingProfileForm({ initial, onSaved }: Props) {
                                     <span className={cn('block text-[11px] font-semibold truncate', active ? 'text-emerald-300' : 'text-foreground')}>
                                         {eq.label}
                                     </span>
-                                    <span className="block text-[10px] text-muted-foreground truncate">{eq.hint}</span>
+                                    <span className="block text-[11px] text-muted-foreground truncate">{eq.hint}</span>
                                 </span>
                                 {active && <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 ml-auto" />}
                             </button>
@@ -183,11 +183,11 @@ export function TrainingProfileForm({ initial, onSaved }: Props) {
                         type="checkbox"
                         checked={includeRope}
                         onChange={e => setIncludeRope(e.target.checked)}
-                        className="w-4 h-4 accent-emerald-500"
+                        className="w-4 h-4 accent-amber-400"
                     />
                     <span>
                         <span className="block text-xs font-semibold text-foreground">Incluir saltar la soga 🪢</span>
-                        <span className="block text-[10px] text-muted-foreground">
+                        <span className="block text-[11px] text-muted-foreground">
                             Se agrega en la entrada en calor y como bloque de intervalos que progresa las 12 semanas.
                         </span>
                     </span>
@@ -201,7 +201,7 @@ export function TrainingProfileForm({ initial, onSaved }: Props) {
                         type="range" min={2} max={6} step={1}
                         value={daysPerWeek}
                         onChange={e => setDaysPerWeek(Number(e.target.value))}
-                        className="w-full accent-emerald-500"
+                        className="w-full accent-amber-400"
                     />
                 </Section>
 
@@ -210,7 +210,7 @@ export function TrainingProfileForm({ initial, onSaved }: Props) {
                         type="range" min={15} max={75} step={5}
                         value={sessionMinutes}
                         onChange={e => setSessionMinutes(Number(e.target.value))}
-                        className="w-full accent-emerald-500"
+                        className="w-full accent-amber-400"
                     />
                 </Section>
             </div>
@@ -259,7 +259,7 @@ export function TrainingProfileForm({ initial, onSaved }: Props) {
                     value={limitations}
                     onChange={e => setLimitations(e.target.value)}
                     placeholder="Ej: me molesta el hombro derecho en press por arriba de la cabeza; rodilla izquierda sensible en impacto."
-                    className="w-full bg-secondary/60 border border-border rounded-xl px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 resize-y"
+                    className="w-full bg-secondary/60 border border-border rounded-xl px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-amber-400/50 resize-y"
                 />
             </Section>
 
@@ -269,14 +269,14 @@ export function TrainingProfileForm({ initial, onSaved }: Props) {
                     value={notes}
                     onChange={e => setNotes(e.target.value)}
                     placeholder="Ej: entreno a las 6 AM antes de que se despierte el nene; los sábados tengo fútbol."
-                    className="w-full bg-secondary/60 border border-border rounded-xl px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 resize-y"
+                    className="w-full bg-secondary/60 border border-border rounded-xl px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-amber-400/50 resize-y"
                 />
             </Section>
 
             <button
                 onClick={handleSave}
                 disabled={saving}
-                className="w-full sm:w-auto px-6 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2"
+                className="w-full sm:w-auto px-6 py-3 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2"
             >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 Guardar perfil
@@ -290,7 +290,7 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
         <div className="space-y-2">
             <div>
                 <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">{title}</h3>
-                {hint && <p className="text-[10px] text-muted-foreground mt-0.5">{hint}</p>}
+                {hint && <p className="text-[11px] text-muted-foreground mt-0.5">{hint}</p>}
             </div>
             {children}
         </div>

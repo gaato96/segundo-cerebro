@@ -96,7 +96,7 @@ export function ContextProfileForm({ initial, onSaved }: Props) {
 
     return (
         <div className="space-y-5">
-            <div className="glass p-4 rounded-2xl border border-violet-500/20 flex gap-3">
+            <div className="glass p-4 rounded-2xl border border-hairline flex gap-3">
                 <Info className="w-4 h-4 text-violet-400 shrink-0 mt-0.5" />
                 <p className="text-xs text-muted-foreground leading-relaxed">
                     Esto se suma a todo lo que el asistente ya lee solo (tareas, hábitos, finanzas, comidas, entrenamiento, journal).
@@ -114,7 +114,7 @@ export function ContextProfileForm({ initial, onSaved }: Props) {
                         value={form[field.key]}
                         onChange={e => setForm(f => ({ ...f, [field.key]: e.target.value }))}
                         placeholder={field.placeholder}
-                        className="w-full bg-secondary/60 border border-border rounded-xl px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-violet-500/50 resize-y"
+                        className="w-full bg-secondary/60 border border-border rounded-xl px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-amber-400/50 resize-y"
                     />
                 </div>
             ))}
@@ -133,7 +133,7 @@ export function ContextProfileForm({ initial, onSaved }: Props) {
                             }`}
                         >
                             <span className="block text-xs font-semibold">{t.label}</span>
-                            <span className="block text-[10px] mt-0.5 opacity-80">{t.desc}</span>
+                            <span className="block text-[11px] mt-0.5 opacity-80">{t.desc}</span>
                         </button>
                     ))}
                 </div>
@@ -142,7 +142,7 @@ export function ContextProfileForm({ initial, onSaved }: Props) {
             <button
                 onClick={handleSave}
                 disabled={saving}
-                className="w-full sm:w-auto px-5 py-2.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white rounded-xl text-xs font-semibold transition-colors flex items-center justify-center gap-2"
+                className="w-full sm:w-auto px-5 py-2.5 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] disabled:opacity-50 text-white rounded-xl text-xs font-semibold transition-colors flex items-center justify-center gap-2"
             >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
                 {saved ? 'Guardado' : 'Guardar mi perfil'}

@@ -56,8 +56,8 @@ export function RatingModal({
     }
 
     return (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-            <div className="bg-popover border border-white/10 w-full max-w-sm flex flex-col rounded-3xl relative overflow-hidden shadow-2xl p-6 text-center space-y-6">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80">
+            <div className="bg-popover border border-hairline w-full max-w-sm flex flex-col rounded-2xl relative overflow-hidden shadow-2xl p-6 text-center space-y-6">
                 <button
                     onClick={onClose}
                     className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-full transition-colors"
@@ -67,7 +67,7 @@ export function RatingModal({
 
                 <div className="space-y-1">
                     <Award className="w-12 h-12 text-yellow-500 mx-auto animate-pulse" />
-                    <h2 className="text-xl font-heading font-bold text-white">¡Califica tu experiencia!</h2>
+                    <h2 className="text-xl font-semibold text-white">¡Califica tu experiencia!</h2>
                     <p className="text-xs text-muted-foreground leading-normal">
                         ¿Cómo calificarías a <span className="text-indigo-300 font-semibold">"{title}"</span>?
                     </p>
@@ -80,7 +80,7 @@ export function RatingModal({
 
                 {/* Main Rating Number */}
                 <div className="space-y-2">
-                    <div className="text-4xl font-extrabold text-white flex items-baseline justify-center gap-1">
+                    <div className="text-4xl font-semibold text-white flex items-baseline justify-center gap-1">
                         <span>{rating.toFixed(1)}</span>
                         <span className="text-sm text-muted-foreground font-normal">/ 10</span>
                     </div>
@@ -92,9 +92,9 @@ export function RatingModal({
                         step="0.1"
                         value={rating}
                         onChange={(e) => setRating(parseFloat(e.target.value))}
-                        className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                        className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-amber-400"
                     />
-                    <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
+                    <div className="flex justify-between text-[11px] text-muted-foreground font-mono">
                         <span>1.0 (Horrible)</span>
                         <span>5.0 (Pasable)</span>
                         <span>10.0 (Obra Maestra)</span>
@@ -105,7 +105,7 @@ export function RatingModal({
                 <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white py-3 rounded-xl font-bold transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-1.5"
+                    className="w-full bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] disabled:opacity-50 text-white py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5"
                 >
                     {isSaving ? (
                         'Guardando...'

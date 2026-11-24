@@ -62,10 +62,10 @@ export function ObjectiveSuggester() {
     }
 
     return (
-        <div className="glass p-5 rounded-2xl border border-violet-500/25 space-y-3">
+        <div className="glass p-5 rounded-2xl border border-hairline space-y-3">
             <div className="flex flex-col  lg:justify-between gap-3">
                 <div>
-                    <h3 className="text-sm font-heading font-bold text-white flex items-center gap-2">
+                    <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                         <Wand2 className="w-4 h-4 text-violet-400" />
                         ¿Qué objetivo realista me conviene ponerme?
                     </h3>
@@ -79,12 +79,12 @@ export function ObjectiveSuggester() {
                         value={focus}
                         onChange={e => setFocus(e.target.value)}
                         placeholder="¿Algún foco? (opcional)"
-                        className="bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-xs text-white w-full focus:outline-none focus:ring-1 focus:ring-violet-500"
+                        className="bg-black/30 border border-hairline rounded-xl px-3 py-2 text-xs text-white w-full focus:outline-none focus:ring-1 focus:ring-amber-400/50"
                     />
                     <button
                         onClick={handleSuggest}
                         disabled={loading}
-                        className="px-4 py-2.5 bg-violet-600/90 hover:bg-violet-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 disabled:opacity-60 shrink-0"
+                        className="px-4 py-2.5 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white rounded-xl text-xs font-semibold flex items-center gap-2 disabled:opacity-60 shrink-0"
                     >
                         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
                         {loading ? 'Pensando…' : 'Proponeme objetivos'}
@@ -106,7 +106,7 @@ export function ObjectiveSuggester() {
                                 type="checkbox"
                                 checked={withTasks}
                                 onChange={e => setWithTasks(e.target.checked)}
-                                className="w-3.5 h-3.5 rounded accent-indigo-500"
+                                className="w-3.5 h-3.5 rounded accent-amber-400"
                             />
                             <span className="text-xs text-muted-foreground">Crear también las tareas</span>
                         </label>
@@ -115,7 +115,7 @@ export function ObjectiveSuggester() {
                                 type="checkbox"
                                 checked={withHabits}
                                 onChange={e => setWithHabits(e.target.checked)}
-                                className="w-3.5 h-3.5 rounded accent-orange-500"
+                                className="w-3.5 h-3.5 rounded accent-amber-400"
                             />
                             <span className="text-xs text-muted-foreground">Crear también los hábitos</span>
                         </label>
@@ -220,7 +220,7 @@ export function ObjectiveSuggester() {
                                         onClick={() => handleCreate(s, idx)}
                                         disabled={creatingIdx === idx}
                                         className={cn(
-                                            'flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold',
+                                            'flex-1 py-2 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white rounded-lg text-xs font-bold',
                                             'flex items-center justify-center gap-1 disabled:opacity-50'
                                         )}
                                     >

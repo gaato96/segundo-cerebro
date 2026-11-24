@@ -128,9 +128,9 @@ export function GameLibrary({
     return (
         <div className="space-y-6">
             {/* Header & Roulette trigger */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass p-6 rounded-3xl border border-indigo-500/20 bg-gradient-to-r from-indigo-950/20 via-black/40 to-black/20">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass p-6 rounded-2xl border border-hairline">
                 <div className="space-y-1">
-                    <h3 className="text-xl font-heading font-black text-white flex items-center gap-2">
+                    <h3 className="text-xl font-heading font-semibold text-white flex items-center gap-2">
                         <Gamepad2 className="w-6 h-6 text-indigo-400" />
                         Mi Biblioteca de Videojuegos
                     </h3>
@@ -149,7 +149,7 @@ export function GameLibrary({
 
                     <button
                         onClick={() => setRouletteOpen(true)}
-                        className="bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/25 flex items-center gap-2"
+                        className="bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2"
                     >
                         <Dices className="w-4 h-4 animate-spin" style={{ animationDuration: '3s' }} />
                         🎰 ¿Qué juego jugar hoy? ({activeGames.length})
@@ -181,17 +181,17 @@ export function GameLibrary({
             {/* Games Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {filteredGames.length === 0 ? (
-                    <div className="col-span-full glass rounded-3xl p-12 text-center border border-dashed border-border flex flex-col items-center justify-center space-y-3">
+                    <div className="col-span-full glass rounded-2xl p-12 text-center border border-dashed border-border flex flex-col items-center justify-center space-y-3">
                         <div className="w-16 h-16 bg-indigo-500/10 rounded-full flex items-center justify-center text-indigo-400">
                             <Gamepad2 className="w-8 h-8" />
                         </div>
-                        <h4 className="text-base font-heading font-bold text-white">No hay juegos en este estado</h4>
+                        <h4 className="text-base font-semibold text-white">No hay juegos en este estado</h4>
                         <p className="text-xs text-muted-foreground max-w-sm">
                             Agrega juegos a tu biblioteca para llevar un registro de tu progreso.
                         </p>
                         <button
                             onClick={() => setIsAddOpen(true)}
-                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all"
+                            className="bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white px-4 py-2 rounded-xl text-xs font-bold transition-all"
                         >
                             + Agregar Videojuego
                         </button>
@@ -210,7 +210,7 @@ export function GameLibrary({
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     exit={{ opacity: 0, scale: 0.95 }}
-                                    className={`glass p-5 rounded-3xl border transition-all group relative ${
+                                    className={`glass p-5 rounded-2xl border transition-all group relative ${
                                         isFinished
                                             ? 'border-border/30 bg-secondary/5 opacity-80 hover:opacity-100'
                                             : 'border-border/50 hover:bg-secondary/15'
@@ -231,10 +231,10 @@ export function GameLibrary({
                                             <img
                                                 src={item.cover_url}
                                                 alt={item.title}
-                                                className="w-16 h-24 rounded-xl object-cover shadow-md border border-white/10 shrink-0"
+                                                className="w-16 h-24 rounded-xl object-cover border border-hairline shrink-0"
                                             />
                                         ) : (
-                                            <div className="w-16 h-24 rounded-xl bg-indigo-950/40 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shadow-md shrink-0">
+                                            <div className="w-16 h-24 rounded-xl bg-indigo-950/40 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
                                                 <Gamepad2 className="w-7 h-7" />
                                             </div>
                                         )}
@@ -256,11 +256,11 @@ export function GameLibrary({
                                             )}
 
                                             <div className="flex items-center gap-2 mt-2">
-                                                <span className="text-[10px] bg-secondary px-2 py-0.5 rounded-full text-muted-foreground border border-border">
+                                                <span className="text-[11px] bg-secondary px-2 py-0.5 rounded-full text-muted-foreground border border-border">
                                                     Videojuego 🎮
                                                 </span>
                                                 {isActive && (
-                                                    <span className="text-[10px] bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded-full border border-indigo-500/20 font-medium">
+                                                    <span className="text-[11px] bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded-full border border-indigo-500/20 font-medium">
                                                         Jugando
                                                     </span>
                                                 )}
@@ -270,7 +270,7 @@ export function GameLibrary({
 
                                     {/* Progress Percent Stepper for Active Games */}
                                     {isActive && (
-                                        <div className="mt-4 pt-3 border-t border-white/5 space-y-2">
+                                        <div className="mt-4 pt-3 border-t border-hairline space-y-2">
                                             <div className="flex justify-between items-center text-xs">
                                                 <span className="text-muted-foreground">Completado:</span>
                                                 <span className="font-bold text-white bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20 font-mono">
@@ -290,7 +290,7 @@ export function GameLibrary({
                                     )}
 
                                     {/* Actions */}
-                                    <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between gap-3 text-xs">
+                                    <div className="mt-4 pt-3 border-t border-hairline flex items-center justify-between gap-3 text-xs">
                                         <div className="text-muted-foreground font-medium">
                                             {isFinished ? 'Completado ✓' : 'En tu lista'}
                                         </div>
@@ -352,14 +352,14 @@ export function GameLibrary({
             {/* Add Game Modal */}
             <AnimatePresence>
                 {isAddOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85">
                         <motion.div
                             initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
-                            className="bg-popover border border-white/10 w-full max-w-md rounded-3xl p-6 relative flex flex-col gap-4 shadow-2xl"
+                            className="bg-popover border border-hairline w-full max-w-md rounded-2xl p-6 relative flex flex-col gap-4 shadow-2xl"
                         >
-                            <h3 className="text-xl font-heading font-bold text-white">Agregar Videojuego</h3>
+                            <h3 className="text-xl font-semibold text-white">Agregar Videojuego</h3>
                             <form onSubmit={handleAddManualGame} className="space-y-3">
                                 <input
                                     required
@@ -411,7 +411,7 @@ export function GameLibrary({
                                     <button
                                         type="submit"
                                         disabled={actionLoading === 'add-game'}
-                                        className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-xs font-bold transition-all shadow"
+                                        className="flex-1 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white py-2.5 rounded-xl text-xs font-bold transition-all shadow"
                                     >
                                         {actionLoading === 'add-game' ? 'Guardando...' : 'Guardar Juego'}
                                     </button>

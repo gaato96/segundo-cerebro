@@ -159,7 +159,7 @@ export function SubtaskList({ parentTaskId, onUpdate }: SubtaskListProps) {
                     placeholder="Añadir subtarea..."
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}
-                    className="flex-1 bg-secondary/30 border border-border/50 rounded-lg px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+                    className="flex-1 bg-secondary/30 border border-border/50 rounded-lg px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-amber-400/50"
                 />
                 <button
                     type="submit"

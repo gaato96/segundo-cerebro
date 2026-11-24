@@ -2,6 +2,9 @@
 
 import { useState } from 'react'
 import { Calendar as CalendarIcon, List, LayoutGrid } from 'lucide-react'
+import { PageShell, PageHeader } from '@/components/ui/kit'
+import { Segmented } from '@/components/ui/controls'
+import { ModuleTabs } from '@/components/layout/ModuleTabs'
 import { EventItem, getEvents } from '@/lib/actions/events'
 import { MonthCalendar } from '@/components/calendar/MonthCalendar'
 import { EventCard } from '@/components/calendar/EventCard'
@@ -40,41 +43,9 @@ export function CalendarClient({ initialEvents, initialMonthYear }: CalendarClie
     }
 
     return (
-        <div className="px-4 md:px-8 py-6 md:py-8 max-w-6xl mx-auto space-y-6 animate-fade-in pb-24">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl md:text-[30px] font-semibold tracking-tight">
-                        Calendario & Eventos
-                    </h1>
-                    <p className="text-muted-foreground text-sm mt-0.5">
-                        Organizá tus reuniones, eventos y sincronizá con Google Calendar.
-                    </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                    <div className="flex items-center bg-secondary/50 rounded-xl p-1 border border-border">
-                        <button
-                            onClick={() => setViewMode('month')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                                viewMode === 'month' ? 'bg-indigo-600 text-white shadow-md' : 'text-muted-foreground hover:text-white'
-                            }`}
-                        >
-                            <LayoutGrid className="w-3.5 h-3.5" />
-                            Mes
-                        </button>
-                        <button
-                            onClick={() => setViewMode('list')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                                viewMode === 'list' ? 'bg-indigo-600 text-white shadow-md' : 'text-muted-foreground hover:text-white'
-                            }`}
-                        >
-                            <List className="w-3.5 h-3.5" />
-                            Lista
-                        </button>
-                    </div>
-                </div>
-            </div>
+        <PageShell wide>
+            <PageHeader label="Planificar" title="Agenda" subtitle="El mes de un vistazo. Tocá un día para agregar un evento."
+                actions={<><ModuleTabs module="agenda" /><Segmented value={viewMode} onChange={setViewMode} options={[{ id: 'month', label: 'Grilla', icon: LayoutGrid }, { id: 'list', label: 'Lista', icon: List }]} /><button onClick={() => openAddModal()} className="btn-primary text-sm">+ Evento</button></>} />
 
             {viewMode === 'month' ? (
                 <MonthCalendar
@@ -87,20 +58,8 @@ export function CalendarClient({ initialEvents, initialMonthYear }: CalendarClie
                 />
             ) : (
                 <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                        <h3 className="font-heading font-bold text-lg text-white">
-                            Próximos Eventos
-                        </h3>
-                        <button
-                            onClick={() => openAddModal()}
-                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold"
-                        >
-                            + Nuevo Evento
-                        </button>
-                    </div>
-
                     {events.length === 0 ? (
-                        <div className="glass p-8 text-center rounded-3xl border border-border/50">
+                        <div className="glass p-8 text-center rounded-2xl border border-hairline">
                             <CalendarIcon className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
                             <p className="text-sm font-medium text-white">No hay eventos registrados este mes.</p>
                         </div>
@@ -120,6 +79,6 @@ export function CalendarClient({ initialEvents, initialMonthYear }: CalendarClie
                 eventToEdit={eventToEdit}
                 defaultDate={selectedDate}
             />
-        </div>
+        </PageShell>
     )
 }

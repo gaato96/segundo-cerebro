@@ -53,13 +53,13 @@ export function NutritionProfileForm({ initialProfile, onSuccess }: NutritionPro
     }
 
     return (
-        <form onSubmit={handleSubmit} className="glass p-6 md:p-8 rounded-2xl border border-emerald-500/20 shadow-xl space-y-6 max-w-2xl mx-auto">
+        <form onSubmit={handleSubmit} className="glass p-6 md:p-8 rounded-2xl border border-hairline space-y-6 max-w-2xl mx-auto">
             <div className="flex items-center gap-3 border-b border-border/50 pb-4">
                 <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
                     <Sparkles className="w-5 h-5" />
                 </div>
                 <div>
-                    <h2 className="text-xl font-heading font-bold text-foreground">Tu Perfil Nutricional</h2>
+                    <h2 className="text-xl font-semibold text-foreground">Tu Perfil Nutricional</h2>
                     <p className="text-xs text-muted-foreground">Datos requeridos para que la IA calcule tus calorías y arme tu dieta adaptada a Tucumán</p>
                 </div>
             </div>
@@ -76,7 +76,7 @@ export function NutritionProfileForm({ initialProfile, onSuccess }: NutritionPro
                         value={weight}
                         onChange={(e) => setWeight(Number(e.target.value))}
                         required
-                        className="w-full bg-secondary/50 border border-border rounded-xl px-3 py-2.5 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                        className="w-full bg-secondary/50 border border-border rounded-xl px-3 py-2.5 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                     />
                 </div>
 
@@ -89,7 +89,7 @@ export function NutritionProfileForm({ initialProfile, onSuccess }: NutritionPro
                         value={height}
                         onChange={(e) => setHeight(Number(e.target.value))}
                         required
-                        className="w-full bg-secondary/50 border border-border rounded-xl px-3 py-2.5 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                        className="w-full bg-secondary/50 border border-border rounded-xl px-3 py-2.5 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                     />
                 </div>
 
@@ -100,7 +100,7 @@ export function NutritionProfileForm({ initialProfile, onSuccess }: NutritionPro
                         value={age}
                         onChange={(e) => setAge(Number(e.target.value))}
                         required
-                        className="w-full bg-secondary/50 border border-border rounded-xl px-3 py-2.5 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                        className="w-full bg-secondary/50 border border-border rounded-xl px-3 py-2.5 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                     />
                 </div>
 
@@ -109,7 +109,7 @@ export function NutritionProfileForm({ initialProfile, onSuccess }: NutritionPro
                     <select
                         value={sex}
                         onChange={(e) => setSex(e.target.value as any)}
-                        className="w-full bg-secondary/50 border border-border rounded-xl px-3 py-2.5 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                        className="w-full bg-secondary/50 border border-border rounded-xl px-3 py-2.5 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                     >
                         <option value="male">Masculino</option>
                         <option value="female">Femenino</option>
@@ -126,7 +126,7 @@ export function NutritionProfileForm({ initialProfile, onSuccess }: NutritionPro
                     <select
                         value={activityLevel}
                         onChange={(e) => setActivityLevel(e.target.value as any)}
-                        className="w-full bg-secondary/50 border border-border rounded-xl px-3 py-2.5 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                        className="w-full bg-secondary/50 border border-border rounded-xl px-3 py-2.5 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                     >
                         <option value="sedentary">🛋️ Sedentario (Oficina / Casi sin ejercicio)</option>
                         <option value="light">🚶 Ligeramente activo (1-2 días/sem)</option>
@@ -143,7 +143,7 @@ export function NutritionProfileForm({ initialProfile, onSuccess }: NutritionPro
                     <select
                         value={goal}
                         onChange={(e) => setGoal(e.target.value as any)}
-                        className="w-full bg-secondary/50 border border-border rounded-xl px-3 py-2.5 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                        className="w-full bg-secondary/50 border border-border rounded-xl px-3 py-2.5 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                     >
                         <option value="lose_weight">🔥 Descenso de peso y grasa corporal</option>
                         <option value="maintain">⚖️ Mantenimiento y salud general</option>
@@ -156,14 +156,14 @@ export function NutritionProfileForm({ initialProfile, onSuccess }: NutritionPro
             <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-muted-foreground flex items-center justify-between">
                     <span>Alimentos / Ingredientes que NO te gustan</span>
-                    <span className="text-[10px] text-muted-foreground/60">Separados por coma</span>
+                    <span className="text-[11px] text-muted-foreground/60">Separados por coma</span>
                 </label>
                 <input
                     type="text"
                     value={dislikedText}
                     onChange={(e) => setDislikedText(e.target.value)}
                     placeholder="Ej. mondongo, pescado, berenjenas, pasas de uva..."
-                    className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                    className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                 />
             </div>
 
@@ -171,14 +171,14 @@ export function NutritionProfileForm({ initialProfile, onSuccess }: NutritionPro
             <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-muted-foreground flex items-center justify-between">
                     <span>Contexto Personal, Horarios y Restricciones Específicas</span>
-                    <span className="text-[10px] text-emerald-400 font-semibold">✨ La IA lo respetará al 100%</span>
+                    <span className="text-[11px] text-emerald-400 font-semibold">✨ La IA lo respetará al 100%</span>
                 </label>
                 <textarea
                     rows={3}
                     value={customNotes}
                     onChange={(e) => setCustomNotes(e.target.value)}
                     placeholder="Ej: Me levanto a las 5:00 AM, tengo un hijo de 2 años y poco tiempo. No puedo comer más de 2 huevos al día por presupuesto. Prefiero comidas rápidas y económicas..."
-                    className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                    className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                 />
             </div>
 
@@ -192,7 +192,7 @@ export function NutritionProfileForm({ initialProfile, onSuccess }: NutritionPro
             <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-xl transition-all shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2"
+                className="w-full py-3 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white font-medium rounded-xl transition-all flex items-center justify-center gap-2"
             >
                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                 Guardar Perfil y Calcular Plan

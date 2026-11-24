@@ -137,13 +137,13 @@ export function DebtManager({ overview }: Props) {
                 <div className="glass p-5 rounded-2xl border border-red-500/20">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Deuda Total</p>
                     <h3 className="text-2xl font-bold font-heading text-white">{formatCurrency(totals.remaining)}</h3>
-                    <p className="text-[10px] text-muted-foreground mt-1">{openDebts.length} deudas abiertas</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">{openDebts.length} deudas abiertas</p>
                 </div>
 
-                <div className="glass p-5 rounded-2xl border border-orange-500/25">
+                <div className="glass p-5 rounded-2xl border border-hairline">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Te corre por día</p>
                     <h3 className="text-2xl font-bold font-heading text-orange-400">{formatCurrency(totals.dailyCost)}</h3>
-                    <p className="text-[10px] text-orange-300/80 mt-1 font-semibold flex items-center gap-1">
+                    <p className="text-[11px] text-orange-300/80 mt-1 font-semibold flex items-center gap-1">
                         <Flame className="w-3 h-3" /> {formatCurrency(totals.monthlyCost)} al mes de puro interés
                     </p>
                 </div>
@@ -151,13 +151,13 @@ export function DebtManager({ overview }: Props) {
                 <div className="glass p-5 rounded-2xl border border-amber-500/25">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">En 30 días serán</p>
                     <h3 className="text-2xl font-bold font-heading text-white">{formatCurrency(totals.in30Days)}</h3>
-                    <p className="text-[10px] text-muted-foreground mt-1">si no pagás nada</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">si no pagás nada</p>
                 </div>
 
-                <div className="glass p-5 rounded-2xl border border-indigo-500/25">
+                <div className="glass p-5 rounded-2xl border border-hairline">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Cuotas comprometidas</p>
                     <h3 className="text-2xl font-bold font-heading text-white">{formatCurrency(totals.monthlyInstallments)}</h3>
-                    <p className="text-[10px] text-muted-foreground mt-1">por mes, en planes activos</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">por mes, en planes activos</p>
                 </div>
             </div>
 
@@ -174,12 +174,12 @@ export function DebtManager({ overview }: Props) {
             )}
 
             <div className="flex items-center justify-between">
-                <h3 className="font-heading font-bold text-base text-white flex items-center gap-2">
+                <h3 className="font-semibold text-base text-white flex items-center gap-2">
                     <Landmark className="w-4 h-4 text-indigo-400" /> Tus deudas
                 </h3>
                 <button
                     onClick={openCreate}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-lg shadow-indigo-600/20"
+                    className="px-4 py-2 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white rounded-xl text-xs font-semibold flex items-center gap-1.5"
                 >
                     <Plus className="w-4 h-4" /> Nueva deuda
                 </button>
@@ -208,11 +208,11 @@ export function DebtManager({ overview }: Props) {
                             <div className="min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <h4 className="text-sm font-bold text-white">{d.creditor}</h4>
-                                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-secondary/60 border border-border text-muted-foreground">
+                                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-secondary/60 border border-border text-muted-foreground">
                                         {KINDS.find(k => k.value === d.kind)?.label || d.kind}
                                     </span>
                                     {d.plan_active && (
-                                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-sky-500/15 border border-sky-500/30 text-sky-300 font-semibold">
+                                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-sky-500/15 border border-sky-500/30 text-sky-300 font-semibold">
                                             En plan de pago
                                         </span>
                                     )}
@@ -241,14 +241,14 @@ export function DebtManager({ overview }: Props) {
                             <div className="text-right shrink-0">
                                 <p className="font-mono font-bold text-white text-base">{formatCurrency(d.remaining_amount)}</p>
                                 {d.total_amount > d.remaining_amount && (
-                                    <p className="text-[10px] text-muted-foreground">de {formatCurrency(d.total_amount)}</p>
+                                    <p className="text-[11px] text-muted-foreground">de {formatCurrency(d.total_amount)}</p>
                                 )}
                             </div>
                         </div>
 
                         {/* El costo real de tenerla */}
                         {d.dailyCost > 0 && !d.plan_active && (
-                            <div className="flex flex-wrap gap-2 text-[10px]">
+                            <div className="flex flex-wrap gap-2 text-[11px]">
                                 <span className="px-2.5 py-1 rounded-lg bg-orange-500/10 border border-orange-500/25 text-orange-300 font-semibold">
                                     {formatCurrency(d.dailyCost)} por día
                                 </span>
@@ -279,9 +279,9 @@ export function DebtManager({ overview }: Props) {
                                     />
                                 </div>
                                 {d.plan_due_day && (
-                                    <p className="text-[10px] text-muted-foreground">Vence el día {d.plan_due_day} de cada mes.</p>
+                                    <p className="text-[11px] text-muted-foreground">Vence el día {d.plan_due_day} de cada mes.</p>
                                 )}
-                                {d.plan_notes && <p className="text-[10px] text-muted-foreground">{d.plan_notes}</p>}
+                                {d.plan_notes && <p className="text-[11px] text-muted-foreground">{d.plan_notes}</p>}
                             </div>
                         )}
 
@@ -292,14 +292,14 @@ export function DebtManager({ overview }: Props) {
                                     <button
                                         onClick={() => handlePayInstallment(d)}
                                         disabled={busyId === d.id}
-                                        className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-bold flex items-center gap-1.5 disabled:opacity-50"
+                                        className="px-2.5 py-1.5 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white rounded-lg text-[11px] font-bold flex items-center gap-1.5 disabled:opacity-50"
                                     >
                                         {busyId === d.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
                                         Pagué la cuota
                                     </button>
                                     <button
                                         onClick={() => handleCancelPlan(d)}
-                                        className="px-2.5 py-1.5 bg-secondary hover:bg-secondary/70 border border-border text-muted-foreground rounded-lg text-[10px] font-semibold"
+                                        className="px-2.5 py-1.5 bg-secondary hover:bg-secondary/70 border border-border text-muted-foreground rounded-lg text-[11px] font-semibold"
                                     >
                                         Dar de baja el plan
                                     </button>
@@ -307,7 +307,7 @@ export function DebtManager({ overview }: Props) {
                             ) : (
                                 <button
                                     onClick={() => setPlanFor(d)}
-                                    className="px-2.5 py-1.5 bg-sky-600/15 hover:bg-sky-600/30 text-sky-300 border border-sky-500/25 rounded-lg text-[10px] font-semibold flex items-center gap-1.5"
+                                    className="px-2.5 py-1.5 bg-sky-600/15 hover:bg-sky-600/30 text-sky-300 border border-sky-500/25 rounded-lg text-[11px] font-semibold flex items-center gap-1.5"
                                 >
                                     <Calculator className="w-3 h-3" /> Arreglé un plan de pago
                                 </button>
@@ -315,7 +315,7 @@ export function DebtManager({ overview }: Props) {
 
                             <button
                                 onClick={() => setPayFor(d)}
-                                className="px-2.5 py-1.5 bg-indigo-600/15 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/25 rounded-lg text-[10px] font-semibold flex items-center gap-1.5"
+                                className="px-2.5 py-1.5 bg-indigo-600/15 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/25 rounded-lg text-[11px] font-semibold flex items-center gap-1.5"
                             >
                                 <Receipt className="w-3 h-3" /> Registrar pago
                             </button>
@@ -323,7 +323,7 @@ export function DebtManager({ overview }: Props) {
                             <button
                                 onClick={() => setObsFor(d)}
                                 className={cn(
-                                    'px-2.5 py-1.5 rounded-lg text-[10px] font-semibold flex items-center gap-1.5 border',
+                                    'px-2.5 py-1.5 rounded-lg text-[11px] font-semibold flex items-center gap-1.5 border',
                                     d.rateSource === 'sin_datos'
                                         ? 'bg-amber-600/20 hover:bg-amber-600/35 text-amber-200 border-amber-500/30'
                                         : 'bg-secondary hover:bg-secondary/70 text-muted-foreground border-border'
@@ -335,7 +335,7 @@ export function DebtManager({ overview }: Props) {
 
                             <button
                                 onClick={() => openEdit(d)}
-                                className="px-2.5 py-1.5 bg-secondary hover:bg-secondary/70 border border-border text-muted-foreground rounded-lg text-[10px] font-semibold"
+                                className="px-2.5 py-1.5 bg-secondary hover:bg-secondary/70 border border-border text-muted-foreground rounded-lg text-[11px] font-semibold"
                             >
                                 Editar
                             </button>
@@ -355,10 +355,10 @@ export function DebtManager({ overview }: Props) {
                 <div className="space-y-2">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400">Saldadas</h4>
                     {closedDebts.map(d => (
-                        <div key={d.id} className="glass rounded-xl p-3 border border-emerald-500/20 flex items-center justify-between">
+                        <div key={d.id} className="glass rounded-xl p-3 border border-hairline flex items-center justify-between">
                             <span className="text-xs text-muted-foreground line-through">{d.creditor}</span>
                             <div className="flex items-center gap-2">
-                                <span className="text-[10px] text-emerald-400 font-semibold">Pagada</span>
+                                <span className="text-[11px] text-emerald-400 font-semibold">Pagada</span>
                                 <button onClick={() => handleDelete(d.id)} className="text-muted-foreground hover:text-red-400">
                                     <Trash2 className="w-3 h-3" />
                                 </button>
@@ -391,10 +391,10 @@ export function DebtManager({ overview }: Props) {
                                             type="button"
                                             onClick={() => setForm(f => ({ ...f, kind: k.value }))}
                                             className={cn(
-                                                'px-2 py-1.5 rounded-lg border text-[10px] font-semibold transition-all',
+                                                'px-2 py-1.5 rounded-lg border text-[11px] font-semibold transition-all',
                                                 form.kind === k.value
                                                     ? 'bg-indigo-600/30 border-indigo-500/50 text-indigo-200'
-                                                    : 'bg-black/20 border-white/10 text-muted-foreground hover:text-white'
+                                                    : 'bg-black/20 border-hairline text-muted-foreground hover:text-white'
                                             )}
                                         >
                                             {k.label}
@@ -423,7 +423,7 @@ export function DebtManager({ overview }: Props) {
                             </div>
 
                             {/* Interés */}
-                            <div className="p-3 rounded-xl bg-black/20 border border-white/10 space-y-3">
+                            <div className="p-3 rounded-xl bg-black/20 border border-hairline space-y-3">
                                 <label className="flex items-center gap-2 cursor-pointer">
                                     <input
                                         type="checkbox"
@@ -437,7 +437,7 @@ export function DebtManager({ overview }: Props) {
                                 </label>
 
                                 {form.interest_unknown ? (
-                                    <p className="text-[10px] text-muted-foreground leading-relaxed">
+                                    <p className="text-[11px] text-muted-foreground leading-relaxed">
                                         Sin problema. Guardá la deuda y después usá <strong>Anotar saldo real</strong>:
                                         con dos saldos en fechas distintas, el sistema deduce la tasa diaria sola.
                                     </p>
@@ -471,7 +471,7 @@ export function DebtManager({ overview }: Props) {
                                                 type="checkbox"
                                                 checked={form.interest_capitalizes}
                                                 onChange={e => setForm(f => ({ ...f, interest_capitalizes: e.target.checked }))}
-                                                className="w-4 h-4 rounded accent-indigo-500"
+                                                className="w-4 h-4 rounded accent-amber-400"
                                             />
                                             <span className="text-[11px] text-muted-foreground">
                                                 El interés se capitaliza (se cobra interés sobre el interés)
@@ -513,7 +513,7 @@ export function DebtManager({ overview }: Props) {
                             <button
                                 type="submit"
                                 disabled={saving}
-                                className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+                                className="w-full py-3 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50"
                             >
                                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                                 Guardar deuda
@@ -606,7 +606,7 @@ function ObservationsModal({ debt, onClose, onDone }: { debt: DebtView; onClose:
                     <button
                         type="submit"
                         disabled={saving}
-                        className="w-full py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+                        className="w-full py-2.5 bg-primary text-primary-foreground hover:brightness-105 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                         Anotar este saldo
@@ -619,7 +619,7 @@ function ObservationsModal({ debt, onClose, onDone }: { debt: DebtView; onClose:
                             Tasa deducida: {Number(result.estimated).toFixed(3)}% por día
                             {result.monthlyEquivalent != null && ` (≈ ${Number(result.monthlyEquivalent).toFixed(1)}% mensual)`}
                         </p>
-                        <p className="text-[10px] text-muted-foreground">
+                        <p className="text-[11px] text-muted-foreground">
                             Calculada entre el {result.from} y el {result.to}
                             {result.paymentsConsidered > 0 && `, descontando ${formatCurrency(result.paymentsConsidered)} de pagos registrados`}.
                         </p>
@@ -634,7 +634,7 @@ function ObservationsModal({ debt, onClose, onDone }: { debt: DebtView; onClose:
 
                 {debt.observations.length > 0 && (
                     <div className="space-y-1.5">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                             Historial
                         </span>
                         {debt.observations.map(o => (
@@ -642,7 +642,7 @@ function ObservationsModal({ debt, onClose, onDone }: { debt: DebtView; onClose:
                                 <div className="min-w-0">
                                     <span className="text-foreground font-mono">{formatCurrency(o.observed_amount)}</span>
                                     <span className="text-muted-foreground"> · {o.observed_on}</span>
-                                    {o.note && <p className="text-[10px] text-muted-foreground truncate">{o.note}</p>}
+                                    {o.note && <p className="text-[11px] text-muted-foreground truncate">{o.note}</p>}
                                 </div>
                                 <button
                                     onClick={async () => { await deleteDebtObservation(o.id, debt.id); onDone() }}
@@ -756,7 +756,7 @@ function PaymentPlanModal({ debt, onClose, onDone }: { debt: DebtView; onClose: 
                 <button
                     onClick={handleSimulate}
                     disabled={busy || !installmentAmount}
-                    className="w-full py-2.5 bg-violet-600/90 hover:bg-violet-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="w-full py-2.5 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                     {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calculator className="w-4 h-4" />}
                     ¿Me conviene?
@@ -779,7 +779,7 @@ function PaymentPlanModal({ debt, onClose, onDone }: { debt: DebtView; onClose: 
                             {sim.verdict === 'conviene' ? 'Conviene financiar' : sim.verdict === 'caro' ? 'Te da aire, pero sale caro' : 'Faltan datos para comparar'}
                         </p>
                         <p className="text-[11px] text-muted-foreground leading-relaxed">{sim.explanation}</p>
-                        <div className="text-[10px] text-muted-foreground space-y-0.5 pt-1 border-t border-border/40">
+                        <div className="text-[11px] text-muted-foreground space-y-0.5 pt-1 border-t border-border/40">
                             <p>Total del plan: <strong className="text-foreground font-mono">{formatCurrency(sim.planTotal)}</strong> ({formatCurrency(sim.extraOverBalance)} más que el saldo de hoy)</p>
                             {sim.doNothingAmount > 0 && (
                                 <p>
@@ -797,12 +797,12 @@ function PaymentPlanModal({ debt, onClose, onDone }: { debt: DebtView; onClose: 
                 <button
                     onClick={handleConfirm}
                     disabled={busy || !installments || !installmentAmount}
-                    className="w-full py-3 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="w-full py-3 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                     {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                     Confirmar: ya arreglé este plan
                 </button>
-                <p className="text-[10px] text-muted-foreground text-center">
+                <p className="text-[11px] text-muted-foreground text-center">
                     Al confirmar, la deuda deja de acumular la tasa vieja y la cuota pasa a contar como gasto fijo del mes.
                 </p>
             </div>
@@ -845,7 +845,7 @@ function PayModal({ debt, onClose, onDone }: { debt: DebtView; onClose: () => vo
                     <button
                         type="button"
                         onClick={() => setAmount(String(debt.minimum_payment))}
-                        className="text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold"
+                        className="text-[11px] text-indigo-400 hover:text-indigo-300 font-semibold"
                     >
                         Usar el pago mínimo ({formatCurrency(debt.minimum_payment)})
                     </button>
@@ -853,12 +853,12 @@ function PayModal({ debt, onClose, onDone }: { debt: DebtView; onClose: () => vo
                 <button
                     type="submit"
                     disabled={busy}
-                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="w-full py-3 bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                     {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                     Registrar el pago
                 </button>
-                <p className="text-[10px] text-muted-foreground text-center">
+                <p className="text-[11px] text-muted-foreground text-center">
                     Se descuenta del saldo y queda como movimiento del mes en Finanzas.
                 </p>
             </form>
@@ -870,7 +870,7 @@ function PayModal({ debt, onClose, onDone }: { debt: DebtView; onClose: () => vo
 // Primitivas de UI
 // ============================================================
 
-const inputCls = 'w-full bg-background/60 border border-border rounded-lg px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-indigo-500/40'
+const inputCls = 'w-full bg-background/60 border border-border rounded-lg px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-amber-400/50'
 
 function Field({ label, hint, required, children }: { label: string; hint?: string; required?: boolean; children: React.ReactNode }) {
     return (
@@ -878,7 +878,7 @@ function Field({ label, hint, required, children }: { label: string; hint?: stri
             <label className="text-[11px] font-semibold text-foreground">
                 {label} {required && <span className="text-indigo-400">*</span>}
             </label>
-            {hint && <p className="text-[10px] text-muted-foreground">{hint}</p>}
+            {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
             {children}
         </div>
     )
@@ -890,13 +890,13 @@ function Modal({ title, children, onClose }: { title: string; children: React.Re
             <motion.div
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 onClick={onClose}
-                className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+                className="absolute inset-0 bg-background/80"
             />
             <motion.div
                 initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }}
-                className="relative w-full sm:max-w-lg max-h-[92vh] overflow-y-auto bg-secondary/90 backdrop-blur-xl border border-border rounded-t-2xl sm:rounded-2xl shadow-2xl"
+                className="relative w-full sm:max-w-lg max-h-[92vh] overflow-y-auto bg-secondary/90 border border-border rounded-t-2xl sm:rounded-2xl shadow-2xl"
             >
-                <div className="p-4 border-b border-border flex items-center justify-between sticky top-0 bg-secondary/95 backdrop-blur-xl z-10">
+                <div className="p-4 border-b border-border flex items-center justify-between sticky top-0 bg-secondary/95 z-10">
                     <h3 className="font-semibold text-foreground text-sm">{title}</h3>
                     <button onClick={onClose} className="text-muted-foreground hover:text-foreground p-1">
                         <X className="w-5 h-5" />

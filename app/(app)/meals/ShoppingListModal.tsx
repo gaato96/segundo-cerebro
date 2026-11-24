@@ -35,11 +35,11 @@ export function ShoppingListModal({
     }
 
     return (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-            <div className="bg-popover border border-white/10 w-full max-w-lg max-h-[85vh] flex flex-col rounded-3xl relative overflow-hidden shadow-2xl">
-                <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80">
+            <div className="bg-popover border border-hairline w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl relative overflow-hidden shadow-2xl">
+                <div className="p-6 border-b border-hairline flex justify-between items-center bg-white/5">
                     <div>
-                        <h2 className="text-2xl font-heading font-bold">Lista de Compras</h2>
+                        <h2 className="text-2xl font-semibold">Lista de Compras</h2>
                         <p className="text-sm text-muted-foreground mt-1">Marca los ingredientes que ya tienes o compraste. Tus cambios se guardan automáticamente.</p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
@@ -55,7 +55,7 @@ export function ShoppingListModal({
                                 key={i}
                                 disabled={toggling !== null}
                                 onClick={() => toggleItem(item.item)}
-                                className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all ${isChecked ? 'bg-indigo-500/10 border-indigo-500/20 opacity-60' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
+                                className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all ${isChecked ? 'bg-indigo-500/10 border-indigo-500/20 opacity-60' : 'bg-white/5 border-hairline hover:bg-white/10'}`}
                             >
                                 <div className="flex items-center gap-4">
                                     {isToggling ? (
@@ -81,7 +81,7 @@ export function ShoppingListModal({
                         </div>
                     )}
                 </div>
-                <div className="p-4 bg-white/5 border-t border-white/10 flex justify-between items-center text-sm font-medium">
+                <div className="p-4 bg-white/5 border-t border-hairline flex justify-between items-center text-sm font-medium">
                     <span className="text-muted-foreground">{checkedItems.length} comprados</span>
                     <span>{(shoppingList?.length || 0) - checkedItems.length} pendientes</span>
                 </div>

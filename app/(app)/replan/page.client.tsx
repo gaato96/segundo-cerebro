@@ -15,6 +15,7 @@ import {
     type ReplanDiagnosis, type QuarterlyReviewRow, type QuarterPlan, type ReplanReflection,
     type ObjectiveDecision, type PlanSelection
 } from '@/lib/actions/quarterly'
+import { PageShell, PageHeader } from '@/components/ui/kit'
 import { prettyDate, type QuarterInfo } from '@/lib/quarter'
 import { cn, formatCurrency, getLocalDateStr } from '@/lib/utils'
 
@@ -65,7 +66,7 @@ export function ReplanClient({ target, current, diagnosis, review, history, miss
         return (
             <div className="px-4 md:px-8 py-6 md:py-8 max-w-3xl mx-auto pb-24">
                 <div className="glass p-6 rounded-2xl border border-amber-500/30 space-y-2">
-                    <h1 className="font-heading font-bold text-white flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-amber-400" /> Falta una migración</h1>
+                    <h1 className="font-semibold text-white flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-amber-400" /> Falta una migración</h1>
                     <p className="text-sm text-muted-foreground">
                         Pegá <code className="text-amber-300">supabase/migrations/024_quarterly_replan.sql</code> en el SQL Editor de Supabase y recargá esta página.
                     </p>
@@ -85,58 +86,21 @@ export function ReplanClient({ target, current, diagnosis, review, history, miss
     const isNextQuarter = target.year !== current.year || target.quarter !== current.quarter
 
     return (
-        <div className="px-4 md:px-8 py-6 md:py-8 max-w-5xl mx-auto space-y-6 animate-fade-in pb-24">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-                <div className="min-w-0">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-teal-300/80">
-                        Replanificación trimestral · {target.name}
-                    </p>
-                    <h1 className="text-2xl md:text-[30px] font-semibold tracking-tight leading-tight mt-1">
-                        {done && !showWizard ? (review?.plan?.tema || `Plan de ${target.name}`) : 'Volver a ordenar todo'}
-                    </h1>
-                    <p className="text-muted-foreground text-sm mt-1">
-                        {prettyDate(target.start)} → {prettyDate(target.end)} ·{' '}
-                        {isNextQuarter ? `arranca en ${current.daysLeft} días` : `quedan ${target.daysLeft} días (${target.elapsedPct}% del trimestre ya pasó)`}
-                    </p>
-                </div>
-                {done && (
-                    <button
-                        onClick={() => { setShowWizard(v => !v); setStep(0) }}
-                        className="px-3.5 py-2 rounded-xl text-xs font-semibold border border-border/60 text-muted-foreground hover:text-white hover:bg-secondary/50 flex items-center gap-1.5 self-start sm:self-auto"
-                    >
-                        {showWizard ? <><Trophy className="w-3.5 h-3.5" /> Ver el progreso</> : <><RotateCcw className="w-3.5 h-3.5" /> Rehacer la revisión</>}
-                    </button>
-                )}
-            </div>
+        <PageShell className="space-y-6">
+            <PageHeader
+                label={`Planificar · ${target.name}`}
+                title={done && !showWizard ? (review?.plan?.tema || `Plan de ${target.name}`) : 'Replanificar'}
+                subtitle={`${prettyDate(target.start)} — ${prettyDate(target.end)}. ${isNextQuarter ? `Arranca en ${current.daysLeft} días.` : `Quedan ${target.daysLeft} días.`}`}
+                actions={done ? <button onClick={() => { setShowWizard(v => !v); setStep(0) }} className="btn-secondary text-sm">{showWizard ? 'Ver el progreso' : 'Rehacer la revisión'}</button> : undefined}
+            />
 
             {done && !showWizard ? (
                 <ProgressView target={target} diagnosis={diagnosis} review={review!} history={history} />
             ) : (
                 <>
-                    {/* Stepper */}
-                    <div className="glass rounded-2xl border border-border/50 p-1.5 flex gap-1 overflow-x-auto no-scrollbar">
-                        {STEPS.map((s, i) => {
-                            const Icon = s.icon
-                            const active = i === step
-                            const passed = i < step
-                            return (
-                                <button
-                                    key={s.id}
-                                    onClick={() => goTo(i)}
-                                    className={cn(
-                                        'flex-1 min-w-[88px] flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl text-[11px] font-semibold transition-all whitespace-nowrap',
-                                        active ? 'bg-teal-500/15 text-teal-200 border border-teal-500/30'
-                                            : passed ? 'text-teal-300/70 hover:bg-secondary/40 border border-transparent'
-                                                : 'text-muted-foreground hover:bg-secondary/40 border border-transparent'
-                                    )}
-                                >
-                                    {passed ? <Check className="w-3.5 h-3.5" /> : <Icon className="w-3.5 h-3.5" />}
-                                    <span>{i + 1}. {s.label}</span>
-                                </button>
-                            )
-                        })}
-                    </div>
+                    <nav aria-label="Pasos" className="flex gap-1 overflow-x-auto no-scrollbar border-b border-hairline">
+                        {STEPS.map((x, n) => <button key={x.id} onClick={() => goTo(n)} aria-current={n === step ? 'step' : undefined} className={cn('h-11 px-3 text-sm whitespace-nowrap border-b-2 -mb-px inline-flex items-center gap-2', n === step ? 'border-amber-400 text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground')}>{n < step ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <span className="font-mono text-xs">{n + 1}</span>}{x.label}</button>)}
+                    </nav>
 
                     <AnimatePresence mode="wait">
                         <motion.div
@@ -174,7 +138,7 @@ export function ReplanClient({ target, current, diagnosis, review, history, miss
                             </button>
                             <button
                                 onClick={() => goTo(step + 1)}
-                                className="px-5 py-2.5 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-teal-600/20"
+                                className="btn-primary text-sm"
                             >
                                 {step === 0 ? 'Empezar' : 'Siguiente'} <ArrowRight className="w-4 h-4" />
                             </button>
@@ -182,7 +146,7 @@ export function ReplanClient({ target, current, diagnosis, review, history, miss
                     )}
                 </>
             )}
-        </div>
+        </PageShell>
     )
 }
 
@@ -194,8 +158,8 @@ function StepReturn({ diagnosis, target }: { diagnosis: ReplanDiagnosis; target:
     const away = diagnosis.daysInactive ?? 0
     return (
         <div className="space-y-4">
-            <div className="glass p-5 md:p-6 rounded-2xl border border-teal-500/25 space-y-3">
-                <h2 className="font-heading font-bold text-lg text-white">
+            <div className="glass p-5 md:p-6 rounded-2xl border border-hairline space-y-3">
+                <h2 className="font-semibold text-lg text-white">
                     {away >= 7
                         ? `Hace ${away} días que no registrás nada. Está bien.`
                         : 'Momento de mirar el trimestre desde arriba.'}
@@ -212,15 +176,15 @@ function StepReturn({ diagnosis, target }: { diagnosis: ReplanDiagnosis; target:
                 </ul>
             </div>
 
-            <div className="glass p-5 rounded-2xl border border-border/50 space-y-3">
-                <h3 className="text-sm font-heading font-bold text-white">Última vez que usaste cada parte</h3>
+            <div className="glass p-5 rounded-2xl border border-hairline space-y-3">
+                <h3 className="text-sm font-semibold text-white">Última vez que usaste cada parte</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                     {diagnosis.modules.map(m => {
                         const f = freshness(m.daysAgo)
                         return (
                             <Link key={m.key} href={m.href} className={cn('px-3 py-2.5 rounded-xl border text-xs flex items-center justify-between gap-2 hover:brightness-125 transition', f.cls)}>
                                 <span className="font-medium truncate text-white/85">{m.label}</span>
-                                <span className="font-mono text-[10px] shrink-0">{f.text}</span>
+                                <span className="font-mono text-[11px] shrink-0">{f.text}</span>
                             </Link>
                         )
                     })}
@@ -240,9 +204,9 @@ function StepReturn({ diagnosis, target }: { diagnosis: ReplanDiagnosis; target:
 function Stat({ label, value, hint, tone = 'default' }: { label: string; value: string; hint?: string; tone?: 'default' | 'good' | 'bad' | 'warn' }) {
     const toneCls = { default: 'text-white', good: 'text-emerald-300', bad: 'text-rose-300', warn: 'text-amber-300' }[tone]
     return (
-        <div className="glass p-4 rounded-2xl border border-border/50">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
-            <p className={cn('text-2xl font-heading font-bold mt-1 tabular-nums', toneCls)}>{value}</p>
+        <div className="glass p-4 rounded-2xl border border-hairline">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+            <p className={cn('text-2xl font-semibold mt-1 tabular-nums', toneCls)}>{value}</p>
             {hint && <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{hint}</p>}
         </div>
     )
@@ -264,13 +228,13 @@ function StepDiagnosis({ diagnosis: d }: { diagnosis: ReplanDiagnosis }) {
                 <Stat label="Entrenamiento" value={`${d.training.sessions90 + d.training.parkSessions90}`} hint={`sesiones · ${d.training.matches90} partidos`} tone={d.training.sessions90 + d.training.parkSessions90 >= 12 ? 'good' : 'bad'} />
                 <Stat label="Peso" value={d.weight.last ? `${d.weight.last} kg` : '—'} hint={weightDelta !== null && d.weight.firstDate !== d.weight.lastDate ? `${weightDelta > 0 ? '+' : ''}${weightDelta.toFixed(1)} kg desde ${d.weight.firstDate}` : d.weight.lastDate ? `último registro ${d.weight.lastDate}` : 'sin registros'} />
                 <Stat label="Journal" value={`${d.journal.entries90}`} hint={`entradas · ánimo ${d.journal.avgMood ?? '—'}/5`} />
-                <Stat label="Compromisos" value={`${d.commitments.done90}/${d.commitments.signed90}`} hint="cumplidos / firmados" />
+                
                 <Stat label="Deudas" value={formatCurrency(d.finances.debtTotal)} hint={`${d.finances.entries90} gastos registrados en 90 días`} tone={d.finances.debtTotal > 0 ? 'warn' : 'good'} />
             </div>
 
             {d.habits.length > 0 && (
-                <div className="glass p-5 rounded-2xl border border-border/50 space-y-3">
-                    <h3 className="text-sm font-heading font-bold text-white flex items-center gap-2"><Flame className="w-4 h-4 text-orange-400" /> Hábitos, últimos 30 días</h3>
+                <div className="glass p-5 rounded-2xl border border-hairline space-y-3">
+                    <h3 className="text-sm font-semibold text-white flex items-center gap-2"><Flame className="w-4 h-4 text-orange-400" /> Hábitos, últimos 30 días</h3>
                     <div className="space-y-2.5">
                         {d.habits.map(h => (
                             <div key={h.id} className="space-y-1">
@@ -285,7 +249,7 @@ function StepDiagnosis({ diagnosis: d }: { diagnosis: ReplanDiagnosis }) {
             )}
 
             {d.reading.length > 0 && (
-                <div className="glass p-4 rounded-2xl border border-border/50 flex flex-wrap gap-3 text-xs">
+                <div className="glass p-4 rounded-2xl border border-hairline flex flex-wrap gap-3 text-xs">
                     <span className="text-muted-foreground flex items-center gap-1.5"><BookOpen className="w-3.5 h-3.5" /> Leyendo:</span>
                     {d.reading.map(b => (
                         <span key={b.title} className="text-white/85">{b.title} <span className="text-muted-foreground font-mono">{Math.round((b.page / b.pages) * 100)}%</span></span>
@@ -321,7 +285,7 @@ function StepObjectives({ diagnosis, target, saved }: { diagnosis: ReplanDiagnos
 
     if (!objectives.length) {
         return (
-            <div className="glass p-6 rounded-2xl border border-border/50 text-sm text-muted-foreground">
+            <div className="glass p-6 rounded-2xl border border-hairline text-sm text-muted-foreground">
                 No tenés objetivos activos. Perfecto para arrancar limpio: en el paso 6 la IA te propone hasta 3 para {target.name}.
             </div>
         )
@@ -341,14 +305,14 @@ function StepObjectives({ diagnosis, target, saved }: { diagnosis: ReplanDiagnos
             </p>
             <div className="space-y-3">
                 {objectives.map(o => (
-                    <div key={o.id} className="glass p-4 rounded-2xl border border-border/50 space-y-3">
+                    <div key={o.id} className="glass p-4 rounded-2xl border border-hairline space-y-3">
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                             <div className="min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/25 text-indigo-300 font-semibold">{o.timeframe}{o.year ? ` ${o.year}` : ''}</span>
-                                    {o.expired && <span className="text-[9px] px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/25 text-rose-300 font-semibold">venció {o.target_date}</span>}
+                                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/25 text-indigo-300 font-semibold">{o.timeframe}{o.year ? ` ${o.year}` : ''}</span>
+                                    {o.expired && <span className="text-[11px] px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/25 text-rose-300 font-semibold">venció {o.target_date}</span>}
                                 </div>
-                                <h4 className="font-heading font-bold text-white mt-1.5">{o.title}</h4>
+                                <h4 className="font-semibold text-white mt-1.5">{o.title}</h4>
                                 {o.key_results.length > 0 && (
                                     <ul className="mt-1.5 space-y-0.5">
                                         {o.key_results.map((kr, i) => (
@@ -357,7 +321,7 @@ function StepObjectives({ diagnosis, target, saved }: { diagnosis: ReplanDiagnos
                                     </ul>
                                 )}
                             </div>
-                            <span className="text-xl font-heading font-bold text-white tabular-nums shrink-0">{o.progress_pct}%</span>
+                            <span className="text-xl font-semibold text-white tabular-nums shrink-0">{o.progress_pct}%</span>
                         </div>
                         <div className="flex flex-wrap gap-1.5">
                             {options.map(opt => (
@@ -380,7 +344,7 @@ function StepObjectives({ diagnosis, target, saved }: { diagnosis: ReplanDiagnos
                 <button
                     onClick={apply}
                     disabled={saving || !Object.keys(decisions).length}
-                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1.5 disabled:opacity-50"
+                    className="btn-secondary text-sm"
                 >
                     {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                     Aplicar decisiones ({Object.keys(decisions).length}/{objectives.length})
@@ -437,9 +401,9 @@ function StepCleanup({ diagnosis }: { diagnosis: ReplanDiagnosis }) {
 
     return (
         <div className="space-y-4">
-            <div className="glass p-5 rounded-2xl border border-border/50 space-y-3">
+            <div className="glass p-5 rounded-2xl border border-hairline space-y-3">
                 <div>
-                    <h3 className="text-sm font-heading font-bold text-white flex items-center gap-2"><CheckSquare className="w-4 h-4 text-indigo-400" /> Tareas abiertas ({tasks.length})</h3>
+                    <h3 className="text-sm font-semibold text-white flex items-center gap-2"><CheckSquare className="w-4 h-4 text-indigo-400" /> Tareas abiertas ({tasks.length})</h3>
                     <p className="text-[11px] text-muted-foreground mt-0.5">Ya quedaron tildadas las vencidas y las que no tienen fecha. Lo que no vas a hacer de verdad, soltalo: la lista vuelve a ser creíble.</p>
                 </div>
                 {tasks.length === 0 ? (
@@ -449,10 +413,10 @@ function StepCleanup({ diagnosis }: { diagnosis: ReplanDiagnosis }) {
                         <div className="space-y-1 max-h-80 overflow-y-auto pr-1">
                             {tasks.map(t => (
                                 <label key={t.id} className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-secondary/40 cursor-pointer">
-                                    <input type="checkbox" checked={selected.has(t.id)} onChange={() => toggle(t.id)} className="w-3.5 h-3.5 accent-teal-500" />
+                                    <input type="checkbox" checked={selected.has(t.id)} onChange={() => toggle(t.id)} className="w-3.5 h-3.5 accent-amber-400" />
                                     <span className="text-xs text-white/85 flex-1 min-w-0 truncate">{t.title}</span>
                                     {t.due_date && (
-                                        <span className={cn('text-[10px] font-mono shrink-0', t.overdue ? 'text-rose-300' : 'text-muted-foreground')}>{t.due_date.slice(8)}/{t.due_date.slice(5, 7)}</span>
+                                        <span className={cn('text-[11px] font-mono shrink-0', t.overdue ? 'text-rose-300' : 'text-muted-foreground')}>{t.due_date.slice(8)}/{t.due_date.slice(5, 7)}</span>
                                     )}
                                 </label>
                             ))}
@@ -476,9 +440,9 @@ function StepCleanup({ diagnosis }: { diagnosis: ReplanDiagnosis }) {
             </div>
 
             {habits.length > 0 && (
-                <div className="glass p-5 rounded-2xl border border-border/50 space-y-3">
+                <div className="glass p-5 rounded-2xl border border-hairline space-y-3">
                     <div>
-                        <h3 className="text-sm font-heading font-bold text-white flex items-center gap-2"><Flame className="w-4 h-4 text-orange-400" /> Hábitos</h3>
+                        <h3 className="text-sm font-semibold text-white flex items-center gap-2"><Flame className="w-4 h-4 text-orange-400" /> Hábitos</h3>
                         <p className="text-[11px] text-muted-foreground mt-0.5">Pausar no borra el historial: lo saca del tablero hasta que tengas lugar. Mejor 2 que cumplís que 5 que te recuerdan que no.</p>
                     </div>
                     <div className="space-y-1.5">
@@ -486,7 +450,7 @@ function StepCleanup({ diagnosis }: { diagnosis: ReplanDiagnosis }) {
                             <div key={h.id} className="flex items-center justify-between gap-3 px-2.5 py-2 rounded-lg bg-secondary/20">
                                 <div className="min-w-0">
                                     <p className={cn('text-xs truncate', h.paused ? 'text-muted-foreground line-through' : 'text-white/85')}>{h.title}</p>
-                                    <p className="text-[10px] text-muted-foreground font-mono">{h.pct}% en 30 días</p>
+                                    <p className="text-[11px] text-muted-foreground font-mono">{h.pct}% en 30 días</p>
                                 </div>
                                 <button
                                     onClick={() => toggleHabit(h.id, !h.paused)}
@@ -528,7 +492,7 @@ function StepReflection({ target, initial }: { target: QuarterInfo; initial: Rep
     }
 
     return (
-        <div className="glass p-5 rounded-2xl border border-border/50 space-y-4">
+        <div className="glass p-5 rounded-2xl border border-hairline space-y-4">
             <p className="text-sm text-muted-foreground">Lo que escribas acá lo lee la IA para armar el plan. La pregunta de por qué te desconectaste es la más importante: el plan tiene que estar armado para esa semana mala.</p>
             {REFLECTION_FIELDS.map(f => (
                 <div key={f.key} className="space-y-1.5">
@@ -539,7 +503,7 @@ function StepReflection({ target, initial }: { target: QuarterInfo; initial: Rep
                             onChange={e => { setValues(v => ({ ...v, [f.key]: e.target.value })); setStatus('idle') }}
                             onBlur={save}
                             placeholder={f.placeholder}
-                            className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-teal-500"
+                            className="field py-2.5"
                         />
                     ) : (
                         <textarea
@@ -548,13 +512,13 @@ function StepReflection({ target, initial }: { target: QuarterInfo; initial: Rep
                             onBlur={save}
                             rows={f.rows}
                             placeholder={f.placeholder}
-                            className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-teal-500 resize-y"
+                            className="field py-2.5 resize-y"
                         />
                     )}
                 </div>
             ))}
             <p className="text-[11px] text-muted-foreground h-4">
-                {status === 'saving' ? 'Guardando…' : status === 'saved' ? '✓ Guardado' : 'Se guarda al salir de cada campo.'}
+                {status === 'saving' ? 'Guardando…' : status === 'saved' ? 'Guardado' : 'Se guarda al salir de cada campo.'}
             </p>
         </div>
     )
@@ -579,9 +543,9 @@ function emptySelection(plan: QuarterPlan | null): PlanSelection {
 
 function Section({ icon: Icon, title, color, children, hint }: { icon: any; title: string; color: string; children: React.ReactNode; hint?: string }) {
     return (
-        <div className="glass p-5 rounded-2xl border border-border/50 space-y-3">
+        <div className="glass p-5 rounded-2xl border border-hairline space-y-3">
             <div>
-                <h3 className="text-sm font-heading font-bold text-white flex items-center gap-2"><Icon className={cn('w-4 h-4', color)} /> {title}</h3>
+                <h3 className="text-sm font-semibold text-white flex items-center gap-2"><Icon className={cn('w-4 h-4', color)} /> {title}</h3>
                 {hint && <p className="text-[11px] text-muted-foreground mt-0.5">{hint}</p>}
             </div>
             {children}
@@ -592,7 +556,7 @@ function Section({ icon: Icon, title, color, children, hint }: { icon: any; titl
 function Pick({ checked, onChange, children }: { checked: boolean; onChange: () => void; children: React.ReactNode }) {
     return (
         <label className={cn('flex gap-2.5 p-3 rounded-xl border cursor-pointer transition', checked ? 'border-teal-500/35 bg-teal-500/5' : 'border-border/50 bg-secondary/20 hover:border-border')}>
-            <input type="checkbox" checked={checked} onChange={onChange} className="w-3.5 h-3.5 accent-teal-500 mt-0.5 shrink-0" />
+            <input type="checkbox" checked={checked} onChange={onChange} className="w-3.5 h-3.5 accent-amber-400 mt-0.5 shrink-0" />
             <div className="min-w-0 flex-1">{children}</div>
         </label>
     )
@@ -648,15 +612,15 @@ function StepPlan({ target, initialPlan, applied, onFinished }: { target: Quarte
 
     if (!plan) {
         return (
-            <div className="glass p-6 md:p-8 rounded-2xl border border-teal-500/25 text-center space-y-4">
+            <div className="glass p-6 md:p-8 rounded-2xl border border-hairline text-center space-y-4">
                 <Sparkles className="w-8 h-8 text-teal-300 mx-auto" />
                 <div className="space-y-1.5">
-                    <h2 className="font-heading font-bold text-lg text-white">Armemos {target.name}</h2>
+                    <h2 className="font-semibold text-lg text-white">Armemos {target.name}</h2>
                     <p className="text-sm text-muted-foreground max-w-xl mx-auto">
                         La IA lee todo tu Segundo Cerebro, el diagnóstico y lo que escribiste, y propone objetivos hasta el {prettyDate(target.end)}, hábitos, tareas recurrentes, un horario tipo, cómo encajar el entreno, comidas y qué ver o leer.
                     </p>
                 </div>
-                <button onClick={generate} disabled={loading} className="px-5 py-3 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-sm font-bold inline-flex items-center gap-2 disabled:opacity-60 shadow-lg shadow-teal-600/20">
+                <button onClick={generate} disabled={loading} className="btn-primary text-sm">
                     {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                     {loading ? 'Armando el plan… (puede tardar 30 segundos)' : 'Generar el plan del trimestre'}
                 </button>
@@ -668,11 +632,11 @@ function StepPlan({ target, initialPlan, applied, onFinished }: { target: Quarte
     return (
         <div className="space-y-4">
             {/* Resumen */}
-            <div className="glass p-5 md:p-6 rounded-2xl border border-teal-500/25 space-y-3">
+            <div className="glass p-5 md:p-6 rounded-2xl border border-hairline space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                     <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-teal-300/80">Tema del trimestre</p>
-                        <h2 className="font-heading font-bold text-xl text-white">{plan.tema}</h2>
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-teal-300/80">Tema del trimestre</p>
+                        <h2 className="font-semibold text-xl text-white">{plan.tema}</h2>
                     </div>
                     <button onClick={generate} disabled={loading} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-border/60 text-muted-foreground hover:text-white flex items-center gap-1.5 self-start">
                         {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3" />} Generar otro
@@ -693,12 +657,12 @@ function StepPlan({ target, initialPlan, applied, onFinished }: { target: Quarte
                         {plan.objetivos.map((o, i) => (
                             <Pick key={i} checked={sel.objetivos.includes(i)} onChange={() => toggle('objetivos', i)}>
                                 <p className="text-xs font-bold text-white">{o.title}</p>
-                                <p className="text-[10px] text-muted-foreground mt-0.5">meta {o.target_date}</p>
+                                <p className="text-[11px] text-muted-foreground mt-0.5">meta {o.target_date}</p>
                                 <ul className="mt-1.5 space-y-0.5">
                                     {o.key_results.map((kr, k) => <li key={k} className="text-[11px] text-white/70">· {kr.title} <span className="font-mono text-muted-foreground">({kr.current}→{kr.target} {kr.unit})</span></li>)}
                                 </ul>
-                                {o.tasks.length > 0 && <p className="text-[10px] text-muted-foreground mt-1.5">{o.tasks.length} tareas: {o.tasks.map(t => t.title).join(' · ')}</p>}
-                                {o.risk && <p className="text-[10px] text-amber-300/80 mt-1.5">Riesgo: {o.risk}</p>}
+                                {o.tasks.length > 0 && <p className="text-[11px] text-muted-foreground mt-1.5">{o.tasks.length} tareas: {o.tasks.map(t => t.title).join(' · ')}</p>}
+                                {o.risk && <p className="text-[11px] text-amber-300/80 mt-1.5">Riesgo: {o.risk}</p>}
                             </Pick>
                         ))}
                     </div>
@@ -712,7 +676,7 @@ function StepPlan({ target, initialPlan, applied, onFinished }: { target: Quarte
                             {plan.habitos.map((h, i) => (
                                 <Pick key={i} checked={sel.habitos.includes(i)} onChange={() => toggle('habitos', i)}>
                                     <p className="text-xs font-semibold text-white">{h.title}</p>
-                                    <p className="text-[10px] text-muted-foreground">
+                                    <p className="text-[11px] text-muted-foreground">
                                         {h.frequency_type === 'daily' ? 'todos los días' : `${h.frequency_times_per_week}x por semana`} · {h.estimated_minutes} min · {TOD_LABEL[h.time_of_day]}
                                     </p>
                                     {h.why && <p className="text-[11px] text-white/60 mt-1">{h.why}</p>}
@@ -728,7 +692,7 @@ function StepPlan({ target, initialPlan, applied, onFinished }: { target: Quarte
                             {plan.tareas_recurrentes.map((r, i) => (
                                 <Pick key={i} checked={sel.tareas_recurrentes.includes(i)} onChange={() => toggle('tareas_recurrentes', i)}>
                                     <p className="text-xs font-semibold text-white">{r.title}</p>
-                                    <p className="text-[10px] text-muted-foreground">{RECUR_LABEL[r.recurrence_type]}{r.recurrence_days.length ? ` · ${r.recurrence_days.map(d => DAY_LABEL[d]).join(', ')}` : ''}</p>
+                                    <p className="text-[11px] text-muted-foreground">{RECUR_LABEL[r.recurrence_type]}{r.recurrence_days.length ? ` · ${r.recurrence_days.map(d => DAY_LABEL[d]).join(', ')}` : ''}</p>
                                     {r.why && <p className="text-[11px] text-white/60 mt-1">{r.why}</p>}
                                 </Pick>
                             ))}
@@ -748,7 +712,7 @@ function StepPlan({ target, initialPlan, applied, onFinished }: { target: Quarte
                         ))}
                     </div>
                     <label className="flex items-center gap-2 text-xs text-white/85 cursor-pointer pt-1">
-                        <input type="checkbox" checked={sel.horario} onChange={() => setSel(s => ({ ...s, horario: !s.horario }))} className="w-3.5 h-3.5 accent-violet-500" />
+                        <input type="checkbox" checked={sel.horario} onChange={() => setSel(s => ({ ...s, horario: !s.horario }))} className="w-3.5 h-3.5 accent-amber-400" />
                         Usar este horario como mi rutina ideal
                     </label>
                     {applied.previousRoutine && (
@@ -794,11 +758,11 @@ function StepPlan({ target, initialPlan, applied, onFinished }: { target: Quarte
                             ['peliculas', 'Películas', Film, plan.peliculas]
                         ] as const).map(([key, label, Icon, list]) => list.length > 0 && (
                             <div key={key} className="space-y-1.5">
-                                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"><Icon className="w-3 h-3" /> {label}</p>
+                                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"><Icon className="w-3 h-3" /> {label}</p>
                                 {list.map((m, i) => (
                                     <Pick key={i} checked={sel[key].includes(i)} onChange={() => toggle(key, i)}>
                                         <p className="text-xs font-semibold text-white">{m.title}{m.author ? <span className="font-normal text-muted-foreground"> · {m.author}</span> : null}</p>
-                                        {m.why && <p className="text-[10px] text-white/60 mt-0.5">{m.why}</p>}
+                                        {m.why && <p className="text-[11px] text-white/60 mt-0.5">{m.why}</p>}
                                     </Pick>
                                 ))}
                             </div>
@@ -816,7 +780,7 @@ function StepPlan({ target, initialPlan, applied, onFinished }: { target: Quarte
             {error && <p className="text-xs text-red-300 bg-red-500/10 border border-red-500/25 rounded-xl p-3 break-words">{error}</p>}
 
             {/* Acciones */}
-            <div className="glass p-4 rounded-2xl border border-teal-500/25 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sticky bottom-20 md:bottom-4 z-10">
+            <div className="glass p-4 rounded-2xl border border-hairline flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sticky bottom-20 md:bottom-4 z-10">
                 <p className="text-xs text-muted-foreground">
                     {result
                         ? `Aplicado: ${result.objetivos} objetivos, ${result.tareas} tareas, ${result.habitos} hábitos, ${result.recurrentes} recurrentes${result.horario ? ', horario' : ''}${result.media ? `, ${result.media} al backlog` : ''}.`
@@ -824,11 +788,11 @@ function StepPlan({ target, initialPlan, applied, onFinished }: { target: Quarte
                 </p>
                 <div className="flex gap-2">
                     {!result && (
-                        <button onClick={apply} disabled={applying || !total} className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 disabled:opacity-50">
+                        <button onClick={apply} disabled={applying || !total} className="btn-secondary text-sm">
                             {applying ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />} Aplicar lo tildado
                         </button>
                     )}
-                    <button onClick={finish} disabled={finishing} className="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold flex items-center gap-1.5 disabled:opacity-50">
+                    <button onClick={finish} disabled={finishing} className="btn-primary text-sm">
                         {finishing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trophy className="w-3.5 h-3.5" />} Cerrar la revisión
                     </button>
                 </div>
@@ -848,7 +812,7 @@ function ProgressView({ target, diagnosis, review, history }: { target: QuarterI
 
     return (
         <div className="space-y-4">
-            <div className="glass p-5 rounded-2xl border border-teal-500/25 space-y-3">
+            <div className="glass p-5 rounded-2xl border border-hairline space-y-3">
                 <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Tiempo transcurrido de {target.name}</span>
                     <span className="font-mono text-white">{target.elapsedPct}%</span>
@@ -860,8 +824,8 @@ function ProgressView({ target, diagnosis, review, history }: { target: QuarterI
                 {plan?.regla_regreso && <p className="text-xs text-amber-200/90 flex gap-2"><LifeBuoy className="w-3.5 h-3.5 shrink-0 mt-0.5" /> {plan.regla_regreso}</p>}
             </div>
 
-            <div className="glass p-5 rounded-2xl border border-border/50 space-y-3">
-                <h3 className="text-sm font-heading font-bold text-white flex items-center gap-2"><Target className="w-4 h-4 text-indigo-400" /> ¿Vas al ritmo del calendario?</h3>
+            <div className="glass p-5 rounded-2xl border border-hairline space-y-3">
+                <h3 className="text-sm font-semibold text-white flex items-center gap-2"><Target className="w-4 h-4 text-indigo-400" /> ¿Vas al ritmo del calendario?</h3>
                 {objectives.length === 0 ? (
                     <p className="text-xs text-muted-foreground">No hay objetivos activos para {target.name}.</p>
                 ) : objectives.map(o => {
@@ -902,12 +866,12 @@ function ProgressView({ target, diagnosis, review, history }: { target: QuarterI
             )}
 
             {history.length > 0 && (
-                <div className="glass p-5 rounded-2xl border border-border/50 space-y-2">
-                    <h3 className="text-sm font-heading font-bold text-white flex items-center gap-2"><History className="w-4 h-4 text-muted-foreground" /> Trimestres anteriores</h3>
+                <div className="glass p-5 rounded-2xl border border-hairline space-y-2">
+                    <h3 className="text-sm font-semibold text-white flex items-center gap-2"><History className="w-4 h-4 text-muted-foreground" /> Trimestres anteriores</h3>
                     {history.map(h => (
                         <Link key={`${h.year}-${h.quarter}`} href={`/replan?q=${h.year}-${h.quarter}`} className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-secondary/40 text-xs">
                             <span className="text-white/85">Q{h.quarter} {h.year}{h.plan?.tema ? ` · ${h.plan.tema}` : ''}</span>
-                            <span className={cn('text-[10px] font-semibold', h.status === 'done' ? 'text-emerald-300' : 'text-amber-300')}>{h.status === 'done' ? 'cerrada' : 'a medias'}</span>
+                            <span className={cn('text-[11px] font-semibold', h.status === 'done' ? 'text-emerald-300' : 'text-amber-300')}>{h.status === 'done' ? 'cerrada' : 'a medias'}</span>
                         </Link>
                     ))}
                 </div>

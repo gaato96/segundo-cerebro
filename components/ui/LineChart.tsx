@@ -16,7 +16,7 @@ export function LineChart({ points, goal, unit, color = 'lamp', height = 150 }: 
                 <polyline points={points.map((p, i) => `${x(i)},${y(p.value)}`).join(' ')} fill="none" stroke={c} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
                 {points.map((p, i) => <circle key={i} cx={x(i)} cy={y(p.value)} r={i === points.length - 1 ? 5 : 3} fill={i === points.length - 1 ? c : 'hsl(var(--card))'} stroke={c} strokeWidth="2"><title>{p.label}: {p.value} {unit}</title></circle>)}
             </svg>
-            <figcaption className="flex justify-between font-mono text-[10px] text-ink-faint"><span>{points[0].label}</span>{points.length > 1 && <span>{points[points.length - 1].label}</span>}</figcaption>
+            <figcaption className="flex justify-between font-mono text-[11px] text-ink-faint"><span>{points[0].label}</span>{points.length > 1 && <span>{points[points.length - 1].label}</span>}</figcaption>
         </figure>
     )
 }
