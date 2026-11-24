@@ -3,6 +3,7 @@ export function LineChart({ points, goal, unit, color = 'lamp', height = 150 }: 
     points: { label: string; value: number }[]; goal?: number | null; unit: string; color?: 'lamp' | 'slateblue' | 'sage'; height?: number
 }) {
     if (points.length === 0) return <p className="text-sm text-muted-foreground">Sin mediciones todavía.</p>
+    if (points.length === 1) return <p className="py-4 text-sm text-muted-foreground"><span className="font-mono text-2xl text-foreground">{points[0].value} {unit}</span><span className="block mt-1">Una sola medición ({points[0].label}). Cargá otra para ver la evolución.</span></p>
     const W = 420, H = height, P = 14
     const all = [...points.map(p => p.value), ...(goal ? [goal] : [])]
     const min = Math.min(...all), max = Math.max(...all), span = max - min || 1

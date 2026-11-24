@@ -249,8 +249,8 @@ export function FootballHub() {
                     <span className="text-xs text-muted-foreground font-semibold pr-1">Juego:</span>
                     {[
                         { id: 'All', label: 'Todos los Juegos' },
-                        { id: 'FM24', label: 'FM24 🟣' },
-                        { id: 'EAFC26', label: 'EAFC 26 🟢' }
+                        { id: 'FM24', label: 'FM24' },
+                        { id: 'EAFC26', label: 'EAFC 26' }
                     ].map(g => (
                         <button
                             key={g.id}
@@ -270,7 +270,7 @@ export function FootballHub() {
                     <span className="text-xs text-muted-foreground font-semibold pr-1">Estado:</span>
                     {[
                         { id: 'Active', label: 'Activos' },
-                        { id: 'Completed', label: 'Cumplidos 🏆' },
+                        { id: 'Completed', label: 'Cumplidos' },
                         { id: 'Abandoned', label: 'Abandonados' },
                         { id: 'All', label: 'Ver Todos' }
                     ].map(s => (

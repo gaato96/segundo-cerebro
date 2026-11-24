@@ -170,7 +170,7 @@ export function TMDBDetailsModal({
                             className="px-4 py-2.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 text-xs font-bold rounded-xl border border-yellow-500/20 flex items-center justify-center gap-1.5"
                         >
                             <Check className="w-4 h-4" />
-                            ✓ Ya Vista
+                            Ya Vista
                         </button>
                     </div>
                 </div>

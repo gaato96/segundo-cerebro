@@ -152,7 +152,7 @@ export function GameLibrary({
                         className="bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2"
                     >
                         <Dices className="w-4 h-4 animate-spin" style={{ animationDuration: '3s' }} />
-                        🎰 ¿Qué juego jugar hoy? ({activeGames.length})
+                        ¿Qué juego jugar hoy? ({activeGames.length})
                     </button>
                 </div>
             </div>
@@ -160,9 +160,9 @@ export function GameLibrary({
             {/* Sub-Filters */}
             <div className="flex gap-2 border-b border-border pb-3">
                 {[
-                    { id: 'Active', label: '🎮 Jugando Actualmente', count: activeGames.length },
-                    { id: 'Backlog', label: '⏳ Pendientes (Backlog)', count: gamesList.filter(g => g.status === 'Backlog').length },
-                    { id: 'Finished', label: '🏆 Completados', count: gamesList.filter(g => g.status === 'Finished').length }
+                    { id: 'Active', label: 'Jugando Actualmente', count: activeGames.length },
+                    { id: 'Backlog', label: 'Pendientes (Backlog)', count: gamesList.filter(g => g.status === 'Backlog').length },
+                    { id: 'Finished', label: 'Completados', count: gamesList.filter(g => g.status === 'Finished').length }
                 ].map(sub => (
                     <button
                         key={sub.id}
@@ -257,7 +257,7 @@ export function GameLibrary({
 
                                             <div className="flex items-center gap-2 mt-2">
                                                 <span className="text-[11px] bg-secondary px-2 py-0.5 rounded-full text-muted-foreground border border-border">
-                                                    Videojuego 🎮
+                                                    Videojuego
                                                 </span>
                                                 {isActive && (
                                                     <span className="text-[11px] bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded-full border border-indigo-500/20 font-medium">
@@ -292,7 +292,7 @@ export function GameLibrary({
                                     {/* Actions */}
                                     <div className="mt-4 pt-3 border-t border-hairline flex items-center justify-between gap-3 text-xs">
                                         <div className="text-muted-foreground font-medium">
-                                            {isFinished ? 'Completado ✓' : 'En tu lista'}
+                                            {isFinished ? 'Completado' : 'En tu lista'}
                                         </div>
 
                                         <div className="flex items-center gap-2 shrink-0">
@@ -388,9 +388,9 @@ export function GameLibrary({
                                     onChange={(e) => setGameStatus(e.target.value as any)}
                                     className="w-full bg-secondary border border-border rounded-xl px-3.5 py-2.5 text-xs outline-none"
                                 >
-                                    <option value="Active">🎮 Jugando Actualmente</option>
-                                    <option value="Backlog">⏳ En Pendientes (Backlog)</option>
-                                    <option value="Finished">🏆 Completado</option>
+                                    <option value="Active">Jugando Actualmente</option>
+                                    <option value="Backlog">En Pendientes (Backlog)</option>
+                                    <option value="Finished">Completado</option>
                                 </select>
                                 <textarea
                                     rows={2}

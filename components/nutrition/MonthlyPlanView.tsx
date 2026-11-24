@@ -178,7 +178,7 @@ export function MonthlyPlanView({ plan }: MonthlyPlanViewProps) {
                 nextApproved
             )
             if (nextApproved) {
-                showToast(`✅ Comida aprobada y sincronizada con tu Planificador de Comidas semanal!`)
+                showToast(`Comida aprobada y sincronizada con tu Planificador de Comidas semanal!`)
             } else {
                 showToast(`Comida marcada como no aprobada.`)
             }
@@ -328,7 +328,7 @@ export function MonthlyPlanView({ plan }: MonthlyPlanViewProps) {
                                     <span className="text-xs font-bold uppercase tracking-wider text-foreground/80">{mealType}</span>
                                     {activeMeal.is_cheat_meal && (
                                         <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[11px] font-bold">
-                                            🎉 Permitido
+                                            Permitido
                                         </span>
                                     )}
                                     {isApproved && (
@@ -367,9 +367,9 @@ export function MonthlyPlanView({ plan }: MonthlyPlanViewProps) {
                             <div>
                                 <h4 className="text-base font-bold text-foreground mb-2 leading-snug">{activeMeal.name}</h4>
                                 <div className="flex items-center gap-3 text-[11px] text-muted-foreground bg-secondary/40 p-2 rounded-lg border border-border/30">
-                                    <span>💪 Prot: <strong>{activeMeal.protein}g</strong></span>
-                                    <span>🌾 Carbs: <strong>{activeMeal.carbs}g</strong></span>
-                                    <span>🥑 Grasas: <strong>{activeMeal.fat}g</strong></span>
+                                    <span>Prot: <strong>{activeMeal.protein}g</strong></span>
+                                    <span>Carbs: <strong>{activeMeal.carbs}g</strong></span>
+                                    <span>Grasas: <strong>{activeMeal.fat}g</strong></span>
                                 </div>
                             </div>
 
@@ -471,10 +471,10 @@ export function MonthlyPlanView({ plan }: MonthlyPlanViewProps) {
 
                             {/* Macros summary */}
                             <div className="flex items-center justify-around bg-secondary/50 p-3 rounded-xl border border-border/40 text-xs">
-                                <span>🔥 <strong>{activeRecipe.calories || 400}</strong> kcal</span>
-                                <span>💪 <strong>{activeRecipe.protein || 30}g</strong> prot</span>
-                                <span>🌾 <strong>{activeRecipe.carbs || 40}g</strong> carbs</span>
-                                <span>🥑 <strong>{activeRecipe.fat || 12}g</strong> grasa</span>
+                                <span><strong>{activeRecipe.calories || 400}</strong> kcal</span>
+                                <span><strong>{activeRecipe.protein || 30}g</strong> prot</span>
+                                <span><strong>{activeRecipe.carbs || 40}g</strong> carbs</span>
+                                <span><strong>{activeRecipe.fat || 12}g</strong> grasa</span>
                             </div>
 
                             {/* Ingredients List */}

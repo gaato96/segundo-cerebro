@@ -117,8 +117,7 @@ function StickyNoteItem({ note, onDelete }: { note: StickyNote, onDelete: (id: s
     return (
         <div
             className={cn(
-                "relative flex flex-col p-3 rounded-lg hover:shadow-lg transition-all min-h-[140px] border",
-                color,
+                "relative flex flex-col p-4 rounded-2xl min-h-[130px] border border-hairline bg-card",
                 isDeleting && "opacity-50 pointer-events-none"
             )}
             onMouseEnter={() => setIsHovered(true)}

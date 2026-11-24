@@ -186,7 +186,7 @@ export function TrainingProfileForm({ initial, onSaved }: Props) {
                         className="w-4 h-4 accent-amber-400"
                     />
                     <span>
-                        <span className="block text-xs font-semibold text-foreground">Incluir saltar la soga 🪢</span>
+                        <span className="block text-xs font-semibold text-foreground">Incluir saltar la soga</span>
                         <span className="block text-[11px] text-muted-foreground">
                             Se agrega en la entrada en calor y como bloque de intervalos que progresa las 12 semanas.
                         </span>

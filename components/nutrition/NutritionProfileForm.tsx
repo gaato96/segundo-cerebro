@@ -128,11 +128,11 @@ export function NutritionProfileForm({ initialProfile, onSuccess }: NutritionPro
                         onChange={(e) => setActivityLevel(e.target.value as any)}
                         className="w-full bg-secondary/50 border border-border rounded-xl px-3 py-2.5 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                     >
-                        <option value="sedentary">🛋️ Sedentario (Oficina / Casi sin ejercicio)</option>
-                        <option value="light">🚶 Ligeramente activo (1-2 días/sem)</option>
-                        <option value="moderate">🏃 Moderadamente activo (3-5 días/sem)</option>
-                        <option value="active">🏋️ Muy activo (6-7 días/sem)</option>
-                        <option value="very_active">⚡ Atleta / Trabajo físico pesado</option>
+                        <option value="sedentary">Sedentario (Oficina / Casi sin ejercicio)</option>
+                        <option value="light">Ligeramente activo (1-2 días/sem)</option>
+                        <option value="moderate">Moderadamente activo (3-5 días/sem)</option>
+                        <option value="active">Muy activo (6-7 días/sem)</option>
+                        <option value="very_active">Atleta / Trabajo físico pesado</option>
                     </select>
                 </div>
 
@@ -145,9 +145,9 @@ export function NutritionProfileForm({ initialProfile, onSuccess }: NutritionPro
                         onChange={(e) => setGoal(e.target.value as any)}
                         className="w-full bg-secondary/50 border border-border rounded-xl px-3 py-2.5 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                     >
-                        <option value="lose_weight">🔥 Descenso de peso y grasa corporal</option>
-                        <option value="maintain">⚖️ Mantenimiento y salud general</option>
-                        <option value="gain_muscle">💪 Aumento de masa muscular (Hipertrofia)</option>
+                        <option value="lose_weight">Descenso de peso y grasa corporal</option>
+                        <option value="maintain">Mantenimiento y salud general</option>
+                        <option value="gain_muscle">Aumento de masa muscular (Hipertrofia)</option>
                     </select>
                 </div>
             </div>
@@ -171,7 +171,7 @@ export function NutritionProfileForm({ initialProfile, onSuccess }: NutritionPro
             <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-muted-foreground flex items-center justify-between">
                     <span>Contexto Personal, Horarios y Restricciones Específicas</span>
-                    <span className="text-[11px] text-emerald-400 font-semibold">✨ La IA lo respetará al 100%</span>
+                    <span className="text-[11px] text-emerald-400 font-semibold">La IA lo respetará al 100%</span>
                 </label>
                 <textarea
                     rows={3}

@@ -127,8 +127,8 @@ export function BudgetProjections({ projections: initialProjections, monthYear }
                     onChange={e => setType(e.target.value as any)}
                     className="bg-black/30 border border-hairline rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-400/50"
                 >
-                    <option value="expense">🔴 Gasto Proyectado</option>
-                    <option value="income">🟢 Ingreso Proyectado</option>
+                    <option value="expense">Gasto Proyectado</option>
+                    <option value="income">Ingreso Proyectado</option>
                 </select>
 
                 <input

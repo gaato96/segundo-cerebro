@@ -298,8 +298,8 @@ export function ChallengeCard({
                         }`}
                     >
                         <option value="Active">▶ En Carrera (Activo)</option>
-                        <option value="Completed">🏆 Reto Cumplido</option>
-                        <option value="Abandoned">❌ Reto Abandonado</option>
+                        <option value="Completed">Reto Cumplido</option>
+                        <option value="Abandoned">Reto Abandonado</option>
                     </select>
 
                     <button onClick={() => setIsExpanded(!isExpanded)} className="p-2 hover:bg-white/10 rounded-xl text-muted-foreground hover:text-white transition-colors">
@@ -394,12 +394,12 @@ export function ChallengeCard({
                                 <div className="flex flex-wrap items-center gap-2">
                                     <select value={newObjCategory} onChange={(e) => setNewObjCategory(e.target.value as any)}
                                         className="bg-secondary border border-border rounded-xl px-2.5 py-1.5 text-xs text-white outline-none">
-                                        <option value="trophy">🏆 Trofeo / Copa</option>
-                                        <option value="transfer">🎯 Fichajes</option>
-                                        <option value="academy">🎖 Cantera</option>
-                                        <option value="derby">🚩 Clásico</option>
-                                        <option value="league">🛡 Liga</option>
-                                        <option value="special">✨ Especial</option>
+                                        <option value="trophy">Trofeo / Copa</option>
+                                        <option value="transfer">Fichajes</option>
+                                        <option value="academy">Cantera</option>
+                                        <option value="derby">Clásico</option>
+                                        <option value="league">Liga</option>
+                                        <option value="special">Especial</option>
                                     </select>
 
                                     <div className="flex items-center gap-1.5">
@@ -436,7 +436,7 @@ export function ChallengeCard({
                                     <div className="flex items-center justify-between pb-2 border-b border-hairline">
                                         <div className={`flex items-center gap-2 text-xs font-bold uppercase tracking-wider ${SEASON_TEXT[colorIdx]}`}>
                                             <CalendarDays className="w-4 h-4" />
-                                            🗓️ Temporada {seasonNum}
+                                            Temporada {seasonNum}
                                         </div>
                                         <span className={`text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-black/40 ${SEASON_TEXT[colorIdx]}`}>
                                             {completedInSeason} / {seasonObjs.length} Completados
@@ -486,12 +486,12 @@ export function ChallengeCard({
                                                                 <div className="flex flex-wrap items-center gap-2">
                                                                     <select value={editingCategory} onChange={(e) => setEditingCategory(e.target.value as any)}
                                                                         className="bg-black/60 border border-hairline rounded-lg px-2 py-1 text-[11px] text-white">
-                                                                        <option value="trophy">🏆 Trofeo</option>
-                                                                        <option value="transfer">🎯 Fichajes</option>
-                                                                        <option value="academy">🎖 Cantera</option>
-                                                                        <option value="derby">🚩 Clásico</option>
-                                                                        <option value="league">🛡 Liga</option>
-                                                                        <option value="special">✨ Especial</option>
+                                                                        <option value="trophy">Trofeo</option>
+                                                                        <option value="transfer">Fichajes</option>
+                                                                        <option value="academy">Cantera</option>
+                                                                        <option value="derby">Clásico</option>
+                                                                        <option value="league">Liga</option>
+                                                                        <option value="special">Especial</option>
                                                                     </select>
 
                                                                     <div className="flex items-center gap-1">
@@ -535,7 +535,7 @@ export function ChallengeCard({
                                                                         </select>
 
                                                                         <span className="text-[11px] text-muted-foreground font-mono">
-                                                                            {obj.status === 'completed' ? '✓ Cumplido' : obj.status === 'failed' ? '✗ Perdido' : '⏳ Pendiente'}
+                                                                            {obj.status === 'completed' ? 'Cumplido' : obj.status === 'failed' ? 'Perdido' : 'Pendiente'}
                                                                         </span>
                                                                     </div>
 

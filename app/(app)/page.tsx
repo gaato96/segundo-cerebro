@@ -29,7 +29,8 @@ export default async function TodayPage() {
         getTodayData(),
         getReplanNudge().catch(() => null),
         getMinimalMode().catch(() => false),
-        getRoutine().catch(() => null)
+        getRoutine().catch(() => null),
+        getStickyNotes().catch(() => [])
     ])
     if (!data) redirect('/login')
 

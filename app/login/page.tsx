@@ -176,7 +176,7 @@ export default function LoginPage() {
                 </div>
 
                 <p className="text-center text-xs text-muted-foreground mt-6">
-                    🔐 Tus datos están protegidos y encriptados
+                    Tus datos están protegidos y encriptados
                 </p>
             </div>
         </div>

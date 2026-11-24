@@ -180,7 +180,7 @@ export function DailySpending({ records: initialRecords, plan, today }: Props) {
                         <Lightbulb className="w-4 h-4 text-emerald-400" /> Cómo arrancar
                     </h3>
                     <ul className="text-xs text-muted-foreground space-y-1 leading-relaxed list-disc pl-4">
-                        <li>Cada vez que pagás algo, tocá el botón verde <span className="text-emerald-300 font-semibold">🧾</span> (abajo a la derecha, en cualquier pantalla) o <kbd className="px-1 border border-white/20 rounded">Ctrl+Shift+L</kbd>.</li>
+                        <li>Cada vez que pagás algo, tocá el botón de gasto (abajo a la derecha, en cualquier pantalla) o <kbd className="px-1 border border-white/20 rounded">Ctrl+Shift+L</kbd>.</li>
                         <li>Monto + categoría alcanza. El detalle, el medio de pago y "¿era necesario?" suman para el análisis.</li>
                         <li>Si se te pasó, cargalo a la noche en el cierre del día con la fecha de "Ayer".</li>
                         <li>Con 2 semanas de registro, el análisis con IA ya te puede decir dónde recortar.</li>
@@ -515,7 +515,7 @@ export function DailySpending({ records: initialRecords, plan, today }: Props) {
                                     <p className="text-[11px] font-bold uppercase tracking-wider text-amber-300">Tope diario sugerido</p>
                                     <p className="text-xl font-bold text-white font-heading">{formatCurrency(analysis.daily_target)}</p>
                                     {target === analysis.daily_target ? (
-                                        <p className="text-[11px] text-emerald-300 font-semibold">✓ Es tu tope actual</p>
+                                        <p className="text-[11px] text-emerald-300 font-semibold">Es tu tope actual</p>
                                     ) : (
                                         <button onClick={() => saveTarget(analysis.daily_target)} className="text-[11px] text-amber-200 hover:text-white font-semibold">
                                             Usarlo como mi tope →

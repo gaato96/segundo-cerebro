@@ -134,10 +134,10 @@ export function ProgressTracker({ history = [], onAdded }: ProgressTrackerProps)
                         <label className="text-xs font-medium text-muted-foreground mb-1 block">¿Cómo te sentís?</label>
                         <div className="flex gap-2">
                             {[
-                                { val: 'great', label: '😄 Excelente' },
-                                { val: 'good', label: '🙂 Bien' },
-                                { val: 'ok', label: '😐 Normal' },
-                                { val: 'bad', label: '🙁 Cansado' }
+                                { val: 'great', label: 'Excelente' },
+                                { val: 'good', label: 'Bien' },
+                                { val: 'ok', label: 'Normal' },
+                                { val: 'bad', label: 'Cansado' }
                             ].map((item) => (
                                 <button
                                     key={item.val}

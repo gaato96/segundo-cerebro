@@ -161,11 +161,11 @@ export function EventFormModal({ isOpen, onClose, eventToEdit, defaultDate }: Ev
                                         onChange={(e: any) => setEventType(e.target.value)}
                                         className="w-full bg-black/20 border border-hairline rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                                     >
-                                        <option value="meeting">👥 Reunión</option>
-                                        <option value="event">📅 Evento</option>
-                                        <option value="appointment">🩺 Cita / Turno</option>
-                                        <option value="reminder">🔔 Recordatorio</option>
-                                        <option value="birthday">🎂 Cumpleaños</option>
+                                        <option value="meeting">Reunión</option>
+                                        <option value="event">Evento</option>
+                                        <option value="appointment">Cita / Turno</option>
+                                        <option value="reminder">Recordatorio</option>
+                                        <option value="birthday">Cumpleaños</option>
                                     </select>
                                 </div>
                                 <div>

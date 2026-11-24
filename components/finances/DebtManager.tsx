@@ -20,12 +20,12 @@ interface Props {
 }
 
 const KINDS: { value: string; label: string }[] = [
-    { value: 'tarjeta', label: '💳 Tarjeta' },
-    { value: 'prestamo', label: '🏦 Préstamo' },
-    { value: 'particular', label: '🤝 Particular' },
-    { value: 'servicio', label: '🔌 Servicio' },
-    { value: 'impuesto', label: '🏛️ Impuesto' },
-    { value: 'otro', label: '📄 Otro' }
+    { value: 'tarjeta', label: 'Tarjeta' },
+    { value: 'prestamo', label: 'Préstamo' },
+    { value: 'particular', label: 'Particular' },
+    { value: 'servicio', label: 'Servicio' },
+    { value: 'impuesto', label: 'Impuesto' },
+    { value: 'otro', label: 'Otro' }
 ]
 
 const EMPTY_FORM = {
