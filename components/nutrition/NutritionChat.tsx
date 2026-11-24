@@ -24,7 +24,8 @@ export function NutritionChat({ initialMessages = [] }: NutritionChatProps) {
     const messagesEndRef = useRef<HTMLDivElement>(null)
 
     const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+        const box = messagesEndRef.current?.parentElement
+        if (box) box.scrollTop = box.scrollHeight
     }
 
     useEffect(() => {

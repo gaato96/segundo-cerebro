@@ -49,18 +49,18 @@ export function StickyNotesWidget({ initialNotes }: StickyNotesWidgetProps) {
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold">Post-its</h3>
+                <h3 className="label-caps">Post-its</h3>
                 <button
                     onClick={handleAddNote}
                     disabled={isCreating}
-                    className="flex items-center gap-2 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-colors disabled:opacity-50"
+                    className="btn-secondary"
                 >
                     <Plus className="w-4 h-4" />
-                    Nueva Nota
+                    Post-it
                 </button>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 items-start">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-4 gap-4 items-start">
                 {notes.map(note => (
                     <StickyNoteItem
                         key={note.id}
@@ -71,8 +71,8 @@ export function StickyNotesWidget({ initialNotes }: StickyNotesWidgetProps) {
                     />
                 ))}
                 {notes.length === 0 && (
-                    <div className="col-span-full border-2 border-dashed border-border rounded-xl p-8 text-center text-muted-foreground">
-                        No tienes notas fijadas. Crea una para recordarte cosas importantes.
+                    <div className="col-span-full text-sm text-muted-foreground">
+                        Sin post-its.
                     </div>
                 )}
             </div>
@@ -127,16 +127,16 @@ function StickyNoteItem({ note, onDelete }: { note: StickyNote, onDelete: (id: s
             <textarea
                 value={content}
                 onChange={(e) => handleContentChange(e.target.value)}
-                placeholder="Escribe algo..."
+                placeholder="Escribí algo…"
                 className="flex-1 w-full bg-transparent resize-none outline-none placeholder:text-inherit placeholder:opacity-60 text-sm font-medium"
             />
 
             {/* Toolbar that appears on hover */}
             <div className={cn(
                 "absolute bottom-2 right-2 flex items-center gap-1 transition-opacity duration-200",
-                isHovered ? "opacity-100" : "opacity-0"
+                isHovered ? "opacity-100" : "md:opacity-0"
             )}>
-                <div className="relative group/color">
+                <div className="hidden">
                     <button className="p-1.5 rounded-full bg-black/10 hover:bg-black/20 text-black/60 hover:text-black">
                         <Palette className="w-4 h-4" />
                     </button>
@@ -153,7 +153,7 @@ function StickyNoteItem({ note, onDelete }: { note: StickyNote, onDelete: (id: s
                 </div>
                 <button
                     onClick={handleDelete}
-                    className="p-1.5 rounded-full bg-black/10 hover:bg-black/20 text-black/60 hover:text-red-600"
+                    className="p-1.5 rounded-full hover:bg-raised text-muted-foreground hover:text-foreground"
                 >
                     <Trash2 className="w-4 h-4" />
                 </button>

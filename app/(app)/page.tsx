@@ -5,6 +5,8 @@ import { getReplanNudge } from '@/lib/actions/quarterly'
 import { getMinimalMode } from '@/lib/actions/profile'
 import { ReplanNudge } from '@/components/dashboard/ReplanNudge'
 import { IdealRoutineWidget } from '@/components/dashboard/IdealRoutineWidget'
+import { StickyNotesWidget } from '@/components/dashboard/StickyNotesWidget'
+import { getStickyNotes } from '@/lib/actions/sticky_notes'
 import { TodayView } from '@/components/today/TodayView'
 import { PageShell } from '@/components/ui/kit'
 
@@ -23,7 +25,7 @@ async function getRoutine() {
  * silencio. El indicador de arriba dice en qué parte del ciclo estás.
  */
 export default async function TodayPage() {
-    const [data, replanNudge, minimal, routine] = await Promise.all([
+    const [data, replanNudge, minimal, routine, notes] = await Promise.all([
         getTodayData(),
         getReplanNudge().catch(() => null),
         getMinimalMode().catch(() => false),
@@ -36,6 +38,7 @@ export default async function TodayPage() {
             {replanNudge && <div className="mb-6"><ReplanNudge nudge={replanNudge} /></div>}
             <TodayView data={data} minimal={minimal} />
             {!minimal && <div className="mt-8"><IdealRoutineWidget routine={routine} /></div>}
+            {!minimal && <div className="mt-8"><StickyNotesWidget initialNotes={notes || []} /></div>}
         </PageShell>
     )
 }

@@ -51,7 +51,7 @@ export function FinanceSummary({ transactions, envelopes, debts, forecast, today
                         <div className="flex justify-between text-xs text-muted-foreground"><span>Consumido <span className="font-mono text-foreground">{income > 0 ? `${Math.round(usedPct)}%` : 'sin ingresos cargados'}</span></span><span>Mes <span className="font-mono text-foreground">{Math.round(timePct)}%</span></span></div>
                         <Bar pct={usedPct} tone={usedPct > 100 ? 'bad' : usedPct > timePct + 10 ? 'amber' : 'good'} /><Bar pct={timePct} />
                     </div>
-                    {forecast && <p className="text-sm text-muted-foreground mt-4">{forecast.headline} <span className="font-mono text-foreground">{formatCurrency(forecast.projectedEndBalance)}</span> proyectado al cierre.</p>}
+                    {forecast && <p className="text-sm text-muted-foreground mt-4">{forecast.headline}</p>}
                 </div>
                 <dl className="lg:col-span-4 p-5 md:p-6 border-t lg:border-t-0 border-hairline text-sm">
                     <p className="label-caps mb-2">Flujo del mes</p>

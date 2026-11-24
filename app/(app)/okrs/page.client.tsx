@@ -10,6 +10,7 @@ import { ObjectiveSuggester } from '@/components/okrs/ObjectiveSuggester'
 import { objectiveProgress, krRatio } from '@/lib/keyResults'
 import { PageShell, PageHeader, Panel, SectionLabel, EmptyState, Check } from '@/components/ui/kit'
 import { Modal, Field, Segmented, Bar } from '@/components/ui/controls'
+import { quarterInfo } from '@/lib/quarter'
 import { cn } from '@/lib/utils'
 
 type Timeframe = 'Year' | 'Q1' | 'Q2' | 'Q3' | 'Q4'
@@ -37,7 +38,7 @@ export function OKRsClient({ objectives: initialObjectives, linkedTasks, dreams:
     const now = new Date()
     const qStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1)
     const week = Math.min(13, Math.floor((now.getTime() - qStart.getTime()) / 604800000) + 1)
-    const timePct = Math.round((week / 13) * 100)
+    const timePct = quarterInfo(now.getFullYear(), quarterOf()).elapsedPct
     const avg = active.length ? Math.round(active.reduce((a, o) => a + (o.progress_pct || 0), 0) / active.length) : 0
 
     /** Mover un resultado clave recalcula solo el avance del objetivo. */
