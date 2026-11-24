@@ -1,13 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { NAV_GROUPS, MOBILE_PRIMARY, ALL_HREFS, isNavActive } from '@/lib/navigation'
-import { getInboxCount } from '@/lib/actions/capture'
+import { useInboxCount } from '@/lib/useInboxCount'
+import { NavLink as FastLink } from '@/components/layout/NavLink'
 
 /**
  * Barra del celular: Hoy · Plan · [Capturar] · Tareas · Copiloto.
@@ -17,7 +17,7 @@ import { getInboxCount } from '@/lib/actions/capture'
 export function BottomBar() {
     const pathname = usePathname()
     const [open, setOpen] = useState(false)
-    const [inbox, setInbox] = useState(0)
+    const inbox = useInboxCount()
 
     useEffect(() => { setOpen(false) }, [pathname])
     useEffect(() => {
@@ -25,14 +25,6 @@ export function BottomBar() {
         window.addEventListener('sc:more', onMore)
         return () => window.removeEventListener('sc:more', onMore)
     }, [])
-    useEffect(() => {
-        let alive = true
-        const load = () => getInboxCount().then(n => alive && setInbox(n)).catch(() => { })
-        load()
-        window.addEventListener('sc:captured', load)
-        return () => { alive = false; window.removeEventListener('sc:captured', load) }
-    }, [pathname])
-
     const allItems = NAV_GROUPS.flatMap(g => g.items)
     const primary = MOBILE_PRIMARY.map(href => allItems.find(i => i.href === href)!).filter(Boolean)
     const left = primary.slice(0, 2)
@@ -41,13 +33,13 @@ export function BottomBar() {
     const NavLink = ({ item }: { item: typeof primary[number] }) => {
         const active = isNavActive(pathname, item.href, ALL_HREFS)
         return (
-            <Link href={item.href} className="flex flex-col items-center justify-center gap-1 h-14">
+            <FastLink href={item.href} className="flex flex-col items-center justify-center gap-1 h-14">
                 <item.icon className={cn('w-5 h-5', active ? 'text-amber-400' : 'text-muted-foreground')} />
                 <span className={cn('text-[10px] font-medium', active ? 'text-amber-400' : 'text-muted-foreground')}>
                     {item.short || item.label}
                 </span>
                 <span className={cn('w-1 h-1 rounded-full', active ? 'bg-amber-400' : 'bg-transparent')} />
-            </Link>
+            </FastLink>
         )
     }
 
@@ -86,7 +78,7 @@ export function BottomBar() {
                                             const active = isNavActive(pathname, item.href, ALL_HREFS)
                                             const badge = item.href === '/inbox' && inbox > 0 ? inbox : null
                                             return (
-                                                <Link
+                                                <FastLink
                                                     key={item.href}
                                                     href={item.href}
                                                     className={cn(
@@ -99,7 +91,7 @@ export function BottomBar() {
                                                     {badge && (
                                                         <span className="absolute top-2 right-2 font-mono text-[10px] px-1.5 rounded-md lamp text-amber-300">{badge}</span>
                                                     )}
-                                                </Link>
+                                                </FastLink>
                                             )
                                         })}
                                     </div>

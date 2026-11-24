@@ -1,13 +1,13 @@
 'use client'
 
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { LogOut, PanelLeftClose, PanelLeftOpen, Lamp } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { NAV_GROUPS, ALL_HREFS, isNavActive } from '@/lib/navigation'
-import { getInboxCount } from '@/lib/actions/capture'
+import { useInboxCount } from '@/lib/useInboxCount'
+import { NavLink } from '@/components/layout/NavLink'
 
 /**
  * Riel izquierdo de 240px (design system): grupos con etiqueta chica en
@@ -16,19 +16,11 @@ import { getInboxCount } from '@/lib/actions/capture'
 export function Sidebar() {
     const pathname = usePathname()
     const [collapsed, setCollapsed] = useState(false)
-    const [inbox, setInbox] = useState(0)
+    const inbox = useInboxCount()
 
     useEffect(() => {
         try { setCollapsed(localStorage.getItem('sc-sidebar') === 'collapsed') } catch { }
     }, [])
-
-    useEffect(() => {
-        let alive = true
-        getInboxCount().then(n => { if (alive) setInbox(n) }).catch(() => { })
-        const onCapture = () => getInboxCount().then(n => alive && setInbox(n)).catch(() => { })
-        window.addEventListener('sc:captured', onCapture)
-        return () => { alive = false; window.removeEventListener('sc:captured', onCapture) }
-    }, [pathname])
 
     function toggle() {
         setCollapsed(v => {
@@ -70,7 +62,7 @@ export function Sidebar() {
                                 const active = isNavActive(pathname, item.href, ALL_HREFS)
                                 const badge = item.href === '/inbox' && inbox > 0 ? inbox : null
                                 return (
-                                    <Link
+                                    <NavLink
                                         key={item.href}
                                         href={item.href}
                                         title={collapsed ? item.label : undefined}
@@ -89,7 +81,7 @@ export function Sidebar() {
                                             <span className="font-mono text-[10px] px-1.5 rounded-md bg-raised border border-hairline text-muted-foreground">{badge}</span>
                                         )}
                                         {badge && collapsed && <span className="absolute top-1.5 right-3 w-1.5 h-1.5 rounded-full bg-amber-400" />}
-                                    </Link>
+                                    </NavLink>
                                 )
                             })}
                         </div>

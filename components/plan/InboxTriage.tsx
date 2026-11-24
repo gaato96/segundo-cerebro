@@ -120,7 +120,7 @@ export function InboxTriage({ notes: initialNotes, dateStr, onChanged }: Props) 
         setPendingSaves(c => c + 1)
 
         applyInboxSuggestion(payload)
-            .then(() => onChanged?.())
+            .then(() => { window.dispatchEvent(new CustomEvent('sc:captured')); onChanged?.() })
             .catch((e: any) => {
                 setNotes(prev => [note, ...prev])
                 setHandled(prev => {

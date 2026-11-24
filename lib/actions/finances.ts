@@ -15,7 +15,7 @@ export async function getFinances(monthYear: string) {
     if (!user) throw new Error('Unauthorized')
 
     // Get transactions for the month
-    const { data: transactions, error: txError } = await supabase
+    const txQuery = supabase
         .from('finances')
         .select(`
       *,
@@ -25,29 +25,34 @@ export async function getFinances(monthYear: string) {
         .eq('month_year', monthYear)
         .order('created_at', { ascending: false })
 
-    if (txError) throw txError
-
     // Get all active debts
-    const { data: debts, error: debtsError } = await supabase
+    const debtsQuery = supabase
         .from('debts')
         .select('*')
         .eq('user_id', user.id)
         .gt('remaining_amount', 0)
         .order('remaining_amount', { ascending: true })
 
-    const { data: budget, error: budgetError } = await supabase
+    const budgetQuery = supabase
         .from('monthly_budgets')
         .select('*')
         .eq('user_id', user.id)
         .eq('month_year', monthYear)
         .maybeSingle()
 
-    const { data: goals, error: goalsError } = await supabase
+    const goalsQuery = supabase
         .from('financial_goals')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: true })
 
+    // Las cuatro a la vez: antes eran cuatro viajes seguidos a la base.
+    const [
+        { data: transactions, error: txError }, { data: debts, error: debtsError },
+        { data: budget, error: budgetError }, { data: goals, error: goalsError }
+    ] = await Promise.all([txQuery, debtsQuery, budgetQuery, goalsQuery])
+
+    if (txError) throw txError
     if (debtsError) throw debtsError
     if (budgetError && budgetError.code !== 'PGRST116') throw budgetError
     if (goalsError) throw goalsError

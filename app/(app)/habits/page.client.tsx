@@ -1,5 +1,6 @@
 'use client'
 
+import { toggleHabitToday } from '@/lib/actions/today'
 import { HabitMatrix } from '@/components/habits/HabitMatrix'
 import { PageShell, PageHeader } from '@/components/ui/kit'
 import { useState } from 'react'
@@ -13,8 +14,6 @@ import {
     suggestHabits, createHabitFromSuggestion, type HabitSuggestion
 } from '@/lib/actions/habits'
 import { isHabitScheduledForDate, getLocalDateStr, getWeekStartStr, addDaysToDateStr } from '@/lib/utils'
-import { createClient } from '@/lib/supabase/client'
-import confetti from 'canvas-confetti'
 
 interface HabitsClientProps {
     initialHabits: HabitItem[]
@@ -72,12 +71,11 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
     const [suggestError, setSuggestError] = useState('')
     const [addingIdx, setAddingIdx] = useState<number | null>(null)
 
-    const supabase = createClient()
     const todayStr = getLocalDateStr()
 
     // Completed today helper
     const completedTodayIds = new Set(
-        logs.filter(l => l.completed_at.startsWith(todayStr)).map(l => l.habit_id)
+        logs.filter(l => getLocalDateStr(new Date(l.completed_at)) === todayStr).map(l => l.habit_id)
     )
 
     // Los hábitos "X veces por semana" no se miden por día sino por cupo:
@@ -87,7 +85,7 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
 
     function weeklyCount(habitId: string) {
         return logs.filter(l => {
-            const d = l.completed_at.slice(0, 10)
+            const d = getLocalDateStr(new Date(l.completed_at))
             return l.habit_id === habitId && d >= weekStart && d <= weekEnd
         }).length
     }
@@ -120,15 +118,14 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
 
     async function handleToggleHabit(habitId: string) {
         const isDone = completedTodayIds.has(habitId)
-
-        if (isDone) {
-            setLogs(prev => prev.filter(l => !(l.habit_id === habitId && l.completed_at.startsWith(todayStr))))
-            await supabase.from('habit_logs').delete().eq('habit_id', habitId).gte('completed_at', `${todayStr}T00:00:00-03:00`)
-        } else {
-            const newLog = { id: Date.now().toString(), habit_id: habitId, user_id: '', completed_at: new Date().toISOString() }
-            setLogs(prev => [...prev, newLog])
-            confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } })
-            await supabase.from('habit_logs').insert({ habit_id: habitId })
+        const before = logs
+        setLogs(prev => isDone
+            ? prev.filter(l => !(l.habit_id === habitId && getLocalDateStr(new Date(l.completed_at)) === todayStr))
+            : [...prev, { id: `tmp-${habitId}`, habit_id: habitId, user_id: '', completed_at: new Date().toISOString() }])
+        const res = await toggleHabitToday(habitId, !isDone)
+        if (res.error) {
+            setLogs(before)
+            alert(`No se pudo guardar: ${res.error}`)
         }
     }
 

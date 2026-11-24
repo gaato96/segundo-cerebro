@@ -88,23 +88,24 @@ export async function saveRitualDraft(dateStr: string, dailyObjective: string, a
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: 'No autorizado' }
 
-    const { data, error } = await supabase
+    const fields = { daily_objective: dailyObjective, affirmation: affirmation || null, mit_task_ids: mitTaskIds }
+    const { data: updated, error } = await supabase
         .from('morning_ritual_logs')
-        .upsert({
-            user_id: user.id,
-            date: dateStr,
-            daily_objective: dailyObjective,
-            affirmation: affirmation || null,
-            mit_task_ids: mitTaskIds
-        }, { onConflict: 'user_id,date' })
-        .select()
-        .single()
+        .update(fields)
+        .eq('user_id', user.id)
+        .eq('date', dateStr)
+        .select('id')
 
     if (error) return { error: error.message }
-
-    revalidatePath('/ritual')
-    revalidatePath('/')
-    return { success: true, log: data }
+    if (!updated?.length) {
+        // completed_at tiene DEFAULT now(): sin el null explícito, un borrador
+        // quedaba guardado como si el día ya estuviera planificado.
+        const { error: insError } = await supabase
+            .from('morning_ritual_logs')
+            .insert({ user_id: user.id, date: dateStr, ...fields, completed_at: null })
+        if (insError) return { error: insError.message }
+    }
+    return { success: true }
 }
 
 export async function saveRitualConfig(sectionsOrder: string[], promptText: string, showAffirmation: boolean) {
@@ -319,7 +320,8 @@ export async function carryOverToTomorrow(dateStr: string, tomorrowFocus?: strin
             user_id: user.id,
             date: tomorrow,
             daily_objective: focus,
-            mit_task_ids: mergedIds
+            mit_task_ids: mergedIds,
+            completed_at: existing?.completed_at ?? null
         }, { onConflict: 'user_id,date' })
 
     if (upError) return { error: upError.message }

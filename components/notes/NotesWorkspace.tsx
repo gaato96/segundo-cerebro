@@ -35,6 +35,7 @@ export function NotesWorkspace({ initialNotes, initialId, startNew }: { initialN
     const [mobileEditor, setMobileEditor] = useState(!!initialId)
     const [error, setError] = useState('')
     const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const pending = useRef<{ id: string; patch: Partial<NoteItem> } | null>(null)
     const textRef = useRef<HTMLTextAreaElement>(null)
     const createdOnce = useRef(false)
 
@@ -80,12 +81,21 @@ export function NotesWorkspace({ initialNotes, initialId, startNew }: { initialN
         const id = active.id
         setNotes(prev => prev.map(n => (n.id === id ? { ...n, ...patch, updated_at: new Date().toISOString() } : n)))
         setSaving('saving')
+        // Si cambió la nota activa, lo pendiente de la anterior se guarda ya.
+        if (pending.current && pending.current.id !== id) flush()
+        pending.current = { id, patch: { ...(pending.current?.patch || {}), ...patch } }
         if (saveTimer.current) clearTimeout(saveTimer.current)
-        saveTimer.current = setTimeout(async () => {
-            const res = await updateNote(id, patch)
-            setSaving(res.ok ? 'saved' : 'idle')
-            if (!res.ok) setError(res.error)
-        }, 700)
+        saveTimer.current = setTimeout(flush, 700)
+    }
+
+    async function flush() {
+        const p = pending.current
+        if (!p) return
+        pending.current = null
+        if (saveTimer.current) clearTimeout(saveTimer.current)
+        const res = await updateNote(p.id, p.patch)
+        setSaving(res.ok ? 'saved' : 'idle')
+        if (!res.ok) setError(res.error)
     }
 
     async function remove() {

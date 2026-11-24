@@ -91,6 +91,7 @@ export async function updateNote(id: string, patch: Partial<Pick<NoteItem, 'titl
         if (patch.tags) clean.tags = patch.tags.map(t => t.trim().replace(/^#/, '').toLowerCase()).filter(Boolean).slice(0, 12)
         const { error } = await supabase.from('notes').update(clean).eq('id', id).eq('user_id', user.id)
         if (error) throw error
+        revalidatePath('/notas')
         return { updated_at }
     })
 }

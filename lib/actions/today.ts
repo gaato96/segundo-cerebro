@@ -135,5 +135,6 @@ export async function toggleHabitToday(habitId: string, done: boolean) {
         if (error) return { error: error.message }
     }
     revalidatePath('/habits')
+    revalidatePath('/')
     return { success: true }
 }

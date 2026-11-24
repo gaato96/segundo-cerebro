@@ -23,6 +23,12 @@ const withPWA = require('next-pwa')({
 
 const nextConfig = {
     turbopack: {},
+    experimental: {
+        // Volver a una sección vista hace poco es instantáneo: el navegador la
+        // guarda 2 minutos. Cualquier cambio guardado (revalidatePath o
+        // router.refresh) vacía esa copia, así que no se ven datos viejos.
+        staleTimes: { dynamic: 120, static: 300 },
+    },
     images: {
         remotePatterns: [
             {
