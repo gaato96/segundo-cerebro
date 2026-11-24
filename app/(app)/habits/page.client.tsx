@@ -358,12 +358,12 @@ export function HabitsClient({ initialHabits, initialLogs, monthlyStats }: Habit
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="label-caps">Todos tus hábitos</h2>
                 <div className="flex gap-2">
-                    <select aria-label="Ordenar" value={sortBy} onChange={(e: any) => setSortBy(e.target.value)} className="field text-xs">
+                    <select aria-label="Ordenar" value={sortBy} onChange={(e: any) => setSortBy(e.target.value)} className="field !w-auto text-xs">
                         <option value="tod">Por momento del día</option>
                         <option value="time_asc">Los más cortos primero</option>
                         <option value="time_desc">Los más largos primero</option>
                     </select>
-                    <button onClick={() => setShowOnlyToday(!showOnlyToday)} aria-pressed={showOnlyToday} className="btn-secondary"><Calendar className="w-4 h-4" /> {showOnlyToday ? 'Ver todos' : 'Solo hoy'}</button>
+                    <button onClick={() => setShowOnlyToday(!showOnlyToday)} aria-pressed={showOnlyToday} className="btn-secondary whitespace-nowrap"><Calendar className="w-4 h-4" /> {showOnlyToday ? 'Ver todos' : 'Solo hoy'}</button>
                 </div>
             </div>
 
