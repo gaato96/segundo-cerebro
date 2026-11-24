@@ -93,9 +93,16 @@ export function NotesWorkspace({ initialNotes, initialId, startNew }: { initialN
         if (!p) return
         pending.current = null
         if (saveTimer.current) clearTimeout(saveTimer.current)
-        const res = await updateNote(p.id, p.patch)
+        const res = await updateNote(p.id, p.patch).catch(() => ({ ok: false as const, error: 'No se pudo guardar. Reintento en unos segundos; si sigue, copiá el texto y recargá la página.' }))
         setSaving(res.ok ? 'saved' : 'idle')
-        if (!res.ok) setError(res.error)
+        if (res.ok) return setError('')
+        setError(res.error)
+        // Nada se pierde: lo no guardado vuelve a la cola y se reintenta.
+        const newer = pending.current as { id: string; patch: Partial<NoteItem> } | null
+        if (!newer || newer.id === p.id) {
+            pending.current = { id: p.id, patch: { ...p.patch, ...(newer?.patch || {}) } }
+            saveTimer.current = setTimeout(flush, 5000)
+        }
     }
 
     async function remove() {

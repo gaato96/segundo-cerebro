@@ -192,54 +192,16 @@ export function FootballHub() {
 
     return (
         <div className="space-y-6">
-            {/* Football Banner & Controls */}
-            <div className="glass p-6 rounded-2xl border border-hairline flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="space-y-2">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold uppercase tracking-wider">
-                        <Trophy className="w-3.5 h-3.5" /> Modo Carrera FM24 & EA Sports FC 26
-                    </div>
-                    <h2 className="text-2xl font-heading font-semibold text-white flex items-center gap-2">
-                        Retos de Fútbol & Selección de Clubes
-                    </h2>
-                    <p className="text-xs text-muted-foreground max-w-xl leading-relaxed">
-                        Sortea equipos de +13 ligas (incluyendo 2ª división de España, Inglaterra e Italia), genera retos de modo carrera con objetivos realistas impulsados por IA, o elegí plantillas de la comunidad (FMSite).
-                    </p>
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div>
+                    <h2 className="text-xl font-semibold">Retos de modo carrera</h2>
+                    <p className="text-sm text-muted-foreground mt-1">Sorteá un equipo o armá un reto con objetivos para FM24 y EA FC 26.</p>
                 </div>
-
-                <div className="flex flex-wrap gap-2.5 shrink-0">
-                    <button
-                        onClick={() => setIsRouletteOpen(true)}
-                        className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2"
-                    >
-                        <Dices className="w-4 h-4 animate-spin" style={{ animationDuration: '4s' }} />
-                        Ruleta de Equipos
-                    </button>
-
-                    <button
-                        onClick={handleCreateFerguson}
-                        disabled={creatingFerguson}
-                        className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2"
-                        title="Plantilla oficial FMSite: Reto Sir Alex Ferguson"
-                    >
-                        <Trophy className="w-4 h-4 text-amber-400" />
-                        {creatingFerguson ? 'Creando...' : 'Reto Sir Alex Ferguson'}
-                    </button>
-
-                    <button
-                        onClick={() => setIsCreateModalOpen(true)}
-                        className="bg-secondary hover:bg-secondary/80 text-foreground px-4 py-2.5 rounded-2xl text-xs font-bold transition-all border border-border/60 flex items-center justify-center gap-2"
-                    >
-                        <Sparkles className="w-4 h-4 text-emerald-400" />
-                        Nuevo Reto IA / Manual
-                    </button>
-
-                    <button
-                        onClick={() => setIsCustomTeamModalOpen(true)}
-                        className="bg-white/5 hover:bg-white/10 text-white px-3 py-2.5 rounded-2xl text-xs font-semibold border border-hairline transition-all flex items-center justify-center gap-1.5"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Agregar Equipo Custom
-                    </button>
+                <div className="flex flex-wrap gap-2">
+                    <button onClick={() => setIsRouletteOpen(true)} className="btn-secondary"><Dices className="w-4 h-4" /> Sortear equipo</button>
+                    <button onClick={handleCreateFerguson} disabled={creatingFerguson} className="btn-secondary" title="Plantilla de FMSite"><Trophy className="w-4 h-4" /> {creatingFerguson ? 'Creando…' : 'Reto Ferguson'}</button>
+                    <button onClick={() => setIsCreateModalOpen(true)} className="btn-secondary"><Sparkles className="w-4 h-4" /> Reto nuevo</button>
+                    <button onClick={() => setIsCustomTeamModalOpen(true)} className="btn-secondary"><Plus className="w-4 h-4" /> Equipo propio</button>
                 </div>
             </div>
 
@@ -300,16 +262,16 @@ export function FootballHub() {
                     <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center text-emerald-400">
                         <Trophy className="w-8 h-8" />
                     </div>
-                    <h3 className="text-lg font-semibold text-white">No tienes retos guardados</h3>
+                    <h3 className="text-lg font-semibold text-white">No tenés retos guardados</h3>
                     <p className="text-xs text-muted-foreground max-w-sm">
-                        ¡Usa la ruleta de equipos o genera un reto con IA para empezar tu carrera en FM24 o EAFC 26!
+                        Sorteá un equipo o armá un reto para empezar tu carrera.
                     </p>
                     <div className="flex gap-2 pt-2">
                         <button
                             onClick={() => setIsRouletteOpen(true)}
                             className="bg-raised border border-hairline hover:border-[hsl(var(--hairline-strong))] text-white px-4 py-2 rounded-xl text-xs font-bold transition-all"
                         >
-                            Girar Ruleta
+                            Sortear equipo
                         </button>
                         <button
                             onClick={() => setIsCreateModalOpen(true)}

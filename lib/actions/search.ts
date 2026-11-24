@@ -1,5 +1,6 @@
 'use server'
 
+import { getLocalMonthYearStr } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/server'
 import { generateText, parseJSON } from '@/lib/ai'
 import { runAction, type ActionResult } from '@/lib/actionResult'
@@ -179,6 +180,19 @@ export async function askBrain(question: string): Promise<ActionResult<BrainAnsw
         for (const t of tasks.data || []) add({ id: t.id, type: 'task', title: t.title, subtitle: t.status === 'Done' ? 'hecha' : 'pendiente', url: '/tasks' }, t.description || '')
         for (const c of captures.data || []) add({ id: c.id, type: 'note', title: String(c.content).slice(0, 80), subtitle: String(c.created_at).slice(0, 10), url: '/inbox' }, c.content || '')
         for (const o of objectives.data || []) add({ id: o.id, type: 'objective', title: o.title, subtitle: `${o.progress_pct || 0}%`, url: '/okrs' }, o.description || '')
+
+        // Las preguntas de plata se responden con los números del mes, no con texto suelto.
+        if (/gast|plata|dinero|ingres|deud|deb[oe]|sobr[aó]|ahorr/i.test(q)) {
+            const monthYear = getLocalMonthYearStr()
+            const { data: fin } = await supabase.from('finances').select('type, amount, category').eq('user_id', uid).eq('month_year', monthYear)
+            if (fin?.length) {
+                const sum = (ok: (t: string) => boolean) => fin.filter(f => ok(f.type)).reduce((a, f) => a + Number(f.amount || 0), 0)
+                const cats: Record<string, number> = {}
+                for (const f of fin) if (f.type === 'Variable' || f.type === 'Fixed') cats[f.category || 'Otros'] = (cats[f.category || 'Otros'] || 0) + Number(f.amount || 0)
+                add({ id: 'finanzas', type: 'task', title: `Finanzas de ${monthYear}`, url: '/finances' },
+                    `Ingresos del mes: ${sum(t => t === 'Income')}. Gastos del mes: ${sum(t => t === 'Variable' || t === 'Fixed')}. Por categoría: ${Object.entries(cats).map(([c, v]) => `${c} ${v}`).join(', ')}.`)
+            }
+        }
 
         if (!sources.length) {
             return { answer: 'No encontré nada guardado sobre eso en tus notas, journal, ideas, tareas ni capturas.', sources: [] }
