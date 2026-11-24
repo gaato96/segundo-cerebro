@@ -1,468 +1,239 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Target, Sparkles, Plus, Trash2, ChevronDown } from 'lucide-react'
 import { NextStepPrompt } from '@/components/okrs/NextStepPrompt'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Target, Sparkles, Plus, CheckCircle2, Circle, Clock, Flame, Calendar, Trash2, Edit2, X, ChevronRight, CheckSquare, Trophy } from 'lucide-react'
 import { ObjectiveItem, KeyResult, createObjective, updateObjectiveProgress, deleteObjective, updateKeyResults } from '@/lib/actions/okrs'
 import { DreamItem, createDream, deleteDream } from '@/lib/actions/dreams'
 import { ObjectiveSuggester } from '@/components/okrs/ObjectiveSuggester'
 import { objectiveProgress, krRatio } from '@/lib/keyResults'
+import { PageShell, PageHeader, Panel, SectionLabel, EmptyState, Check } from '@/components/ui/kit'
+import { Modal, Field, Segmented, Bar } from '@/components/ui/controls'
+import { cn } from '@/lib/utils'
 
-interface OKRsClientProps {
-    objectives: ObjectiveItem[]
-    linkedTasks: Record<string, any[]>
-    dreams: DreamItem[]
-}
+type Timeframe = 'Year' | 'Q1' | 'Q2' | 'Q3' | 'Q4'
+const quarterOf = () => Math.floor(new Date().getMonth() / 3) + 1
+const DREAM_LABEL: Record<string, string> = { Personal: 'Personal', Professional: 'Profesional', Health: 'Salud', Financial: 'Financiero', Relationships: 'Relaciones', Adventure: 'Aventura' }
 
-export function OKRsClient({ objectives: initialObjectives, linkedTasks, dreams: initialDreams }: OKRsClientProps) {
-    const [objectives, setObjectives] = useState<ObjectiveItem[]>(initialObjectives)
-    const [dreams, setDreams] = useState<DreamItem[]>(initialDreams)
-    const [selectedTab, setSelectedTab] = useState<'All' | 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'Year'>('All')
-    const [isObjModalOpen, setIsObjModalOpen] = useState(false)
-    const [isDreamModalOpen, setIsDreamModalOpen] = useState(false)
+export function OKRsClient({ objectives: initialObjectives, linkedTasks, dreams: initialDreams }: {
+    objectives: ObjectiveItem[]; linkedTasks: Record<string, any[]>; dreams: DreamItem[]
+}) {
+    const router = useRouter()
+    const [objectives, setObjectives] = useState(initialObjectives)
+    const [dreams, setDreams] = useState(initialDreams)
+    const [tab, setTab] = useState<'All' | Timeframe>('All')
+    const [openId, setOpenId] = useState<string | null>(initialObjectives.find(o => o.status === 'Active')?.id || null)
+    const [objModal, setObjModal] = useState(false)
+    const [dreamModal, setDreamModal] = useState(false)
+    const [obj, setObj] = useState({ title: '', description: '', timeframe: `Q${quarterOf()}` as Timeframe, type: 'Personal', dream_id: '' })
+    const [dream, setDream] = useState({ title: '', description: '', category: 'Personal' })
 
-    // Form states for Objective
-    const [objTitle, setObjTitle] = useState('')
-    const [objDesc, setObjDesc] = useState('')
-    const [objTimeframe, setObjTimeframe] = useState<'Year' | 'Q1' | 'Q2' | 'Q3' | 'Q4'>('Q1')
-    const [objType, setObjType] = useState<'Personal' | 'Professional'>('Personal')
-    const [objDreamId, setObjDreamId] = useState<string>('')
+    useEffect(() => { setObjectives(initialObjectives); setDreams(initialDreams) }, [initialObjectives, initialDreams])
 
-    // Form states for Dream
-    const [dreamTitle, setDreamTitle] = useState('')
-    const [dreamDesc, setDreamDesc] = useState('')
-    const [dreamCategory, setDreamCategory] = useState<'Personal' | 'Professional' | 'Health' | 'Financial' | 'Relationships' | 'Adventure'>('Personal')
+    const list = tab === 'All' ? objectives : objectives.filter(o => o.timeframe === tab)
+    const active = objectives.filter(o => o.status === 'Active')
+    const orphan = active.filter(o => !(linkedTasks[o.id] || []).some(t => t.status !== 'Done'))
+    const now = new Date()
+    const qStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1)
+    const week = Math.min(13, Math.floor((now.getTime() - qStart.getTime()) / 604800000) + 1)
+    const timePct = Math.round((week / 13) * 100)
+    const avg = active.length ? Math.round(active.reduce((a, o) => a + (o.progress_pct || 0), 0) / active.length) : 0
 
-    // Filtered objectives
-    const filteredObjectives = selectedTab === 'All'
-        ? objectives
-        : objectives.filter(o => o.timeframe === selectedTab)
-
-    const completedCount = objectives.filter(o => o.status === 'Completed').length
-    const overallProgress = objectives.length > 0
-        ? Math.round(objectives.reduce((acc, o) => acc + (o.progress_pct || 0), 0) / objectives.length)
-        : 0
-
-    /**
-     * Mover un resultado clave recalcula el progreso del objetivo solo: el
-     * progreso deja de ser un slider que movés a ojo y pasa a salir de números.
-     */
-    async function handleKeyResultChange(obj: ObjectiveItem, index: number, current: number) {
-        const krs = [...(obj.key_results || [])]
+    /** Mover un resultado clave recalcula solo el avance del objetivo. */
+    async function changeKR(o: ObjectiveItem, index: number, current: number) {
+        const krs = [...(o.key_results || [])]
         if (!krs[index]) return
-        const prevKr = krs[index]
-        krs[index] = { ...prevKr, start: prevKr.start ?? prevKr.current, current }
-
-        const progress = objectiveProgress(krs, obj.progress_pct)
-
-        setObjectives(prev => prev.map(o =>
-            o.id === obj.id
-                ? { ...o, key_results: krs, progress_pct: progress, status: progress >= 100 ? 'Completed' : o.status }
-                : o
-        ))
-        await updateKeyResults(obj.id, krs)
+        krs[index] = { ...krs[index], start: krs[index].start ?? krs[index].current, current }
+        const progress = objectiveProgress(krs, o.progress_pct)
+        setObjectives(prev => prev.map(x => x.id === o.id ? { ...x, key_results: krs, progress_pct: progress, status: progress >= 100 ? 'Completed' : x.status } : x))
+        await updateKeyResults(o.id, krs)
     }
-
-    async function handleProgressChange(id: string, pct: number) {
+    async function saveProgress(id: string, pct: number) {
         setObjectives(prev => prev.map(o => o.id === id ? { ...o, progress_pct: pct, status: pct >= 100 ? 'Completed' : 'Active' } : o))
         await updateObjectiveProgress(id, pct)
     }
-
-    async function handleCreateObjective(e: React.FormEvent) {
+    async function submitObjective(e: React.FormEvent) {
         e.preventDefault()
-        if (!objTitle.trim()) return
-
-        const formData = new FormData()
-        formData.append('title', objTitle)
-        formData.append('description', objDesc)
-        formData.append('timeframe', objTimeframe)
-        formData.append('type', objType)
-        if (objDreamId) formData.append('dream_id', objDreamId)
-
-        await createObjective(formData)
-        setIsObjModalOpen(false)
-        window.location.reload()
+        const fd = new FormData()
+        Object.entries(obj).forEach(([k, v]) => { if (v) fd.append(k, v) })
+        await createObjective(fd)
+        setObjModal(false)
+        setObj(o => ({ ...o, title: '', description: '' }))
+        router.refresh()
     }
-
-    async function handleCreateDream(e: React.FormEvent) {
+    async function submitDream(e: React.FormEvent) {
         e.preventDefault()
-        if (!dreamTitle.trim()) return
-
-        const formData = new FormData()
-        formData.append('title', dreamTitle)
-        formData.append('description', dreamDesc)
-        formData.append('category', dreamCategory)
-
-        await createDream(formData)
-        setIsDreamModalOpen(false)
-        window.location.reload()
+        const fd = new FormData()
+        Object.entries(dream).forEach(([k, v]) => fd.append(k, v))
+        await createDream(fd)
+        setDreamModal(false)
+        setDream(d => ({ ...d, title: '', description: '' }))
+        router.refresh()
     }
-
-    async function handleDeleteObj(id: string) {
+    async function removeObjective(id: string) {
         if (!confirm('¿Eliminar este objetivo?')) return
         await deleteObjective(id)
         setObjectives(prev => prev.filter(o => o.id !== id))
     }
-
-    async function handleDeleteDream(id: string) {
+    async function removeDream(id: string) {
         if (!confirm('¿Eliminar este sueño?')) return
         await deleteDream(id)
         setDreams(prev => prev.filter(d => d.id !== id))
     }
 
     return (
-        <div className="px-4 md:px-8 py-6 md:py-8 max-w-6xl mx-auto space-y-8 animate-fade-in pb-24">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl md:text-[30px] font-semibold tracking-tight">
-                        Objetivos
-                    </h1>
-                    <p className="text-muted-foreground text-sm mt-0.5">
-                        Transformá grandes aspiraciones en logros concretos paso a paso.
-                    </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => setIsDreamModalOpen(true)}
-                        className="px-3.5 py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all"
-                    >
-                        <Sparkles className="w-4 h-4" /> Anotar Sueño
-                    </button>
-                    <button
-                        onClick={() => setIsObjModalOpen(true)}
-                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-lg shadow-indigo-600/20 transition-all"
-                    >
-                        <Plus className="w-4 h-4" /> Nuevo Objetivo
-                    </button>
-                </div>
+        <PageShell wide>
+            <PageHeader
+                label={`Q${quarterOf()} ${now.getFullYear()} · semana ${week} de 13`}
+                title="Objetivos"
+                subtitle="Los vectores que ordenan tus días. Si una tarea no empuja un objetivo, pensá si va."
+                actions={<>
+                    <button onClick={() => setDreamModal(true)} className="btn-secondary text-sm"><Sparkles className="w-4 h-4" /> Sueño</button>
+                    <button onClick={() => setObjModal(true)} className="btn-primary text-sm"><Plus className="w-4 h-4" /> Objetivo</button>
+                </>}
+            />
+            <div className="mb-8 -mt-2">
+                <div className="flex justify-between font-mono text-[11px] text-muted-foreground mb-1.5"><span>trimestre recorrido</span><span>{timePct}%</span></div>
+                <Bar pct={timePct} />
             </div>
 
-            {/* El estratega propone objetivos SMART y los aterriza en tareas y hábitos */}
-            <ObjectiveSuggester />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div className="lg:col-span-8 min-w-0 space-y-4">
+                    <Segmented value={tab} onChange={setTab} options={[
+                        { id: 'All', label: 'Todos', count: objectives.length }, { id: 'Q1', label: 'Q1' }, { id: 'Q2', label: 'Q2' }, { id: 'Q3', label: 'Q3' }, { id: 'Q4', label: 'Q4' }, { id: 'Year', label: 'Año' }
+                    ]} />
 
-            {/* Vision Board / Dreams Section */}
-            <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <Sparkles className="w-5 h-5 text-purple-400" />
-                        <h2 className="text-lg font-heading font-bold text-white">Mis Sueños & Aspiraciones</h2>
-                    </div>
-                    <span className="text-xs text-muted-foreground font-mono">{dreams.length} registrados</span>
-                </div>
-
-                {dreams.length === 0 ? (
-                    <div className="glass p-6 text-center rounded-3xl border border-border/50 text-xs text-muted-foreground italic">
-                        No tenés sueños registrados aún. Anotá un sueño pendiente para vincularlo a tus metas.
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {dreams.map((dream) => (
-                            <div
-                                key={dream.id}
-                                className="glass rounded-2xl p-4 border border-purple-500/20 hover:border-purple-500/40 transition-all group relative overflow-hidden flex flex-col justify-between"
-                            >
-                                <div>
-                                    <div className="flex items-start justify-between gap-2">
-                                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                                            {dream.category}
-                                        </span>
-                                        <button
-                                            onClick={() => handleDeleteDream(dream.id)}
-                                            className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-400 transition-opacity"
-                                        >
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                    </div>
-                                    <h4 className="font-heading font-bold text-base text-white mt-2 group-hover:text-purple-300 transition-colors">
-                                        {dream.title}
-                                    </h4>
-                                    {dream.description && (
-                                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                                            {dream.description}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[10px] text-muted-foreground">
-                                    <span>Objetivo: {dream.target_year || 'Largo plazo'}</span>
-                                    <span className="text-purple-300 font-semibold">{dream.status}</span>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            {/* Yearly Summary KPIs */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="glass p-5 rounded-2xl border border-indigo-500/20">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Progreso Anual General</p>
-                    <h3 className="text-2xl font-bold font-heading text-white">{overallProgress}%</h3>
-                    <div className="w-full bg-black/40 h-2 rounded-full mt-2 overflow-hidden">
-                        <div className="bg-indigo-500 h-full transition-all duration-500" style={{ width: `${overallProgress}%` }} />
-                    </div>
-                </div>
-
-                <div className="glass p-5 rounded-2xl border border-emerald-500/20">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Objetivos Cumplidos</p>
-                    <h3 className="text-2xl font-bold font-heading text-white">{completedCount} / {objectives.length}</h3>
-                    <p className="text-[10px] text-emerald-400 mt-1 font-semibold flex items-center gap-1">
-                        <Trophy className="w-3 h-3" /> Metas alcanzadas
-                    </p>
-                </div>
-
-                <div className="glass p-5 rounded-2xl border border-purple-500/20">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Sueños en Progreso</p>
-                    <h3 className="text-2xl font-bold font-heading text-white">{dreams.length}</h3>
-                    <p className="text-[10px] text-purple-400 mt-1 font-semibold flex items-center gap-1">
-                        <Sparkles className="w-3 h-3" /> Aspiraciones activas
-                    </p>
-                </div>
-            </div>
-
-            {/* Quarter Filter Tabs */}
-            <div className="glass p-2 rounded-2xl border border-border/50 flex items-center gap-2 overflow-x-auto">
-                {(['All', 'Q1', 'Q2', 'Q3', 'Q4', 'Year'] as const).map((tab) => (
-                    <button
-                        key={tab}
-                        onClick={() => setSelectedTab(tab)}
-                        className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap ${
-                            selectedTab === tab
-                                ? 'bg-indigo-600 text-white shadow-md'
-                                : 'text-muted-foreground hover:text-white hover:bg-white/5'
-                        }`}
-                    >
-                        {tab === 'All' ? 'Todos los Objetivos' : tab === 'Year' ? 'Objetivos Anuales' : `Trimestre ${tab}`}
-                    </button>
-                ))}
-            </div>
-
-            {/* Objectives List */}
-            <div className="space-y-4">
-                {filteredObjectives.length === 0 ? (
-                    <div className="glass p-8 text-center rounded-3xl border border-border/50">
-                        <Target className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                        <p className="text-sm font-medium text-white">No hay objetivos registrados para este periodo.</p>
-                    </div>
-                ) : (
-                    filteredObjectives.map((obj) => {
-                        const tasksForObj = linkedTasks[obj.id] || []
-                        const completedTasksCount = tasksForObj.filter(t => t.status === 'Done').length
-                        const linkedDream = dreams.find(d => d.id === obj.dream_id)
-
+                    {list.length === 0 ? (
+                        <EmptyState icon={Target} title="Sin objetivos en este período" hint="Creá uno o pedile propuestas a la IA en la columna de la derecha." />
+                    ) : list.map((o, n) => {
+                        const tasks = linkedTasks[o.id] || []
+                        const openTasks = tasks.filter(t => t.status !== 'Done')
+                        const isOpen = openId === o.id
+                        const linked = dreams.find(d => d.id === o.dream_id)
+                        const done = o.status === 'Completed'
                         return (
-                            <div
-                                key={obj.id}
-                                className="glass rounded-3xl p-5 border border-border/50 space-y-4 transition-all hover:bg-secondary/10"
-                            >
-                                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
-                                    <div className="space-y-1">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                                                {obj.timeframe}{obj.year && obj.timeframe !== 'Year' ? ` ${obj.year}` : ''}
-                                            </span>
-                                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-secondary text-muted-foreground border border-border">
-                                                {obj.type}
-                                            </span>
-                                            {linkedDream && (
-                                                <span className="text-[10px] font-bold text-purple-300 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
-                                                    <Sparkles className="w-2.5 h-2.5" /> Sueño: {linkedDream.title}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <h3 className="font-heading font-bold text-lg text-white">
-                                            {obj.title}
-                                        </h3>
-                                        {obj.description && (
-                                            <p className="text-xs text-muted-foreground">{obj.description}</p>
-                                        )}
-                                        <p className="font-mono text-[11px] text-muted-foreground pt-1">
-                                            Tareas vinculadas {tasksForObj.filter(t => t.status !== 'Done').length} abiertas · {completedTasksCount} hechas
-                                        </p>
+                            <section key={o.id} className={cn('rounded-2xl', isOpen && !done ? 'lamp' : 'bg-card border border-hairline')}>
+                                <button onClick={() => setOpenId(isOpen ? null : o.id)} aria-expanded={isOpen} className="w-full text-left px-5 py-4">
+                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                                        <span className="label-caps !text-[10px]">{o.type === 'Professional' ? 'Profesional' : 'Personal'}</span>
+                                        <span className="font-mono">{o.timeframe === 'Year' ? 'Anual' : o.timeframe}{o.year ? ` ${o.year}` : ''}</span>
+                                        {done ? <span className="text-emerald-300">cumplido</span> : openTasks.length === 0 && <span className="text-red-300 flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-red-400" /> sin tareas abiertas</span>}
+                                        <span className="ml-auto font-mono">{openTasks.length} abiertas · {tasks.length - openTasks.length} hechas</span>
                                     </div>
-
-                                    <div className="flex items-center gap-2 self-end sm:self-auto">
-                                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                                            obj.status === 'Completed' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                                        }`}>
-                                            {obj.status === 'Completed' ? 'Cumplido' : 'En proceso'}
-                                        </span>
-                                        <button
-                                            onClick={() => handleDeleteObj(obj.id)}
-                                            className="p-1.5 text-muted-foreground hover:text-red-400"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
+                                    <div className="flex items-center gap-4 mt-2">
+                                        <span className="font-mono text-xs text-ink-faint">{String(n + 1).padStart(2, '0')}</span>
+                                        <h2 className="flex-1 min-w-0 text-base font-semibold leading-snug">{o.title}</h2>
+                                        <span className="font-mono text-sm">{o.progress_pct || 0}%</span>
+                                        <ChevronDown className={cn('w-4 h-4 text-muted-foreground transition-transform', isOpen && 'rotate-180')} />
                                     </div>
-                                </div>
+                                    <Bar pct={o.progress_pct} tone={done ? 'good' : isOpen ? 'amber' : 'neutral'} className="mt-3" />
+                                </button>
 
-                                {obj.status === 'Active' && !tasksForObj.some(t => t.status !== 'Done') && (
-                                    <NextStepPrompt objectiveId={obj.id} />
-                                )}
+                                {isOpen && (
+                                    <div className="px-5 pb-5 space-y-5">
+                                        {o.description && <p className="text-sm text-muted-foreground max-w-[65ch]">{o.description}</p>}
+                                        {linked && <p className="text-sm text-muted-foreground">Acerca al sueño: <span className="text-foreground">{linked.title}</span></p>}
+                                        {!done && openTasks.length === 0 && <NextStepPrompt objectiveId={o.id} />}
 
-                                {/* Resultados clave: de acá sale el progreso real */}
-                                {(obj.key_results?.length ?? 0) > 0 && (
-                                    <div className="space-y-2">
-                                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
-                                            Resultados clave
-                                        </span>
-                                        {(obj.key_results || []).map((kr: KeyResult, i: number) => {
-                                            const pct = Math.round(krRatio(kr) * 100)
-                                            return (
-                                                <div key={i} className="bg-secondary/30 border border-border/50 rounded-xl p-3 space-y-1.5">
-                                                    <div className="flex items-center justify-between gap-2">
-                                                        <span className="text-xs text-white">{kr.title}</span>
-                                                        <div className="flex items-center gap-1 shrink-0">
-                                                            <input
-                                                                type="number"
-                                                                value={kr.current}
-                                                                onChange={(e) => handleKeyResultChange(obj, i, Number(e.target.value) || 0)}
-                                                                className="w-16 bg-black/30 border border-white/10 rounded-lg px-2 py-1 text-[11px] text-white font-mono text-right focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                                                            />
-                                                            <span className="text-[11px] text-muted-foreground font-mono">
-                                                                / {kr.target} {kr.unit}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="h-1.5 bg-black/40 rounded-full overflow-hidden">
-                                                        <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
-                                                    </div>
+                                        {(o.key_results?.length ?? 0) > 0 ? (
+                                            <div>
+                                                <SectionLabel>Resultados clave</SectionLabel>
+                                                <div className="rounded-xl border border-hairline divide-y divide-hairline bg-background/30">
+                                                    {(o.key_results || []).map((kr: KeyResult, i: number) => {
+                                                        const pct = Math.round(krRatio(kr) * 100)
+                                                        return (
+                                                            <div key={i} className="px-4 py-3">
+                                                                <div className="flex flex-wrap items-center gap-3">
+                                                                    <span className="flex-1 min-w-[160px] text-sm">{kr.title}</span>
+                                                                    <input type="number" aria-label={`Valor actual de ${kr.title}`} value={kr.current} onChange={e => changeKR(o, i, Number(e.target.value) || 0)} className="field !min-h-9 !w-20 !px-2 font-mono text-right" />
+                                                                    <span className="font-mono text-xs text-muted-foreground">/ {kr.target} {kr.unit}</span>
+                                                                    <span className="font-mono text-xs w-10 text-right">{pct}%</span>
+                                                                </div>
+                                                                <Bar pct={pct} tone={pct >= 100 ? 'good' : 'neutral'} className="mt-2" />
+                                                            </div>
+                                                        )
+                                                    })}
                                                 </div>
-                                            )
-                                        })}
+                                            </div>
+                                        ) : (
+                                            <div>
+                                                <SectionLabel right={`${o.progress_pct || 0}%`}>Avance</SectionLabel>
+                                                <input type="range" min={0} max={100} value={o.progress_pct || 0} aria-label="Avance del objetivo"
+                                                    onChange={e => setObjectives(p => p.map(x => x.id === o.id ? { ...x, progress_pct: Number(e.target.value) } : x))}
+                                                    onPointerUp={e => saveProgress(o.id, Number((e.target as HTMLInputElement).value))}
+                                                    onKeyUp={e => saveProgress(o.id, Number((e.target as HTMLInputElement).value))}
+                                                    className="w-full accent-amber-400" />
+                                            </div>
+                                        )}
+
+                                        {tasks.length > 0 && (
+                                            <div>
+                                                <SectionLabel>Tareas vinculadas</SectionLabel>
+                                                <div className="divide-y divide-hairline">
+                                                    {[...openTasks, ...tasks.filter(t => t.status === 'Done')].slice(0, 6).map(t => (
+                                                        <div key={t.id} className="flex items-center gap-3 min-h-[40px] text-sm">
+                                                            <Check done={t.status === 'Done'} /><span className={cn('truncate', t.status === 'Done' && 'line-through text-muted-foreground')}>{t.title}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        <button onClick={() => removeObjective(o.id)} className="text-xs text-muted-foreground hover:text-red-300 inline-flex items-center gap-1.5 min-h-[36px]"><Trash2 className="w-3.5 h-3.5" /> Eliminar objetivo</button>
                                     </div>
                                 )}
-
-                                {/* Progress Slider Bar */}
-                                <div className="space-y-1.5 pt-2">
-                                    <div className="flex justify-between items-center text-xs">
-                                        <span className="text-muted-foreground font-semibold">Progreso acumulado</span>
-                                        <span className="font-mono font-bold text-indigo-300">{obj.progress_pct}%</span>
-                                    </div>
-                                    <input
-                                        type="range"
-                                        min={0}
-                                        max={100}
-                                        value={obj.progress_pct}
-                                        onChange={(e) => handleProgressChange(obj.id, parseInt(e.target.value))}
-                                        className="w-full h-2 bg-black/40 rounded-lg appearance-none cursor-pointer accent-indigo-500"
-                                    />
-                                </div>
-
-                                {/* Linked Tasks Footer */}
-                                {tasksForObj.length > 0 && (
-                                    <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs text-muted-foreground">
-                                        <span className="flex items-center gap-1.5">
-                                            <CheckSquare className="w-3.5 h-3.5 text-indigo-400" />
-                                            {completedTasksCount} / {tasksForObj.length} tareas vinculadas completadas
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
+                            </section>
                         )
-                    })
-                )}
+                    })}
+                </div>
+
+                <aside className="lg:col-span-4 min-w-0 space-y-4">
+                    <Panel>
+                        <SectionLabel>Salud del trimestre</SectionLabel>
+                        <dl className="text-sm divide-y divide-hairline">
+                            <div className="flex justify-between py-2.5"><dt className="text-muted-foreground">Con tareas en marcha</dt><dd className="font-mono">{active.length - orphan.length} de {active.length}</dd></div>
+                            <div className="flex justify-between py-2.5"><dt className="text-muted-foreground">Estancados</dt><dd className={cn('font-mono', orphan.length > 0 && 'text-red-300')}>{orphan.length}</dd></div>
+                            <div className="flex justify-between py-2.5"><dt className="text-muted-foreground">Tiempo / avance</dt><dd className="font-mono">{timePct}% / {avg}%</dd></div>
+                        </dl>
+                    </Panel>
+                    <Panel>
+                        <SectionLabel right={dreams.length}>Sueños</SectionLabel>
+                        {dreams.length === 0 ? <p className="text-sm text-muted-foreground">El norte que no cambia de un trimestre a otro. Anotá el primero.</p> : (
+                            <ol className="divide-y divide-hairline">
+                                {dreams.map((d, i) => (
+                                    <li key={d.id} className="flex gap-3 py-3">
+                                        <span className="font-mono text-xs text-ink-faint pt-0.5">{String(i + 1).padStart(2, '0')}</span>
+                                        <div className="flex-1 min-w-0"><p className="text-sm">{d.title}</p><p className="text-xs text-muted-foreground mt-0.5">{DREAM_LABEL[d.category || ''] || d.category}{d.target_year ? ` · ${d.target_year}` : ''}</p></div>
+                                        <button onClick={() => removeDream(d.id)} aria-label="Eliminar sueño" className="w-8 h-8 text-ink-faint hover:text-red-300 flex items-center justify-center"><Trash2 className="w-3.5 h-3.5" /></button>
+                                    </li>
+                                ))}
+                            </ol>
+                        )}
+                    </Panel>
+                    <ObjectiveSuggester />
+                </aside>
             </div>
 
-            {/* Modal Create Objective */}
-            <AnimatePresence>
-                {isObjModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsObjModalOpen(false)} />
-                        <div className="glass border border-border/50 w-full max-w-md rounded-3xl p-6 relative z-10 space-y-4">
-                            <div className="flex justify-between items-center border-b border-white/5 pb-3">
-                                <h3 className="font-heading font-bold text-lg text-white">Nuevo Objetivo</h3>
-                                <button onClick={() => setIsObjModalOpen(false)} className="text-muted-foreground hover:text-white"><X className="w-5 h-5" /></button>
-                            </div>
-                            <form onSubmit={handleCreateObjective} className="space-y-3 text-xs">
-                                <div>
-                                    <label className="text-muted-foreground font-semibold block mb-1">Título del Objetivo *</label>
-                                    <input required type="text" value={objTitle} onChange={e => setObjTitle(e.target.value)} placeholder="Ej: Duplicar ahorros mensuales..." className="w-full bg-black/20 border border-white/10 rounded-xl p-2.5 text-white" />
-                                </div>
-                                <div>
-                                    <label className="text-muted-foreground font-semibold block mb-1">Descripción</label>
-                                    <textarea rows={2} value={objDesc} onChange={e => setObjDesc(e.target.value)} placeholder="Detalles de ejecución..." className="w-full bg-black/20 border border-white/10 rounded-xl p-2.5 text-white resize-none" />
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <label className="text-muted-foreground font-semibold block mb-1">Periodo</label>
-                                        <select value={objTimeframe} onChange={(e: any) => setObjTimeframe(e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-xl p-2 text-white">
-                                            <option value="Q1">Q1 (Ene-Mar)</option>
-                                            <option value="Q2">Q2 (Abr-Jun)</option>
-                                            <option value="Q3">Q3 (Jul-Sep)</option>
-                                            <option value="Q4">Q4 (Oct-Dic)</option>
-                                            <option value="Year">Anual</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="text-muted-foreground font-semibold block mb-1">Tipo</label>
-                                        <select value={objType} onChange={(e: any) => setObjType(e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-xl p-2 text-white">
-                                            <option value="Personal">Personal</option>
-                                            <option value="Professional">Profesional</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="text-muted-foreground font-semibold block mb-1">Vincular a Sueño (Opcional)</label>
-                                    <select value={objDreamId} onChange={(e) => setObjDreamId(e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-xl p-2 text-white">
-                                        <option value="">Sin vincular</option>
-                                        {dreams.map(d => (
-                                            <option key={d.id} value={d.id}>{d.title}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="pt-2 flex justify-end gap-2">
-                                    <button type="button" onClick={() => setIsObjModalOpen(false)} className="px-4 py-2 border border-white/10 rounded-xl text-muted-foreground">Cancelar</button>
-                                    <button type="submit" className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl">Crear Objetivo</button>
-                                </div>
-                            </form>
-                        </div>
+            <Modal open={objModal} title="Nuevo objetivo" onClose={() => setObjModal(false)}>
+                <form onSubmit={submitObjective} className="space-y-4">
+                    <Field label="Título"><input required value={obj.title} onChange={e => setObj({ ...obj, title: e.target.value })} placeholder="Conseguir el primer cliente de automatización" className="field" /></Field>
+                    <Field label="Descripción"><textarea rows={2} value={obj.description} onChange={e => setObj({ ...obj, description: e.target.value })} className="field py-2.5 resize-none" /></Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Período"><select value={obj.timeframe} onChange={e => setObj({ ...obj, timeframe: e.target.value as Timeframe })} className="field"><option value="Q1">Q1 (ene-mar)</option><option value="Q2">Q2 (abr-jun)</option><option value="Q3">Q3 (jul-sep)</option><option value="Q4">Q4 (oct-dic)</option><option value="Year">Anual</option></select></Field>
+                        <Field label="Tipo"><select value={obj.type} onChange={e => setObj({ ...obj, type: e.target.value })} className="field"><option value="Personal">Personal</option><option value="Professional">Profesional</option></select></Field>
                     </div>
-                )}
-            </AnimatePresence>
-
-            {/* Modal Create Dream */}
-            <AnimatePresence>
-                {isDreamModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsDreamModalOpen(false)} />
-                        <div className="glass border border-border/50 w-full max-w-md rounded-3xl p-6 relative z-10 space-y-4">
-                            <div className="flex justify-between items-center border-b border-white/5 pb-3">
-                                <h3 className="font-heading font-bold text-lg text-white">Anotar Nuevo Sueño</h3>
-                                <button onClick={() => setIsDreamModalOpen(false)} className="text-muted-foreground hover:text-white"><X className="w-5 h-5" /></button>
-                            </div>
-                            <form onSubmit={handleCreateDream} className="space-y-3 text-xs">
-                                <div>
-                                    <label className="text-muted-foreground font-semibold block mb-1">Título del Sueño *</label>
-                                    <input required type="text" value={dreamTitle} onChange={e => setDreamTitle(e.target.value)} placeholder="Ej: Viajar a Japón, Comprar casa..." className="w-full bg-black/20 border border-white/10 rounded-xl p-2.5 text-white" />
-                                </div>
-                                <div>
-                                    <label className="text-muted-foreground font-semibold block mb-1">Categoría</label>
-                                    <select value={dreamCategory} onChange={(e: any) => setDreamCategory(e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-xl p-2 text-white">
-                                        <option value="Personal">Personal</option>
-                                        <option value="Professional">Profesional</option>
-                                        <option value="Health">Salud</option>
-                                        <option value="Financial">Financiero</option>
-                                        <option value="Relationships">Relaciones</option>
-                                        <option value="Adventure">Aventura / Viaje</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="text-muted-foreground font-semibold block mb-1">Descripción / Visión</label>
-                                    <textarea rows={3} value={dreamDesc} onChange={e => setDreamDesc(e.target.value)} placeholder="¿Por qué es importante para vos?" className="w-full bg-black/20 border border-white/10 rounded-xl p-2.5 text-white resize-none" />
-                                </div>
-                                <div className="pt-2 flex justify-end gap-2">
-                                    <button type="button" onClick={() => setIsDreamModalOpen(false)} className="px-4 py-2 border border-white/10 rounded-xl text-muted-foreground">Cancelar</button>
-                                    <button type="submit" className="px-5 py-2 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-xl">Guardar Sueño</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                )}
-            </AnimatePresence>
-        </div>
+                    <Field label="Sueño (opcional)"><select value={obj.dream_id} onChange={e => setObj({ ...obj, dream_id: e.target.value })} className="field"><option value="">Sin vincular</option>{dreams.map(d => <option key={d.id} value={d.id}>{d.title}</option>)}</select></Field>
+                    <button className="btn-primary w-full text-sm">Crear objetivo</button>
+                </form>
+            </Modal>
+            <Modal open={dreamModal} title="Nuevo sueño" onClose={() => setDreamModal(false)}>
+                <form onSubmit={submitDream} className="space-y-4">
+                    <Field label="Título"><input required value={dream.title} onChange={e => setDream({ ...dream, title: e.target.value })} className="field" /></Field>
+                    <Field label="Categoría"><select value={dream.category} onChange={e => setDream({ ...dream, category: e.target.value })} className="field">{Object.entries(DREAM_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></Field>
+                    <Field label="¿Por qué es importante?"><textarea rows={3} value={dream.description} onChange={e => setDream({ ...dream, description: e.target.value })} className="field py-2.5 resize-none" /></Field>
+                    <button className="btn-primary w-full text-sm">Guardar sueño</button>
+                </form>
+            </Modal>
+        </PageShell>
     )
 }

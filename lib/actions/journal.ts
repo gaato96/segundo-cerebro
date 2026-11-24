@@ -89,3 +89,23 @@ export async function appendToJournal(date: string, newContent: string) {
     }
     revalidatePath('/journal')
 }
+
+/** El mes para la tira de ánimo, la racha de escritura y qué escribiste este mismo día otros años. */
+export async function getJournalMonth(month: string, day: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { entries: [], dates: [], memories: [] }
+    const [y, m] = month.split('-').map(Number)
+    const last = String(new Date(y, m, 0).getDate()).padStart(2, '0')
+    const years = [1, 2, 3].map(n => `${Number(day.slice(0, 4)) - n}${day.slice(4)}`).filter(d => !d.endsWith('-02-29'))
+    const [entries, dates, memories] = await Promise.all([
+        supabase.from('journal_entries').select('date, mood, content').eq('user_id', user.id).gte('date', `${month}-01`).lte('date', `${month}-${last}`).order('date'),
+        supabase.from('journal_entries').select('date').eq('user_id', user.id).order('date', { ascending: false }).limit(120),
+        supabase.from('journal_entries').select('date, content').eq('user_id', user.id).in('date', years)
+    ])
+    return {
+        entries: (entries.data || []).map(e => ({ date: String(e.date), mood: e.mood as number | null, words: String(e.content || '').split(/\s+/).filter(Boolean).length })),
+        dates: (dates.data || []).map(d => String(d.date)),
+        memories: (memories.data || []).map(x => ({ date: String(x.date), content: String(x.content || '').slice(0, 220) }))
+    }
+}

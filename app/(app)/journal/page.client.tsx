@@ -1,240 +1,173 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { MoodIcon } from '@/components/ui/MoodIcon'
-import { motion } from 'framer-motion'
-import { Calendar as CalendarIcon, Save, Loader2, Sparkles, PencilLine } from 'lucide-react'
-import { format, subDays, addDays, isFuture } from 'date-fns'
-import { es } from 'date-fns/locale'
-import { getJournalEntry, saveJournalEntry } from '@/lib/actions/journal'
+import { useEffect, useRef, useState } from 'react'
+import { ChevronLeft, ChevronRight, Eye, PenLine } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
-import { cn } from '@/lib/utils'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
+import { MoodIcon } from '@/components/ui/MoodIcon'
+import { getJournalEntry, saveJournalEntry, getJournalMonth } from '@/lib/actions/journal'
+import { PageShell, PageHeader, Panel, SectionLabel } from '@/components/ui/kit'
+import { addDaysToDateStr, getLocalDateStr, cn } from '@/lib/utils'
+
+type Month = Awaited<ReturnType<typeof getJournalMonth>>
+const MOODS = ['Agotado', 'Regular', 'Neutral', 'Bien', 'Excelente']
+const PROMPTS = ['¿Qué aprendiste hoy?', '¿Dónde hubo fricción o desgaste?', '¿Una victoria que merezca registro?']
+const tone = (m: number | null) => (!m ? 'bg-graphite-400' : m >= 4 ? 'bg-emerald-400' : m === 3 ? 'bg-sky-400' : 'bg-red-400')
+const count = (t: string) => t.split(/\s+/).filter(Boolean).length
 
 export function JournalClient() {
-    const [selectedDate, setSelectedDate] = useState<Date>(new Date())
+    const today = getLocalDateStr()
+    const [date, setDate] = useState(today)
+    const [month, setMonth] = useState(today.slice(0, 7))
     const [content, setContent] = useState('')
-    const [mood, setMood] = useState<number | undefined>(undefined)
-    const [isEditing, setIsEditing] = useState(true)
-    const [isLoading, setIsLoading] = useState(true)
-    const [isSaving, setIsSaving] = useState(false)
-    const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null)
-
-    const timeoutRef = useRef<NodeJS.Timeout | null>(null)
-
-    const dateStr = format(selectedDate, 'yyyy-MM-dd')
-    const isToday = dateStr === format(new Date(), 'yyyy-MM-dd')
+    const [mood, setMood] = useState<number | undefined>()
+    const [editing, setEditing] = useState(true)
+    const [loading, setLoading] = useState(true)
+    const [state, setState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+    const [data, setData] = useState<Month | null>(null)
+    const pending = useRef<{ date: string; content: string; mood?: number } | null>(null)
+    const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const area = useRef<HTMLTextAreaElement>(null)
 
     useEffect(() => {
-        async function loadEntry() {
-            setIsLoading(true)
-            try {
-                const entry = await getJournalEntry(dateStr)
-                if (entry) {
-                    setContent(entry.content || '')
-                    setMood(entry.mood)
-                    setIsEditing(false) // Show preview if content exists
-                } else {
-                    setContent('')
-                    setMood(undefined)
-                    setIsEditing(true) // Auto edit if empty
-                }
-            } catch (error) {
-                console.error('Error loading journal', error)
-            } finally {
-                setIsLoading(false)
-            }
-        }
-        loadEntry()
-    }, [dateStr])
-
-    // Auto-save logic
+        let alive = true
+        setLoading(true)
+        getJournalEntry(date).then(e => {
+            if (!alive) return
+            setContent(e?.content || '')
+            setMood(e?.mood || undefined)
+            setEditing(!e?.content)
+            setLoading(false)
+        }).catch(() => alive && setState('error'))
+        return () => { alive = false }
+    }, [date])
     useEffect(() => {
-        if (isLoading || !isEditing) return
+        let alive = true
+        getJournalMonth(month, date).then(d => alive && setData(d)).catch(() => { })
+        return () => { alive = false }
+    }, [month, date])
+    useEffect(() => {
+        const el = area.current
+        if (!el) return
+        el.style.height = 'auto'
+        el.style.height = `${Math.max(el.scrollHeight, 360)}px`
+    }, [content, editing, loading])
+    // Al salir de la pantalla se guarda lo que quedó pendiente.
+    useEffect(() => () => { void flush() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-        if (timeoutRef.current) clearTimeout(timeoutRef.current)
-
-        timeoutRef.current = setTimeout(() => {
-            if (content.trim()) {
-                handleSave(true)
-            }
-        }, 2000)
-
-        return () => {
-            if (timeoutRef.current) clearTimeout(timeoutRef.current)
-        }
-    }, [content, mood, isEditing])
-
-    async function handleSave(silent = false) {
-        if (!content.trim()) return
-
-        if (!silent) setIsSaving(true)
-        setMessage(null)
-
+    async function flush() {
+        if (timer.current) clearTimeout(timer.current)
+        const p = pending.current
+        if (!p) return true
+        pending.current = null
         try {
-            await saveJournalEntry(dateStr, content, mood)
-            if (!silent) {
-                setMessage({ text: 'Guardado correctamente', type: 'success' })
-                setIsEditing(false)
-                setTimeout(() => setMessage(null), 3000)
-            }
-        } catch (error) {
-            console.error('Error saving', error)
-            if (!silent) setMessage({ text: 'Error al guardar', type: 'error' })
-        } finally {
-            if (!silent) setIsSaving(false)
+            await saveJournalEntry(p.date, p.content, p.mood)
+            setState('saved')
+            setData(d => d && ({
+                ...d,
+                entries: [...d.entries.filter(e => e.date !== p.date), { date: p.date, mood: p.mood ?? null, words: count(p.content) }],
+                dates: d.dates.includes(p.date) ? d.dates : [p.date, ...d.dates]
+            }))
+            return true
+        } catch {
+            pending.current = pending.current || p
+            setState('error')
+            return false
         }
     }
-
-    const moods = [
-        { value: 1, emoji: '😫', label: 'Agotado' },
-        { value: 2, emoji: '😕', label: 'Regular' },
-        { value: 3, emoji: '😐', label: 'Neutral' },
-        { value: 4, emoji: '🙂', label: 'Bien' },
-        { value: 5, emoji: '🤩', label: 'Excelente' },
-    ]
-
-    const handlePrevDay = () => setSelectedDate(prev => subDays(prev, 1))
-    const handleNextDay = () => {
-        if (!isFuture(addDays(selectedDate, 1))) {
-            setSelectedDate(prev => addDays(prev, 1))
-        }
+    function change(next: { content?: string; mood?: number }) {
+        const c = next.content ?? content, m = next.mood ?? mood
+        if (next.content !== undefined) setContent(c)
+        if (next.mood !== undefined) setMood(m)
+        pending.current = { date, content: c, mood: m }
+        setState('saving')
+        if (timer.current) clearTimeout(timer.current)
+        timer.current = setTimeout(flush, 1200)
     }
+    async function go(d: string) {
+        if (d > today || d === date) return
+        if (!(await flush())) return
+        setLoading(true)
+        setDate(d)
+        setMonth(d.slice(0, 7))
+        setState('idle')
+    }
+    function moveMonth(n: number) {
+        const [yy, mm] = month.split('-').map(Number)
+        const d = new Date(yy, mm - 1 + n, 1)
+        const next = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+        if (next <= today.slice(0, 7)) setMonth(next)
+    }
+
+    const [y, m] = month.split('-').map(Number)
+    const days = Array.from({ length: new Date(y, m, 0).getDate() }, (_, i) => `${month}-${String(i + 1).padStart(2, '0')}`)
+    const byDate = new Map((data?.entries || []).map(e => [e.date, e]))
+    const withMood = (data?.entries || []).filter(e => e.mood)
+    const good = withMood.filter(e => e.mood! >= 4).length, mid = withMood.filter(e => e.mood === 3).length, bad = withMood.length - good - mid
+    const dates = new Set(data?.dates || [])
+    let streak = 0
+    for (let d = dates.has(today) ? today : addDaysToDateStr(today, -1); dates.has(d); d = addDaysToDateStr(d, -1)) streak++
 
     return (
-        <div className="px-4 md:px-8 py-6 md:py-8 max-w-4xl mx-auto space-y-6 animate-fade-in pb-24">
-            {/* Header & Navigation */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl md:text-[30px] font-semibold tracking-tight flex items-center gap-2">
-                        Brain Dump
-                        <Sparkles className="w-6 h-6 text-indigo-400" />
-                    </h1>
-                    <p className="text-muted-foreground text-sm mt-1">
-                        Vaciá tu mente para ganar enfoque. Soporta Markdown.
-                    </p>
-                </div>
+        <PageShell wide>
+            <PageHeader label="Capturar · reflexión" title="Journal" subtitle="Un espacio sobrio para vaciar la cabeza, registrar aprendizajes y notar patrones."
+                actions={<span role="status" className={cn('font-mono text-xs flex items-center gap-2', state === 'error' ? 'text-red-300' : 'text-muted-foreground')}><span className={cn('w-1.5 h-1.5 rounded-full', state === 'error' ? 'bg-red-400' : state === 'saving' ? 'bg-amber-400' : 'bg-emerald-400')} />{state === 'saving' ? 'Guardando…' : state === 'error' ? 'Error al guardar o cargar' : 'Guardado automático'}</span>} />
 
-                <div className="flex items-center gap-3 bg-secondary/50 p-1.5 rounded-xl border border-border">
-                    <button
-                        onClick={handlePrevDay}
-                        className="px-3 py-1.5 rounded-lg hover:bg-background text-sm font-medium transition-colors border border-transparent hover:border-border"
-                    >
-                        Ayer
-                    </button>
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-background rounded-lg border border-border text-sm font-medium min-w-[140px] justify-center text-indigo-300 shadow-inner">
-                        <CalendarIcon className="w-4 h-4 text-indigo-400" />
-                        {isToday ? 'Hoy' : format(selectedDate, 'd MMM YYY', { locale: es })}
-                    </div>
-                    <button
-                        onClick={handleNextDay}
-                        disabled={isFuture(addDays(selectedDate, 1))}
-                        className="px-3 py-1.5 rounded-lg hover:bg-background text-sm font-medium transition-colors border border-transparent hover:border-border disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:border-transparent"
-                    >
-                        Mañana
-                    </button>
+            <Panel className="mb-8">
+                <div className="flex items-center gap-2 mb-3">
+                    <button onClick={() => moveMonth(-1)} aria-label="Mes anterior" className="w-9 h-9 rounded-lg text-muted-foreground hover:text-foreground flex items-center justify-center"><ChevronLeft className="w-4 h-4" /></button>
+                    <span className="text-sm font-medium capitalize">{format(new Date(y, m - 1, 1), 'MMMM yyyy', { locale: es })}</span>
+                    <button onClick={() => moveMonth(1)} aria-label="Mes siguiente" disabled={month >= today.slice(0, 7)} className="w-9 h-9 rounded-lg text-muted-foreground hover:text-foreground flex items-center justify-center disabled:opacity-30"><ChevronRight className="w-4 h-4" /></button>
+                    <span className="ml-auto hidden sm:flex gap-4 text-xs text-muted-foreground">{[['bg-emerald-400', 'Bueno'], ['bg-sky-400', 'Neutral'], ['bg-red-400', 'Difícil']].map(([c, l]) => <span key={l} className="flex items-center gap-1.5"><span className={cn('w-1.5 h-1.5 rounded-full', c)} />{l}</span>)}</span>
                 </div>
+                <div className="grid grid-cols-7 lg:flex gap-1">
+                    {days.map(d => {
+                        const e = byDate.get(d), sel = d === date
+                        return (
+                            <button key={d} onClick={() => go(d)} disabled={d > today} aria-label={d} aria-current={sel ? 'date' : undefined}
+                                className={cn('flex-1 min-w-0 h-12 rounded-lg flex flex-col items-center justify-center gap-1 font-mono text-xs border transition-colors disabled:opacity-25', sel ? 'lamp text-amber-300' : 'border-transparent text-muted-foreground hover:bg-raised')}>
+                                {Number(d.slice(8))}<span className={cn('w-1.5 h-1.5 rounded-full', e ? tone(e.mood) : 'bg-transparent')} />
+                            </button>
+                        )
+                    })}
+                </div>
+            </Panel>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                <article className="lg:col-span-8 min-w-0">
+                    <div className="flex items-center justify-between gap-3 mb-5">
+                        <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">{format(new Date(`${date}T12:00:00`), "EEEE d 'de' MMMM", { locale: es })}</p>
+                        <button onClick={() => setEditing(v => !v)} className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 min-h-[36px]">{editing ? <><Eye className="w-4 h-4" /> Leer</> : <><PenLine className="w-4 h-4" /> Escribir</>}</button>
+                    </div>
+                    {loading ? <div className="space-y-3 animate-pulse">{[90, 100, 80, 60].map(w => <div key={w} className="h-4 rounded bg-raised" style={{ width: `${w}%` }} />)}</div> : editing ? (
+                        <>
+                            <textarea ref={area} value={content} onChange={e => change({ content: e.target.value })} placeholder="Escribí lo que tengas en la cabeza…" aria-label="Entrada del día" className="w-full max-w-[65ch] min-h-[360px] bg-transparent resize-none text-[17px] leading-[1.75] focus:outline-none placeholder:text-ink-faint" />
+                            <div className="flex flex-wrap gap-2 pt-4 border-t border-hairline">
+                                {PROMPTS.map(p => <button key={p} onClick={() => { change({ content: `${content.trim()}${content.trim() ? '\n\n' : ''}## ${p}\n\n` }); area.current?.focus() }} className="h-9 px-3 rounded-lg border border-hairline text-xs text-muted-foreground hover:text-foreground">{p}</button>)}
+                            </div>
+                        </>
+                    ) : <div className="prose-note max-w-[65ch] text-[17px] leading-[1.75]" onDoubleClick={() => setEditing(true)}>{content ? <ReactMarkdown>{content}</ReactMarkdown> : <p className="text-muted-foreground">Sin entrada este día.</p>}</div>}
+                    <p className="font-mono text-[11px] text-ink-faint mt-4">{count(content)} palabras</p>
+                </article>
+
+                <aside className="lg:col-span-4 space-y-4">
+                    <Panel>
+                        <SectionLabel>¿Cómo te sentís?</SectionLabel>
+                        <div className="grid grid-cols-5 gap-1.5">
+                            {MOODS.map((l, i) => <button key={l} disabled={loading} onClick={() => change({ mood: i + 1 })} aria-pressed={mood === i + 1} title={l} className={cn('h-14 rounded-xl border flex items-center justify-center', mood === i + 1 ? 'lamp text-amber-300' : 'border-hairline text-muted-foreground hover:text-foreground')}><MoodIcon value={i + 1} /></button>)}
+                        </div>
+                        {mood && <p className="text-xs text-muted-foreground mt-2">{MOODS[mood - 1]}</p>}
+                    </Panel>
+                    <Panel>
+                        <SectionLabel right={`${data?.entries.length ?? 0} de ${days.length} días`}>El mes</SectionLabel>
+                        <div className="flex h-1.5 rounded-full overflow-hidden bg-raised gap-px">{([['bg-emerald-400', good], ['bg-sky-400', mid], ['bg-red-400', bad]] as [string, number][]).map(([c, n]) => <span key={c} className={c} style={{ width: `${withMood.length ? (n / withMood.length) * 100 : 0}%` }} />)}</div>
+                        <p className="text-xs text-muted-foreground mt-2">{withMood.length ? `${good} buenos · ${mid} neutrales · ${bad} difíciles` : 'Todavía sin ánimo registrado este mes.'}</p>
+                        <div className="flex items-baseline justify-between mt-4 pt-4 border-t border-hairline"><span className="text-sm text-muted-foreground">Racha de escritura</span><span className="font-mono text-xl">{streak} <span className="text-xs text-muted-foreground">días</span></span></div>
+                    </Panel>
+                    {!!data?.memories.length && <Panel><SectionLabel>Este día, otros años</SectionLabel>{data.memories.map(x => <button key={x.date} onClick={() => go(x.date)} className="block w-full text-left py-2"><span className="font-mono text-xs text-muted-foreground">{x.date.slice(0, 4)}</span><span className="block text-sm line-clamp-3 mt-1">{x.content}</span></button>)}</Panel>}
+                </aside>
             </div>
-
-            <div className="glass rounded-2xl border border-border/50 shadow-xl overflow-hidden flex flex-col min-h-[60vh]">
-                {/* Toolbar */}
-                <div className="border-b border-border/50 bg-secondary/30 p-4 flex flex-wrap items-center justify-between gap-4">
-                    {/* Mood Selector */}
-                    <div className="flex items-center gap-1">
-                        <span className="text-xs font-medium text-muted-foreground mr-2">¿Cómo te sentís?</span>
-                        {moods.map(m => (
-                            <button
-                                key={m.value}
-                                onClick={() => {
-                                    setMood(m.value)
-                                    if (!isEditing) setIsEditing(true)
-                                }}
-                                disabled={isLoading}
-                                className={cn(
-                                    'w-8 h-8 rounded-full flex items-center justify-center text-lg transition-all hover:scale-110 active:scale-95 disabled:opacity-50',
-                                    mood === m.value ? 'bg-indigo-500/20 ring-2 ring-indigo-500/50 scale-110' : 'grayscale hover:grayscale-0'
-                                )}
-                                title={m.label}
-                            >
-                                <MoodIcon value={m.value} />
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        {message && (
-                            <span className={`text-xs px-3 py-1 rounded-full ${message.type === 'success' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
-                                {message.text}
-                            </span>
-                        )}
-
-                        <div className="bg-background rounded-lg p-1 flex items-center border border-border shadow-inner">
-                            <button
-                                onClick={() => setIsEditing(true)}
-                                className={cn(
-                                    'px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2',
-                                    isEditing ? 'bg-secondary text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                                )}
-                            >
-                                <PencilLine className="w-4 h-4" />
-                                Editar
-                            </button>
-                            <button
-                                onClick={() => setIsEditing(false)}
-                                className={cn(
-                                    'px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2',
-                                    !isEditing ? 'bg-secondary text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                                )}
-                            >
-                                <Sparkles className="w-4 h-4" />
-                                Preview
-                            </button>
-                        </div>
-
-                        <button
-                            onClick={() => handleSave(false)}
-                            disabled={isLoading || isSaving}
-                            className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-md flex items-center gap-2"
-                        >
-                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                            Guardar
-                        </button>
-                    </div>
-                </div>
-
-                {/* Editor / Preview Area */}
-                <div className="flex-1 relative bg-background/50">
-                    {isLoading ? (
-                        <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-10">
-                            <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-                        </div>
-                    ) : isEditing ? (
-                        <textarea
-                            value={content}
-                            onChange={(e) => setContent(e.target.value)}
-                            placeholder="Escribí acá lo que tenés en la cabeza. Podés usar **negritas**, - listas, o # títulos..."
-                            className="w-full h-full min-h-[500px] p-6 bg-transparent resize-none focus:outline-none text-foreground leading-relaxed text-base md:text-lg placeholder:text-muted-foreground/50"
-                            autoFocus
-                        />
-                    ) : (
-                        <div className="p-6 prose prose-invert prose-indigo max-w-none prose-p:leading-relaxed prose-pre:bg-secondary/50 min-h-[500px]">
-                            {content ? (
-                                <ReactMarkdown>{content}</ReactMarkdown>
-                            ) : (
-                                <div className="h-full flex flex-col items-center justify-center text-muted-foreground italic h-[400px]">
-                                    <PencilLine className="w-12 h-12 mb-4 opacity-20" />
-                                    <p>No hay entradas para este día.</p>
-                                    <button
-                                        onClick={() => setIsEditing(true)}
-                                        className="mt-4 text-indigo-400 hover:text-indigo-300 not-italic text-sm font-medium"
-                                    >
-                                        Empezar a escribir...
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
+        </PageShell>
     )
 }
