@@ -123,6 +123,49 @@ export const FULL_CROP: Crop = { x0: 0, y0: 0, x1: 1, y1: 1 }
 // y en el celu cada página cacheada ocupa memoria de verdad.
 const MAX_CANVAS_PIXELS = 10_000_000
 
+/**
+ * Texto de la página rearmado en párrafos, para leerlo a tamaño de celular.
+ * Une las líneas cortadas, pega las palabras partidas con guion y saca el
+ * número de página suelto. Vacío si el PDF es una imagen escaneada.
+ */
+export async function pageParagraphs(doc: PDFDocumentProxy, n: number): Promise<string[]> {
+    const page = await doc.getPage(n)
+    const tc = await page.getTextContent()
+    type Line = { y: number; x: number; h: number; text: string }
+    const lines: Line[] = []
+    for (const it of tc.items as any[]) {
+        if (!('str' in it) || !it.str) { if (it?.hasEOL && lines.length) lines[lines.length - 1].text += '\n'; continue }
+        const y = it.transform[5], x = it.transform[4], h = Math.abs(it.transform[3]) || it.height || 10
+        const cur = lines[lines.length - 1]
+        if (cur && Math.abs(cur.y - y) < h * 0.5) cur.text += (cur.text.endsWith(' ') || it.str.startsWith(' ') ? '' : ' ') + it.str
+        else lines.push({ y, x, h, text: it.str })
+    }
+    const clean = lines.map(l => ({ ...l, text: l.text.replace(/\n/g, '').replace(/\s+/g, ' ').trim() })).filter(l => l.text)
+    if (!clean.length) return []
+    // Número de página o encabezado corto suelto arriba/abajo.
+    const isNoise = (t: string) => /^\d{1,4}$/.test(t)
+    const body = clean.filter((l, i) => !((i === 0 || i === clean.length - 1) && isNoise(l.text)))
+    const gaps = body.slice(1).map((l, i) => Math.abs(body[i].y - l.y)).filter(g => g > 0).sort((a, b) => a - b)
+    const gap = gaps[Math.floor(gaps.length / 2)] || 12
+    const left = body.map(l => l.x).sort((a, b) => a - b)[Math.floor(body.length * 0.2)] ?? 0
+    const paras: string[] = []
+    let buf = ''
+    body.forEach((l, i) => {
+        const prev = body[i - 1]
+        const breakHere = prev && (
+            Math.abs(prev.y - l.y) > gap * 1.45 ||                       // renglón vacío
+            (l.x - left > 8 && /[.!?:»"”)]$/.test(prev.text)) ||           // sangría después de punto
+            (prev.text.length < 45 && /[.!?:»"”]$/.test(prev.text))        // línea corta que cierra
+        )
+        if (breakHere && buf) { paras.push(buf); buf = '' }
+        if (!buf) buf = l.text
+        else if (/[A-Za-zÁÉÍÓÚáéíóúñÑ]-$/.test(buf)) buf = buf.slice(0, -1) + l.text
+        else buf += ' ' + l.text
+    })
+    if (buf) paras.push(buf)
+    return paras
+}
+
 export class PageRenderer {
     private sizes = new Map<number, Promise<PageSize>>()
     private crops = new Map<number, Promise<Crop>>()

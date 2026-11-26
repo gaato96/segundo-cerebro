@@ -7,14 +7,14 @@ import { AnimatePresence, motion } from 'framer-motion'
 import {
     ArrowLeft, ListTree, Type, Maximize, Minimize, CheckCircle2, ChevronLeft, ChevronRight,
     Loader2, X, RefreshCw, ZoomIn, ZoomOut, Columns2, Crop as CropIcon, MoveHorizontal,
-    RectangleVertical, SunDim, BookOpen, Highlighter
+    RectangleVertical, SunDim, BookOpen, Highlighter, AlignLeft, FileText
 } from 'lucide-react'
 import { HighlightPanel } from '@/components/reader/HighlightPanel'
 import {
     type BookItem, saveReadingProgress, getReadingProgress, finishBook
 } from '@/lib/actions/books'
 import {
-    PageRenderer, FULL_CROP, openPdf, readOutline, resolveDest,
+    PageRenderer, FULL_CROP, openPdf, pageParagraphs, readOutline, resolveDest,
     type Crop, type OutlineEntry
 } from '@/lib/reader/pdf'
 import { getLocalBook, saveLocalBook, deleteLocalBook, downloadBookPdf, formatBytes } from '@/lib/reader/files'
@@ -88,6 +88,12 @@ interface Prefs {
     zoom: number
     spread: boolean
     crop: boolean
+    /** 'page' = la hoja tal cual; 'text' = el texto rearmado, con letra a tu medida. */
+    mode: 'page' | 'text'
+    fontSize: number
+    /** Recorte manual extra por lado (0 a 0,25 del ancho/alto), encima del automático. */
+    trimX: number
+    trimY: number
 }
 
 const ZOOM_MIN = 1
@@ -99,7 +105,7 @@ const posKey = (id: string) => `reader:pos:${id}`
 function defaultPrefs(): Prefs {
     const narrow = typeof window !== 'undefined' && window.innerWidth < 768
     // En el celu recortar márgenes hace la letra bastante más grande.
-    return { theme: 'sepia', dim: 0, fit: 'page', zoom: 1, spread: true, crop: narrow }
+    return { theme: 'sepia', dim: 0, fit: narrow ? 'width' : 'page', zoom: 1, spread: true, crop: narrow, mode: 'page', fontSize: 19, trimX: 0, trimY: 0 }
 }
 
 function loadPrefs(): Prefs {
@@ -265,7 +271,7 @@ export function BookReader({ book }: { book: BookItem }) {
     }, [book.id, book.file_path, book.current_page, reloadKey])
 
     // ── Qué páginas se ven ──────────────────────────────────────
-    const spreadActive = !!prefs && prefs.spread && prefs.fit === 'page' && prefs.zoom === 1
+    const spreadActive = !!prefs && prefs.mode === 'page' && prefs.spread && prefs.fit === 'page' && prefs.zoom === 1
         && size.w >= 900 && size.w > size.h * 1.1 && numPages > 2
 
     const pagesAt = useCallback((p: number): number[] => {
@@ -305,7 +311,7 @@ export function BookReader({ book }: { book: BookItem }) {
 
     useEffect(() => {
         const r = rendererRef.current
-        if (load.kind !== 'ready' || !r || !prefs || !size.w || !displayed.length) return
+        if (load.kind !== 'ready' || !r || !prefs || prefs.mode === 'text' || !size.w || !displayed.length) return
 
         const narrow = size.w < 640
         const margin = narrow ? (prefs.crop ? 6 : 0) : 20
@@ -315,6 +321,12 @@ export function BookReader({ book }: { book: BookItem }) {
         const computeSpec = async (pages: number[]): Promise<SlotSpec[]> => {
             let crops = await Promise.all(pages.map(n => prefs.crop ? r.crop(n) : Promise.resolve(FULL_CROP)))
             // A doble página las dos hojas se recortan igual, si no quedan de distinto alto.
+            if (prefs.trimX || prefs.trimY) {
+                crops = crops.map(c => {
+                    const dx = (c.x1 - c.x0) * prefs.trimX, dy = (c.y1 - c.y0) * prefs.trimY
+                    return { x0: c.x0 + dx, x1: c.x1 - dx, y0: c.y0 + dy, y1: c.y1 - dy }
+                })
+            }
             if (crops.length === 2) {
                 const [a, b] = crops
                 const merged = { x0: Math.min(a.x0, b.x0), y0: Math.min(a.y0, b.y0), x1: Math.max(a.x1, b.x1), y1: Math.max(a.y1, b.y1) }
@@ -374,7 +386,24 @@ export function BookReader({ book }: { book: BookItem }) {
 
         return () => { stale = true; clearTimeout(slowTimer) }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [load.kind, displayedKey, size.w, size.h, prefs?.fit, prefs?.zoom, prefs?.crop, spreadActive, numPages, dpr])
+    }, [load.kind, displayedKey, size.w, size.h, prefs?.fit, prefs?.zoom, prefs?.crop, prefs?.trimX, prefs?.trimY, prefs?.mode, spreadActive, numPages, dpr])
+
+    // ── Modo texto: la página rearmada en párrafos ──────────────
+    const [textPage, setTextPage] = useState<{ n: number; paras: string[] } | null>(null)
+    useEffect(() => {
+        const r = rendererRef.current
+        if (load.kind !== 'ready' || !r || prefs?.mode !== 'text') return
+        let alive = true
+        pageParagraphs(r.doc, page).then(paras => alive && setTextPage({ n: page, paras })).catch(() => alive && setTextPage({ n: page, paras: [] }))
+        return () => { alive = false }
+    }, [load.kind, page, prefs?.mode])
+    useLayoutEffect(() => {
+        const el = scrollRef.current
+        if (!textPage || !el) return
+        el.scrollTop = scrollTarget.current === 'bottom' ? el.scrollHeight : 0
+        scrollTarget.current = 'top'
+        setOverflow({ x: false, y: el.scrollHeight > el.clientHeight + 1 })
+    }, [textPage, prefs?.fontSize])
 
     // Al cambiar de página: scroll arriba (o abajo si se volvió con la rueda) y fuera el zoom del pellizco.
     const lastFrameKey = useRef('')
@@ -708,6 +737,18 @@ export function BookReader({ book }: { book: BookItem }) {
                 onPointerCancel={onPointerCancel}
                 onContextMenu={e => e.preventDefault()}
             >
+                {prefs?.mode === 'text' ? (
+                    <article
+                        className="mx-auto px-5 sm:px-8 pt-20 pb-32 select-text"
+                        style={{ maxWidth: '38em', fontSize: prefs.fontSize, lineHeight: 1.6, color: theme.swatchText, fontFamily: 'Georgia, \'Times New Roman\', serif', filter: prefs.dim ? undefined : undefined }}
+                    >
+                        {textPage?.n === page ? (
+                            textPage.paras.length ? textPage.paras.map((t, i) => <p key={i} className="mb-[0.9em] text-pretty hyphens-auto" lang="es">{t}</p>)
+                                : <div className="text-center text-sm opacity-70 space-y-3 pt-16"><p>Esta página no tiene texto (es una imagen escaneada o una ilustración).</p><button onClick={() => updatePrefs({ mode: 'page' })} className="underline">Verla como página</button></div>
+                        ) : <Loader2 className="w-5 h-5 animate-spin mx-auto opacity-60" />}
+                        <p className="text-center text-xs opacity-50 pt-6 font-mono">— {page} —</p>
+                    </article>
+                ) : (
                 <div className="flex" style={{ minWidth: '100%', minHeight: '100%', width: 'max-content' }}>
                     <div
                         ref={pagesRef}
@@ -719,6 +760,7 @@ export function BookReader({ book }: { book: BookItem }) {
                         ))}
                     </div>
                 </div>
+                )}
             </div>
 
             {/* Atenuar brillo (por encima de las páginas, por debajo de los menús) */}
@@ -901,7 +943,7 @@ export function BookReader({ book }: { book: BookItem }) {
                         animate={{ y: 0, opacity: 1 }}
                         exit={{ y: 30, opacity: 0 }}
                         transition={{ duration: 0.18 }}
-                        className={cn('absolute z-30 inset-x-2 sm:inset-x-auto sm:right-4 sm:w-80 bottom-28 rounded-2xl border shadow-2xl p-4 space-y-4', theme.chrome)}
+                        className={cn('absolute z-30 inset-x-2 sm:inset-x-auto sm:right-4 sm:w-80 bottom-28 max-h-[70dvh] overflow-y-auto rounded-2xl border shadow-2xl p-4 space-y-4', theme.chrome)}
                     >
                         <div className="grid grid-cols-3 gap-2">
                             {(Object.keys(THEMES) as ThemeId[]).map(id => {
@@ -937,6 +979,37 @@ export function BookReader({ book }: { book: BookItem }) {
                         </label>
 
                         <div className="grid grid-cols-2 gap-2 text-xs font-medium">
+                            <Toggle divider={theme.divider} active={prefs.mode === 'page'} onClick={() => updatePrefs({ mode: 'page' })} accent={theme.accent}>
+                                <FileText className="w-4 h-4" /> Como página
+                            </Toggle>
+                            <Toggle divider={theme.divider} active={prefs.mode === 'text'} onClick={() => updatePrefs({ mode: 'text' })} accent={theme.accent}>
+                                <AlignLeft className="w-4 h-4" /> Texto adaptado
+                            </Toggle>
+                        </div>
+
+                        {prefs.mode === 'text' ? (
+                            <div className="flex items-center justify-between">
+                                <span className={cn('text-xs', theme.chromeMuted)}>Tamaño de letra</span>
+                                <div className="flex items-center gap-1">
+                                    <button onClick={() => updatePrefs({ fontSize: Math.max(14, prefs.fontSize - 1) })} className="w-10 h-10 rounded-lg hover:bg-black/5 text-sm" aria-label="Letra más chica">A−</button>
+                                    <span className="text-xs font-semibold w-10 text-center tabular-nums">{prefs.fontSize}</span>
+                                    <button onClick={() => updatePrefs({ fontSize: Math.min(32, prefs.fontSize + 1) })} className="w-10 h-10 rounded-lg hover:bg-black/5 text-lg" aria-label="Letra más grande">A+</button>
+                                </div>
+                            </div>
+                        ) : (<>
+                        <div className="space-y-2">
+                            <label className="flex items-center gap-3">
+                                <span className={cn('text-xs w-24 shrink-0', theme.chromeMuted)}>Márgenes lados</span>
+                                <input type="range" min={0} max={0.25} step={0.01} value={prefs.trimX} onChange={e => updatePrefs({ trimX: Number(e.target.value) })} className="flex-1" style={{ accentColor: theme.accent }} aria-label="Recortar márgenes de los lados" />
+                            </label>
+                            <label className="flex items-center gap-3">
+                                <span className={cn('text-xs w-24 shrink-0', theme.chromeMuted)}>Arriba y abajo</span>
+                                <input type="range" min={0} max={0.25} step={0.01} value={prefs.trimY} onChange={e => updatePrefs({ trimY: Number(e.target.value) })} className="flex-1" style={{ accentColor: theme.accent }} aria-label="Recortar márgenes de arriba y abajo" />
+                            </label>
+                            {(prefs.trimX > 0 || prefs.trimY > 0) && <button onClick={() => updatePrefs({ trimX: 0, trimY: 0 })} className={cn('text-xs underline', theme.chromeMuted)}>Volver a los márgenes originales</button>}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 text-xs font-medium">
                             <Toggle divider={theme.divider} active={prefs.fit === 'page'} onClick={() => updatePrefs({ fit: 'page', zoom: 1 })} accent={theme.accent}>
                                 <RectangleVertical className="w-4 h-4" /> Página entera
                             </Toggle>
@@ -965,6 +1038,7 @@ export function BookReader({ book }: { book: BookItem }) {
                                 </button>
                             </div>
                         </div>
+                        </>)}
                     </motion.div>
                 )}
             </AnimatePresence>
